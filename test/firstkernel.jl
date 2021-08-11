@@ -9,16 +9,20 @@ settings_grid = Dict(
     "ysize" => 3200.,
     "zsize" => 3200.)
 
+settings_fields = Dict(
+    "visc" => 1.)
+
 settings_time = Dict(
     "start_time" => 0.,
     "end_time" => 7200.,
     "dt" => 5. )
 
 settings = Dict(
-    "grid" => settings_grid,
-    "time" => settings_time)
+    "grid"   => settings_grid,
+    "fields" => settings_fields,
+    "time"   => settings_time)
 
 grid = MicroHH.Grid(settings["grid"])
-fields = MicroHH.Fields(grid)
+fields = MicroHH.Fields(grid, settings["fields"])
 
 MicroHH.advection_diffusion!(fields, grid)
