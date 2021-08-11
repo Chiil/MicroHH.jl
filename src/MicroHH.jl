@@ -1,5 +1,6 @@
 module MicroHH
 
-# Write your package code here.
+include("Grid.jl")
+include("Fields.jl")
 
 end
