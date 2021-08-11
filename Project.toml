@@ -3,6 +3,9 @@ uuid = "9dba9f50-2dd2-405b-92a9-ad4528f9d99f"
 authors = ["Chiel van Heerwaarden <chielvanheerwaarden@gmail.com> and contributors"]
 version = "0.1.0"
 
+[deps]
+LoopVectorization = "bdcacae8-1622-11e9-2a5c-532679323890"
+
 [compat]
 julia = "1"
 
