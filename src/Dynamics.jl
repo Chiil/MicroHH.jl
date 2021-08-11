@@ -1,7 +1,7 @@
 using LoopVectorization
 
 
-function advec_diff_u_kernel!(
+function dynamics_u_kernel!(
     ut, u, v, w,
     visc,
     dxi, dyi, dzi,
@@ -17,7 +17,7 @@ function advec_diff_u_kernel!(
 end
 
 
-function advec_diff_v_kernel!(
+function dynamics_v_kernel!(
     vt, u, v, w,
     visc,
     dxi, dyi, dzi,
@@ -33,7 +33,7 @@ function advec_diff_v_kernel!(
 end
 
 
-function advec_diff_w_kernel!(
+function dynamics_w_kernel!(
     wt, u, v, w,
     visc,
     dxi, dyi, dzi,
@@ -49,7 +49,7 @@ function advec_diff_w_kernel!(
 end
 
 
-function advec_diff_s_kernel!(
+function dynamics_s_kernel!(
     st, u, v, w, s,
     visc,
     dxi, dyi, dzi,
@@ -65,26 +65,26 @@ function advec_diff_s_kernel!(
 end
 
 
-function advection_diffusion!(f::Fields, g::Grid)
-    advec_diff_u_kernel!(
+function dynamics!(f::Fields, g::Grid, d::Dict)
+    dynamics_u_kernel!(
         f.u_tend, f.u, f.v, f.w,
         f.visc,
         g.dxi, g.dyi, g.dzi,
         g.is, g.ie, g.js, g.je, g.ks, g.ke)
 
-    advec_diff_v_kernel!(
+    dynamics_v_kernel!(
         f.v_tend, f.u, f.v, f.w,
         f.visc,
         g.dxi, g.dyi, g.dzi,
         g.is, g.ie, g.js, g.je, g.ks, g.ke)
 
-    advec_diff_w_kernel!(
+    dynamics_w_kernel!(
         f.w_tend, f.u, f.v, f.w,
         f.visc,
         g.dxi, g.dyi, g.dzi,
         g.is, g.ie, g.js, g.je, g.ks, g.ke)
 
-    advec_diff_s_kernel!(
+    dynamics_s_kernel!(
         f.s_tend, f.u, f.v, f.w, f.s,
         f.visc,
         g.dxi, g.dyi, g.dzi,
