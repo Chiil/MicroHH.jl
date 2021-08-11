@@ -63,9 +63,9 @@ function Grid(d::Dict)
     dy = ysize / jtot
     dz = zsize / ktot
 
-    dxi = 1. / dxi
-    dyi = 1. / dyi
-    dzi = 1. / dzi
+    dxi = 1. / dx
+    dyi = 1. / dy
+    dzi = 1. / dz
 
     g = Grid(
         itot, jtot, ktot,
