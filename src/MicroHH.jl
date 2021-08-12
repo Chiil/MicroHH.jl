@@ -1,6 +1,10 @@
 module MicroHH
 
-export Model, Grid, Fields, Dynamics
+# Export the types.
+export Model
+
+# Export the functions.
+export step_model
 
 include("Grid.jl")
 include("Fields.jl")
@@ -16,6 +20,11 @@ function Model(settings::Dict)
     fields = Fields(grid, settings["fields"])
 
     Model(grid, fields)
+end
+
+function step_model(model::Model)
+    calc_dynamics!(model.fields, model.grid)
+    return true
 end
 
 end

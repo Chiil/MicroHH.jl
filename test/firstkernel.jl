@@ -31,3 +31,7 @@ settings = Dict(
 
 model = Model(settings)
 
+in_progress = true
+while in_progress
+    global in_progress = step_model(model)
+end

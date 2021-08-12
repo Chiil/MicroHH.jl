@@ -65,7 +65,7 @@ function dynamics_s_kernel!(
 end
 
 
-function dynamics!(f::Fields, g::Grid, d::Dict)
+function calc_dynamics!(f::Fields, g::Grid)
     dynamics_u_kernel!(
         f.u_tend, f.u, f.v, f.w,
         f.visc,
