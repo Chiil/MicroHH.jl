@@ -29,7 +29,5 @@ settings = Dict(
     "time"     => settings_time,
     "dynamics" => settings_dynamics)
 
-grid = MicroHH.Grid(settings["grid"])
-fields = MicroHH.Fields(grid, settings["fields"])
+model = Model(settings)
 
-MicroHH.dynamics!(fields, grid, settings["dynamics"])
