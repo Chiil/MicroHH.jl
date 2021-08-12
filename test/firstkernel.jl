@@ -1,9 +1,9 @@
 using MicroHH
 
 settings_grid = Dict(
-    "itot" => 32,
-    "jtot" => 32,
-    "ktot" => 32,
+    "itot" => 64,
+    "jtot" => 64,
+    "ktot" => 64,
 
     "xsize" => 3200.,
     "ysize" => 3200.,
@@ -18,7 +18,7 @@ settings_dynamics = Dict(
 settings_fields = Dict(
     "visc" => 1.)
 
-settings_time = Dict(
+settings_timeloop = Dict(
     "start_time" => 0.,
     "end_time" => 7200.,
     "dt" => 5. )
@@ -26,7 +26,7 @@ settings_time = Dict(
 settings = Dict(
     "grid"     => settings_grid,
     "fields"   => settings_fields,
-    "time"     => settings_time,
+    "timeloop" => settings_timeloop,
     "dynamics" => settings_dynamics)
 
 model = Model(settings)
