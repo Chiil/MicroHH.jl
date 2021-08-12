@@ -6,6 +6,9 @@ export Model
 # Export the functions.
 export step_model
 
+using LoopVectorization
+
+include("StencilBuilder.jl")
 include("Grid.jl")
 include("Fields.jl")
 include("Dynamics.jl")
