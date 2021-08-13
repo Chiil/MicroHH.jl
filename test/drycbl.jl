@@ -31,8 +31,11 @@ settings = Dict(
 
 model = Model(settings)
 
+prepare_model!(model)
+
 in_progress = true
 while in_progress
     duration = @timed global in_progress = step_model!(model)
     println(duration.time, " ", model.timeloop.time)
 end
+
