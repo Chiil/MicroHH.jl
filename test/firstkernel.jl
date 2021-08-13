@@ -9,14 +9,14 @@ settings_grid = Dict(
     "ysize" => 3200.,
     "zsize" => 3200.)
 
-settings_dynamics = Dict(
-    "swadvec" => true,
-    "swdiff" => true,
-    "swbuoy" => true,
-    "swcoriolis" => true)
-
 settings_fields = Dict(
     "visc" => 1.)
+
+settings_boundary = Dict(
+    "mom_bot_type" => "Dirichlet",
+    "mom_top_type" => "Neumann",
+    "s_bot_type" => "Dirichlet",
+    "s_top_type" => "Neumann")
 
 settings_timeloop = Dict(
     "start_time" => 0.,
@@ -26,8 +26,8 @@ settings_timeloop = Dict(
 settings = Dict(
     "grid"     => settings_grid,
     "fields"   => settings_fields,
-    "timeloop" => settings_timeloop,
-    "dynamics" => settings_dynamics)
+    "boundary" => settings_boundary,
+    "timeloop" => settings_timeloop)
 
 model = Model(settings)
 
