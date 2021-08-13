@@ -1,9 +1,9 @@
 using MicroHH
 
 settings_grid = Dict(
-    "itot" => 128,
-    "jtot" => 128,
-    "ktot" => 128,
+    "itot" => 256,
+    "jtot" => 256,
+    "ktot" => 256,
 
     "xsize" => 3200.,
     "ysize" => 3200.,
