@@ -29,7 +29,6 @@ function Model(settings::Dict)
 end
 
 function step_model(model::Model)
-    println(model.timeloop.time)
     calc_dynamics!(model.fields, model.grid)
     return step_time!(model.timeloop)
 end

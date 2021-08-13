@@ -187,7 +187,7 @@ end
 
 macro fast3d(ex)
     ex_loop = quote
-        @tturbo unroll=4 for k in ks:ke
+        @tturbo unroll=8 for k in ks:ke
             for j in js:je
                 for i in is:ie
                     $ex
