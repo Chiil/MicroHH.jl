@@ -1,9 +1,9 @@
 using MicroHH
 
 settings_grid = Dict(
-    "itot" => 256,
-    "jtot" => 256,
-    "ktot" => 256,
+    "itot" => 128,
+    "jtot" => 128,
+    "ktot" => 128,
 
     "xsize" => 3200.,
     "ysize" => 3200.,
@@ -33,6 +33,6 @@ model = Model(settings)
 
 in_progress = true
 while in_progress
-    duration = @timed global in_progress = step_model(model)
+    duration = @timed global in_progress = step_model!(model)
     println(duration.time, " ", model.timeloop.time)
 end

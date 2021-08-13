@@ -4,7 +4,7 @@ module MicroHH
 export Model
 
 # Export the functions.
-export step_model
+export step_model!
 
 using LoopVectorization
 
@@ -28,7 +28,7 @@ function Model(settings::Dict)
     Model(grid, fields, timeloop)
 end
 
-function step_model(model::Model)
+function step_model!(model::Model)
     calc_dynamics!(model.fields, model.grid)
     return step_time!(model.timeloop)
 end
