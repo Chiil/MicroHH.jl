@@ -14,6 +14,7 @@ include("Fields.jl")
 include("Boundary.jl")
 include("Timeloop.jl")
 include("Dynamics.jl")
+include("Pressure.jl")
 
 struct Model
     grid::Grid
@@ -33,7 +34,8 @@ end
 
 function prepare_model!(model::Model)
     set_boundary!(model.fields, model.grid, model.boundary)
-    calc_dynamics!(model.fields, model.grid)
+    calc_dynamics_tend!(model.fields, model.grid)
+    calc_pressure_tend!(model.fields, model.grid, model.timeloop)
 end
 
 function step_model!(model::Model)
@@ -41,7 +43,8 @@ function step_model!(model::Model)
     step_time!(model.timeloop)
 
     set_boundary!(model.fields, model.grid, model.boundary)
-    calc_dynamics!(model.fields, model.grid)
+    calc_dynamics_tend!(model.fields, model.grid)
+    calc_pressure_tend!(model.fields, model.grid, model.timeloop)
 
     return model.timeloop.time < model.timeloop.end_time
 end

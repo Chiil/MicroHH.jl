@@ -63,7 +63,7 @@ end
 
 
 ## Dynamics kernels launcher.
-function calc_dynamics!(f::Fields, g::Grid)
+function calc_dynamics_tend!(f::Fields, g::Grid)
     dynamics_u_kernel!(
         f.u_tend, f.u, f.v, f.w,
         f.visc,
