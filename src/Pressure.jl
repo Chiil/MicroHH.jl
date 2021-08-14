@@ -1,6 +1,18 @@
 using FFTW
 
 struct Pressure
+    fft_forward 
+    fft_backward
+end
+
+function Pressure(g::Grid)
+    FFTW.set_num_threads(2*Threads.nthreads())
+
+    a = rand(g.itot, g.jtot, g.ktot)
+    fft_plan_f = FFTW.plan_r2r(a, FFTW.R2HC, (1, 2), flags=FFTW.PATIENT)
+    fft_plan_b = FFTW.plan_r2r(a, FFTW.HC2R, (1, 2), flags=FFTW.PATIENT)
+
+    Pressure(fft_plan_f, fft_plan_b)
 end
 
 function input_kernel!(
@@ -21,18 +33,23 @@ function output_kernel!(
     is, ie, js, je, ks, ke)
 end
 
-function calc_pressure_tend!(f::Fields, g::Grid, t::Timeloop)
+function calc_pressure_tend!(f::Fields, g::Grid, t::Timeloop, p::Pressure)
     boundary_cyclic_kernel!(
         f.u_tend, g.is, g.ie, g.js, g.je, g.igc, g.jgc)
     boundary_cyclic_kernel!(
         f.v_tend, g.is, g.ie, g.js, g.je, g.igc, g.jgc)
 
+    p_nogc = zeros(g.itot, g.jtot, g.ktot)
+
     input_kernel!(
-        f.p,
+        p_nogc,
         f.u, f.v, f.w,
         f.u_tend, f.v_tend, f.w_tend,
         g.dxi, g.dyi, g.dzi, 1/t.dt,
         g.is, g.ie, g.js, g.je, g.ks, g.ke)
+
+    tmp = p.fft_forward * p_nogc
+    p_nogc = (p.fft_backward * tmp) ./ (g.itot * g.jtot)
 
     output_kernel!(
         f.u_tend, f.v_tend, f.w_tend,

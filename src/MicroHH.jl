@@ -21,6 +21,7 @@ struct Model
     fields::Fields
     boundary::Boundary
     timeloop::Timeloop
+    pressure::Pressure
 end
 
 function Model(settings::Dict)
@@ -28,14 +29,15 @@ function Model(settings::Dict)
     fields = Fields(grid, settings["fields"])
     boundary = Boundary(settings["boundary"])
     timeloop = Timeloop(settings["timeloop"])
+    pressure = Pressure(grid)
 
-    Model(grid, fields, boundary, timeloop)
+    Model(grid, fields, boundary, timeloop, pressure)
 end
 
 function prepare_model!(model::Model)
     set_boundary!(model.fields, model.grid, model.boundary)
     calc_dynamics_tend!(model.fields, model.grid)
-    calc_pressure_tend!(model.fields, model.grid, model.timeloop)
+    calc_pressure_tend!(model.fields, model.grid, model.timeloop, model.pressure)
 end
 
 function step_model!(model::Model)
@@ -44,7 +46,7 @@ function step_model!(model::Model)
 
     set_boundary!(model.fields, model.grid, model.boundary)
     calc_dynamics_tend!(model.fields, model.grid)
-    calc_pressure_tend!(model.fields, model.grid, model.timeloop)
+    calc_pressure_tend!(model.fields, model.grid, model.timeloop, model.pressure)
 
     return model.timeloop.time < model.timeloop.end_time
 end
