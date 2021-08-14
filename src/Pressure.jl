@@ -16,6 +16,24 @@ function Pressure(g::Grid)
     Pressure(fft_plan_f, fft_plan_b)
 end
 
+function divergence_kernel(
+    u, v, w,
+    dxi, dyi, dzi,
+    is, ie, js, je, ks, ke)
+
+    divmax = 0.
+    @inbounds for k in ks:ke
+        for j in js:je
+            for i in is:ie
+                div = @fd (u, v, w) gradx(u) + grady(v) + gradz(w)
+                divmax = max(divmax, div)
+            end
+        end
+    end
+
+    return divmax
+end
+
 function input_kernel!(
     p,
     u, v, w,
@@ -55,5 +73,12 @@ function calc_pressure_tend!(f::Fields, g::Grid, t::Timeloop, p::Pressure)
     output_kernel!(
         f.u_tend, f.v_tend, f.w_tend,
         g.dxi, g.dyi, g.dzhi,
+        g.is, g.ie, g.js, g.je, g.ks, g.ke)
+end
+
+function calc_divergence(f::Fields, g::Grid)
+    div = divergence_kernel(
+        f.u, f.v, f.w,
+        g.dxi, g.dyi, g.dzi,
         g.is, g.ie, g.js, g.je, g.ks, g.ke)
 end

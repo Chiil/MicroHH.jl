@@ -52,6 +52,7 @@ function step_model!(model::Model)
         calc_rhs!(model)
     end
 
+    println("Divergence = ", calc_divergence(model.fields, model.grid))
     return model.timeloop.time < model.timeloop.end_time
 end
 
