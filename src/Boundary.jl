@@ -40,22 +40,22 @@ function boundary_cyclic_kernel!(
 end
 
 function set_ghost_cells_bot_kernel!(
-    a, a_bot, a_gradbot, dz, ks, bot_type::Boundary_type)
+    a, a_bot, a_gradbot, dzh, ks, bot_type::Boundary_type)
 
     if bot_type == Dirichlet::Boundary_type
         @inbounds @. a[:, :, ks-1] = 2a_bot[:, :] - a[:, :, ks]
     elseif bot_type == Neumann::Boundary_type
-        @inbounds @. a[:, :, ks-1] = -a_gradbot[:, :]*dz + a[:, :, ks]
+        @inbounds @. a[:, :, ks-1] = -a_gradbot[:, :]*dzh[ks] + a[:, :, ks]
     end
 end
 
 function set_ghost_cells_top_kernel!(
-    a, a_top, a_gradtop, dz, ke, bot_type::Boundary_type)
+    a, a_top, a_gradtop, dzh, ke, bot_type::Boundary_type)
 
     if bot_type == Dirichlet::Boundary_type
         @inbounds @. a[:, :, ke+1] = 2a_top[:, :] - a[:, :, ke]
     elseif bot_type == Neumann::Boundary_type
-        @inbounds @. a[:, :, ke+1] = a_gradtop[:, :]*dz + a[:, :, ke]
+        @inbounds @. a[:, :, ke+1] = a_gradtop[:, :]*dzh[ke+1] + a[:, :, ke]
     end
 end
 
@@ -72,17 +72,17 @@ function set_boundary!(fields::Fields, grid::Grid, boundary::Boundary)
     
     # Bottom BC.
     set_ghost_cells_bot_kernel!(
-        fields.u, fields.u_bot, fields.u_gradbot, grid.dz, grid.ks, boundary.mom_bot_type)
+        fields.u, fields.u_bot, fields.u_gradbot, grid.dzh, grid.ks, boundary.mom_bot_type)
     set_ghost_cells_bot_kernel!(
-        fields.v, fields.v_bot, fields.v_gradbot, grid.dz, grid.ks, boundary.mom_bot_type)
+        fields.v, fields.v_bot, fields.v_gradbot, grid.dzh, grid.ks, boundary.mom_bot_type)
     set_ghost_cells_bot_kernel!(
-        fields.s, fields.s_bot, fields.s_gradbot, grid.dz, grid.ks, boundary.s_bot_type)
+        fields.s, fields.s_bot, fields.s_gradbot, grid.dzh, grid.ks, boundary.s_bot_type)
 
     # Top BC.
     set_ghost_cells_top_kernel!(
-        fields.u, fields.u_top, fields.u_gradtop, grid.dz, grid.ke, boundary.mom_top_type)
+        fields.u, fields.u_top, fields.u_gradtop, grid.dzh, grid.ke, boundary.mom_top_type)
     set_ghost_cells_top_kernel!(
-        fields.v, fields.v_top, fields.v_gradtop, grid.dz, grid.ke, boundary.mom_top_type)
+        fields.v, fields.v_top, fields.v_gradtop, grid.dzh, grid.ke, boundary.mom_top_type)
     set_ghost_cells_top_kernel!(
-        fields.s, fields.s_top, fields.s_gradtop, grid.dz, grid.ke, boundary.s_top_type)
+        fields.s, fields.s_top, fields.s_gradtop, grid.dzh, grid.ke, boundary.s_top_type)
 end

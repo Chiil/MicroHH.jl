@@ -61,7 +61,25 @@ function process_expr(ex, arrays, i, j, k)
         ex = :( $ex * dyi )
     elseif (isa(ex.args[1], Symbol) && ex.args[1] == Symbol("gradz"))
         ex.args[1] = Symbol("gradz_")
-        ex = :( $ex * dzi )
+        if isinteger(k)
+            k_int = convert(Int, abs(k))
+            if k > 0
+                ex = :( $ex * dzi[k + $k_int] )
+            elseif k < 0
+                ex = :( $ex * dzi[k - $k_int] )
+            else
+                ex = :( $ex * dzi[k] )
+            end
+        else
+            k_int = convert(Int, abs(k + 1/2))
+            if k > -1/2
+                ex = :( $ex * dzhi[k + $k_int] )
+            elseif k < -1/2
+                ex = :( $ex * dzhi[k - $k_int] )
+            else
+                ex = :( $ex * dzhi[k] )
+            end
+        end
     end
 
     args = ex.args

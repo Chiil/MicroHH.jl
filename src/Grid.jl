@@ -3,6 +3,7 @@ struct Grid
     itot::Int64
     jtot::Int64
     ktot::Int64
+    ktoth::Int64
 
     xsize::Float64
     ysize::Float64
@@ -24,20 +25,24 @@ struct Grid
     ie::Int64
     je::Int64
     ke::Int64
+    keh::Int64
 
     dx::Float64
     dy::Float64
-    dz::Float64
+    dz::Vector{Float64}
+    dzh::Vector{Float64}
 
     dxi::Float64
     dyi::Float64
-    dzi::Float64
+    dzi::Vector{Float64}
+    dzhi::Vector{Float64}
 end
 
 function Grid(d::Dict)
     itot = d["itot"]
     jtot = d["jtot"]
     ktot = d["ktot"]
+    ktoth = ktot+1
 
     xsize = d["xsize"]
     ysize = d["ysize"]
@@ -58,21 +63,26 @@ function Grid(d::Dict)
     ie = igc + itot
     je = jgc + jtot
     ke = kgc + ktot
+    keh = ke + 1
 
     dx = xsize / itot
     dy = ysize / jtot
-    dz = zsize / ktot
+    dz = zeros(kcells)
+    dzh = zeros(kcells)
+    dz[:] .= zsize / ktot
+    dzh[:] .= zsize / ktot
 
     dxi = 1. / dx
     dyi = 1. / dy
-    dzi = 1. / dz
+    dzi = 1. ./ dz[:]
+    dzhi = 1. ./ dzh[:]
 
     g = Grid(
-        itot, jtot, ktot,
+        itot, jtot, ktot, ktoth,
         xsize, ysize, zsize,
         igc, jgc, kgc,
         icells, jcells, kcells,
-        is, js, ks, ie, je, ke,
-        dx, dy, dz,
-        dxi, dyi, dzi)
+        is, js, ks, ie, je, ke, keh,
+        dx, dy, dz, dzh,
+        dxi, dyi, dzi, dzhi)
 end
