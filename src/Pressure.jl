@@ -6,7 +6,8 @@ struct Pressure
 end
 
 function Pressure(g::Grid)
-    FFTW.set_num_threads(2*Threads.nthreads())
+    nthreads = (Threads.nthreads() == 1) ? 1 : 2*Threads.nthreads()
+    FFTW.set_num_threads(nthreads)
 
     a = rand(g.itot, g.jtot, g.ktot)
     fft_plan_f = FFTW.plan_r2r(a, FFTW.R2HC, (1, 2), flags=FFTW.PATIENT)
