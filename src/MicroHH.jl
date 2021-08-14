@@ -34,19 +34,23 @@ function Model(settings::Dict)
     Model(grid, fields, boundary, timeloop, pressure)
 end
 
-function prepare_model!(model::Model)
+function calc_rhs!(model::Model)
     set_boundary!(model.fields, model.grid, model.boundary)
     calc_dynamics_tend!(model.fields, model.grid)
     calc_pressure_tend!(model.fields, model.grid, model.timeloop, model.pressure)
 end
 
-function step_model!(model::Model)
-    integrate_time!(model.fields, model.grid, model.timeloop)
-    step_time!(model.timeloop)
+function prepare_model!(model::Model)
+    calc_rhs!(model)
+end
 
-    set_boundary!(model.fields, model.grid, model.boundary)
-    calc_dynamics_tend!(model.fields, model.grid)
-    calc_pressure_tend!(model.fields, model.grid, model.timeloop, model.pressure)
+function step_model!(model::Model)
+    time_next = model.timeloop.time + model.timeloop.dt
+    while (model.timeloop.time < time_next)
+        integrate_time!(model.fields, model.grid, model.timeloop)
+        step_time!(model.timeloop)
+        calc_rhs!(model)
+    end
 
     return model.timeloop.time < model.timeloop.end_time
 end
