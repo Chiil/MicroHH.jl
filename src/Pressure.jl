@@ -1,3 +1,8 @@
+using FFTW
+
+struct Pressure
+end
+
 function input_kernel!(
     p,
     u, v, w,
@@ -10,11 +15,27 @@ function input_kernel!(
     end
 end
 
+function output_kernel!(
+    ut, vt, wt,
+    dxi, dyi, dzhi,
+    is, ie, js, je, ks, ke)
+end
+
 function calc_pressure_tend!(f::Fields, g::Grid, t::Timeloop)
+    boundary_cyclic_kernel!(
+        f.u_tend, g.is, g.ie, g.js, g.je, g.igc, g.jgc)
+    boundary_cyclic_kernel!(
+        f.v_tend, g.is, g.ie, g.js, g.je, g.igc, g.jgc)
+
     input_kernel!(
         f.p,
         f.u, f.v, f.w,
         f.u_tend, f.v_tend, f.w_tend,
         g.dxi, g.dyi, g.dzi, 1/t.dt,
+        g.is, g.ie, g.js, g.je, g.ks, g.ke)
+
+    output_kernel!(
+        f.u_tend, f.v_tend, f.w_tend,
+        g.dxi, g.dyi, g.dzhi,
         g.is, g.ie, g.js, g.je, g.ks, g.ke)
 end
