@@ -43,8 +43,10 @@ function Pressure(g::Grid)
         bmati[i+1] = bmati[g.itot-i+1];
     end
 
-    println(bmati)
-    println(bmatj)
+    for k in 1:g.ktot
+        a[k] = g.dz[k+g.kgc] * g.dzhi[k+g.kgc  ];
+        c[k] = g.dz[k+g.kgc] * g.dzhi[k+g.kgc+1];
+    end
 
     Pressure(fft_plan_f, fft_plan_b, bmati, bmatj, a, c)
 end
@@ -86,10 +88,15 @@ function output_kernel!(
 end
 
 function calc_pressure_tend!(f::Fields, g::Grid, t::Timeloop, p::Pressure)
+    # Set the cyclic boundaries for the tendencies.
     boundary_cyclic_kernel!(
         f.u_tend, g.is, g.ie, g.js, g.je, g.igc, g.jgc)
     boundary_cyclic_kernel!(
         f.v_tend, g.is, g.ie, g.js, g.je, g.igc, g.jgc)
+
+    # Set the boundaries of wtend to zero.
+    f.w_tend[g.ks, :, :] .= 0.
+    f.w_tend[g.keh, :, :] .= 0.
 
     p_nogc = zeros(g.itot, g.jtot, g.ktot)
 
@@ -101,6 +108,7 @@ function calc_pressure_tend!(f::Fields, g::Grid, t::Timeloop, p::Pressure)
         g.is, g.ie, g.js, g.je, g.ks, g.ke)
 
     tmp = p.fft_forward * p_nogc
+
     p_nogc = (p.fft_backward * tmp) ./ (g.itot * g.jtot)
 
     output_kernel!(
