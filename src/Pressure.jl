@@ -120,7 +120,7 @@ function solve_tdma_kernel!(
         @inbounds @. p[:, :, k] /= work2d[:, :]
     end
 
-    for k in ktot-1:1:-1
+    for k in ktot-1:-1:1
         @inbounds @. p[:, :, k] -= work3d[:, :, k+1] * p[:, :, k+1]
     end
 end
