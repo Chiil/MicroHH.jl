@@ -53,7 +53,7 @@ function integrate_time!(
     integrate_time_kernel!(
         fields.w, fields.w_tend,
         timeloop.rkstep, timeloop.dt,
-        grid.is, grid.ie, grid.js, grid.je, grid.ks, grid.ke+1)
+        grid.is, grid.ie, grid.js, grid.je, grid.ks, grid.keh)
 
     integrate_time_kernel!(
         fields.s, fields.s_tend,

@@ -1,5 +1,6 @@
 using .StencilBuilder
 
+
 ## Kernels.
 function dynamics_u_kernel!(
     ut, u, v, w,
@@ -37,12 +38,14 @@ function dynamics_w_kernel!(
     dxi, dyi, dzi, dzhi,
     is, ie, js, je, ks, ke)
 
+    alpha = 9.81/300;
+
     @fast3d begin
         @fd (wt, u, v, w, s) wt += (
             - gradx(interpz(u) * interpx(w)) + visc * (gradx(gradx(w)))
             - grady(interpz(v) * interpy(w)) + visc * (grady(grady(w)))
             - gradz(interpz(w) * interpz(w)) + visc * (gradz(gradz(w)))
-            + interpz(s) )
+            + alpha*interpz(s) )
     end
 end
 

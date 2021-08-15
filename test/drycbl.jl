@@ -2,13 +2,14 @@
 using MicroHH
 using Tullio
 using HDF5
+using Statistics
 
 
 ## Model settings.
 settings_grid = Dict(
-    "itot" => 32,
-    "jtot" => 32,
-    "ktot" => 32,
+    "itot" => 256,
+    "jtot" => 256,
+    "ktot" => 256,
 
     "xsize" => 3200.,
     "ysize" => 3200.,
@@ -25,7 +26,7 @@ settings_boundary = Dict(
 
 settings_timeloop = Dict(
     "start_time" => 0.,
-    "end_time" => 5.,
+    "end_time" => 1800.,
     "dt" => 5. )
 
 settings = Dict(
@@ -40,22 +41,11 @@ model = Model(settings)
 ## Fields initialization.
 f = model.fields; g = model.grid
 s = @view f.s[g.is:g.ie, g.js:g.je, g.ks:g.ke]
-u = @view f.u[g.is:g.ie, g.js:g.je, g.ks:g.ke]
-v = @view f.v[g.is:g.ie, g.js:g.je, g.ks:g.ke]
-w = @view f.w[g.is:g.ie, g.js:g.je, g.ks:g.keh]
-
 z = range(g.dz[1]/2, g.zsize, step=g.dz[1]) |> collect
-rand2d = rand(g.itot, g.jtot) .- 0.5
-# s[:, :, 1] .+= rand2d[:, :]
-u[:, :, 1] .+= rand2d[:, :]
-# @tullio s[i, j, k] += 0.003 * z[k]
-#
-# h5open("drycbl.00000000.h5", "w") do fid
-#     write(fid, "u", u[:, :, :])
-#     write(fid, "v", v[:, :, :])
-#     write(fid, "w", w[:, :, :])
-#     write(fid, "s", s[:, :, :])
-# end
+rand2d = rand(g.itot, g.jtot)
+rand2d .-= mean(rand2d)
+s[:, :, 1] .+= rand2d[:, :]
+@tullio s[i, j, k] += 0.003 * z[k]
 
 
 ## Run the model.
@@ -67,3 +57,11 @@ while in_progress
     println(duration.time, " ", model.timeloop.time)
 end
 
+
+## Save some fields.
+h5open("drycbl.end.h5", "w") do fid
+    write(fid, "u", model.fields.u[:, :, :])
+    write(fid, "v", model.fields.v[:, :, :])
+    write(fid, "w", model.fields.w[:, :, :])
+    write(fid, "s", model.fields.s[:, :, :])
+end

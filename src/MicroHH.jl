@@ -36,7 +36,7 @@ end
 
 function calc_rhs!(model::Model)
     set_boundary!(model.fields, model.grid, model.boundary)
-    # calc_dynamics_tend!(model.fields, model.grid)
+    calc_dynamics_tend!(model.fields, model.grid)
     calc_pressure_tend!(model.fields, model.grid, model.timeloop, model.pressure)
 end
 
