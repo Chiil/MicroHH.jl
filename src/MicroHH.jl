@@ -42,6 +42,7 @@ end
 
 function prepare_model!(model::Model)
     calc_rhs!(model)
+    println("Divergence = ", calc_divergence(model.fields, model.grid))
 end
 
 function step_model!(model::Model)

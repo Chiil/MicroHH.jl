@@ -6,9 +6,9 @@ using HDF5
 
 ## Model settings.
 settings_grid = Dict(
-    "itot" => 256,
-    "jtot" => 256,
-    "ktot" => 256,
+    "itot" => 32,
+    "jtot" => 32,
+    "ktot" => 32,
 
     "xsize" => 3200.,
     "ysize" => 3200.,
@@ -46,7 +46,7 @@ w = @view f.w[g.is:g.ie, g.js:g.je, g.ks:g.keh]
 
 z = range(g.dz[1]/2, g.zsize, step=g.dz[1]) |> collect
 s_rand = rand(g.itot, g.jtot) .- 0.5
-s[:, :, 1] .+= rand(g.itot, g.jtot)
+s[:, :, 1] .+= s_rand[:, :]
 @tullio s[i, j, k] += 0.003 * z[k]
 h5open("drycbl.00000000.h5", "w") do fid
     write(fid, "u", u[:, :, :])
