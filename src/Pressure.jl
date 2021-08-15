@@ -81,6 +81,48 @@ function input_kernel!(
     end
 end
 
+function solve_pre_kernel!(
+    p, b,
+    dz, bmati, bmatj, a, c,
+    itot, jtot, ktot, kgc)
+
+    @tturbo unroll=8 for k in 1:ktot
+        for j in 1:jtot
+            for i in 1:itot
+                b[i, j, k] = dz[k+kgc]*dz[k+kgc] * (bmati[i]+bmatj[j]) - (a[k]+c[k]);
+                p[i, j, k] *= dz[k+kgc]*dz[k+kgc]
+            end
+        end
+    end
+
+    # Set the BCs of all wave numbers to Neumann = 0.
+    b[:, :, 1] .+= a[1]
+    b[:, :, ktot] .+= c[ktot]
+
+    # Set the wave number 0 to Dirichlet = 0.
+    b[1, 1, ktot] -= 2c[ktot]
+end
+
+function solve_tdma_kernel!(
+    p, work3d, work2d,
+    a, b, c,
+    ktot)
+
+    @inbounds @. work2d[:, :] = b[:, :, 1]
+    @inbounds @. p[:, :, 1] /= work2d[:, :]
+
+    for k in 2:ktot
+        @inbounds @. work3d[:, :, k] = c[k-1] / work2d[:, :]
+        @inbounds @. work2d[:, :] = b[:, :, k] - a[k]*work3d[:, :, k]
+        @inbounds @. p[:, :, k] -= a[k] * p[:, :, k-1]
+        @inbounds @. p[:, :, k] /= work2d[:, :]
+    end
+
+    for k in ktot-1:1:-1
+        @inbounds @. p[:, :, k] -= work3d[:, :, k+1] * p[:, :, k+1]
+    end
+end
+
 function output_kernel!(
     ut, vt, wt,
     dxi, dyi, dzhi,
@@ -108,6 +150,20 @@ function calc_pressure_tend!(f::Fields, g::Grid, t::Timeloop, p::Pressure)
         g.is, g.ie, g.js, g.je, g.ks, g.ke)
 
     tmp = p.fft_forward * p_nogc
+
+    b = zeros(g.itot, g.jtot, g.ktot)
+    solve_pre_kernel!(
+        tmp, b,
+        g.dz, p.bmati, p.bmatj, p.a, p.c,
+        g.itot, g.jtot, g.ktot, g.kgc)
+
+    work3d = zeros(g.itot, g.jtot, g.ktot)
+    work2d = zeros(g.itot, g.jtot)
+
+    solve_tdma_kernel!(
+        tmp, work3d, work2d,
+        p.a, b, p.c,
+        g.ktot)
 
     p_nogc = (p.fft_backward * tmp) ./ (g.itot * g.jtot)
 
