@@ -98,8 +98,8 @@ function solve_pre_kernel!(
     end
 
     # Set the BCs of all wave numbers to Neumann = 0.
-    b[:, :, 1] .+= a[1]
-    b[:, :, ktot] .+= c[ktot]
+    @inbounds @. b[:, :, 1] += a[1]
+    @inbounds @. b[:, :, ktot] += c[ktot]
 
     # Set the wave number 0 to Dirichlet = 0.
     b[1, 1, ktot] -= 2c[ktot]
@@ -157,8 +157,8 @@ function calc_pressure_tend!(f::Fields, g::Grid, t::Timeloop, p::Pressure)
 
     # Set the boundaries of wtend to zero.
     # CvH: Fix this later.
-    f.w_tend[:, :, g.ks ] .= 0.
-    f.w_tend[:, :, g.keh] .= 0.
+    @inbounds @. f.w_tend[:, :, g.ks ] = 0.
+    @inbounds @. f.w_tend[:, :, g.keh] = 0.
 
     p_nogc = zeros(g.itot, g.jtot, g.ktot)
 
