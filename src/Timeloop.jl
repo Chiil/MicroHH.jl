@@ -69,3 +69,8 @@ function step_time!(timeloop::Timeloop)
         timeloop.time += timeloop.dt
     end
 end
+
+function get_sub_dt(t::Timeloop)
+    c_b = [1/3, 15/16, 8/15];
+    return c_b[t.rkstep]*t.dt;
+end
