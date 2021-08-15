@@ -1,4 +1,6 @@
 using FFTW
+using Printf
+using HDF5
 
 struct Pressure
     fft_forward 
@@ -14,8 +16,8 @@ function Pressure(g::Grid)
     FFTW.set_num_threads(nthreads)
 
     tmp = rand(g.itot, g.jtot, g.ktot)
-    fft_plan_f = FFTW.plan_r2r(tmp, FFTW.R2HC, (1, 2), flags=FFTW.PATIENT)
-    fft_plan_b = FFTW.plan_r2r(tmp, FFTW.HC2R, (1, 2), flags=FFTW.PATIENT)
+    fft_plan_f = FFTW.plan_r2r(tmp, FFTW.R2HC, [1, 2], flags=FFTW.MEASURE)
+    fft_plan_b = FFTW.plan_r2r(tmp, FFTW.HC2R, [1, 2], flags=FFTW.MEASURE)
 
     bmati = zeros(g.itot)
     bmatj = zeros(g.jtot)
@@ -89,8 +91,8 @@ function solve_pre_kernel!(
     @tturbo unroll=8 for k in 1:ktot
         for j in 1:jtot
             for i in 1:itot
-                b[i, j, k] = dz[k+kgc]*dz[k+kgc] * (bmati[i]+bmatj[j]) - (a[k]+c[k]);
-                p[i, j, k] *= dz[k+kgc]*dz[k+kgc]
+                b[i, j, k] = dz[k+kgc]^2 * (bmati[i]+bmatj[j]) - (a[k]+c[k]);
+                p[i, j, k] *= dz[k+kgc]^2
             end
         end
     end
@@ -154,23 +156,26 @@ function calc_pressure_tend!(f::Fields, g::Grid, t::Timeloop, p::Pressure)
         f.v_tend, g.is, g.ie, g.js, g.je, g.igc, g.jgc)
 
     # Set the boundaries of wtend to zero.
-    f.w_tend[g.ks, :, :] .= 0.
-    f.w_tend[g.keh, :, :] .= 0.
+    # CvH: Fix this later.
+    f.w_tend[:, :, g.ks ] .= 0.
+    f.w_tend[:, :, g.keh] .= 0.
 
     p_nogc = zeros(g.itot, g.jtot, g.ktot)
+
+    dti_sub = 1/get_sub_dt(t)
 
     input_kernel!(
         p_nogc,
         f.u, f.v, f.w,
         f.u_tend, f.v_tend, f.w_tend,
-        g.dxi, g.dyi, g.dzi, 1/t.dt,
+        g.dxi, g.dyi, g.dzi, dti_sub,
         g.is, g.ie, g.js, g.je, g.ks, g.ke)
 
-    tmp = p.fft_forward * p_nogc
+    p_fft = p.fft_forward * p_nogc
 
     b = zeros(g.itot, g.jtot, g.ktot)
     solve_pre_kernel!(
-        tmp, b,
+        p_fft, b,
         g.dz, p.bmati, p.bmatj, p.a, p.c,
         g.itot, g.jtot, g.ktot, g.kgc)
 
@@ -178,11 +183,11 @@ function calc_pressure_tend!(f::Fields, g::Grid, t::Timeloop, p::Pressure)
     work2d = zeros(g.itot, g.jtot)
 
     solve_tdma_kernel!(
-        tmp, work3d, work2d,
+        p_fft, work3d, work2d,
         p.a, b, p.c,
         g.ktot)
 
-    p_nogc = (p.fft_backward * tmp) ./ (g.itot * g.jtot)
+    p_nogc = (p.fft_backward * p_fft) ./ (g.itot * g.jtot)
 
     solve_post_kernel!(
         f.p, p_nogc,

@@ -25,7 +25,7 @@ settings_boundary = Dict(
 
 settings_timeloop = Dict(
     "start_time" => 0.,
-    "end_time" => 7200.,
+    "end_time" => 5.,
     "dt" => 5. )
 
 settings = Dict(
@@ -45,15 +45,17 @@ v = @view f.v[g.is:g.ie, g.js:g.je, g.ks:g.ke]
 w = @view f.w[g.is:g.ie, g.js:g.je, g.ks:g.keh]
 
 z = range(g.dz[1]/2, g.zsize, step=g.dz[1]) |> collect
-s_rand = rand(g.itot, g.jtot) .- 0.5
-s[:, :, 1] .+= s_rand[:, :]
-@tullio s[i, j, k] += 0.003 * z[k]
-h5open("drycbl.00000000.h5", "w") do fid
-    write(fid, "u", u[:, :, :])
-    write(fid, "v", v[:, :, :])
-    write(fid, "w", w[:, :, :])
-    write(fid, "s", s[:, :, :])
-end
+rand2d = rand(g.itot, g.jtot) .- 0.5
+# s[:, :, 1] .+= rand2d[:, :]
+u[:, :, 1] .+= rand2d[:, :]
+# @tullio s[i, j, k] += 0.003 * z[k]
+#
+# h5open("drycbl.00000000.h5", "w") do fid
+#     write(fid, "u", u[:, :, :])
+#     write(fid, "v", v[:, :, :])
+#     write(fid, "w", w[:, :, :])
+#     write(fid, "s", s[:, :, :])
+# end
 
 
 ## Run the model.
