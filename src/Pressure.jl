@@ -123,10 +123,27 @@ function solve_tdma_kernel!(
     end
 end
 
+function solve_post_kernel!(
+    p, p_nogc,
+    is, ie, js, je, ks, ke,
+    igc, jgc, kgc)
+
+    @fast3d begin
+        p[i, j, k] = p_nogc[i-igc, j-jgc, k-kgc]
+    end
+end
+
 function output_kernel!(
     ut, vt, wt,
+    p,
     dxi, dyi, dzhi,
     is, ie, js, je, ks, ke)
+
+    @fast3d begin
+        @fd (ut, p) ut -= gradx(p)
+        @fd (vt, p) vt -= grady(p)
+        @fd (wt, p) wt -= gradz(p)
+    end
 end
 
 function calc_pressure_tend!(f::Fields, g::Grid, t::Timeloop, p::Pressure)
@@ -167,8 +184,21 @@ function calc_pressure_tend!(f::Fields, g::Grid, t::Timeloop, p::Pressure)
 
     p_nogc = (p.fft_backward * tmp) ./ (g.itot * g.jtot)
 
+    solve_post_kernel!(
+        f.p, p_nogc,
+        g.is, g.ie, g.js, g.je, g.ks, g.ke,
+        g.igc, g.jgc, g.kgc)
+
+    # Set the bot and top bc's
+    @inbounds @. f.p[:, :, g.ks-1] = f.p[:, :, g.ks]
+    @inbounds @. f.p[:, :, g.ke+1] = f.p[:, :, g.ke]
+
+    boundary_cyclic_kernel!(
+        f.p, g.is, g.ie, g.js, g.je, g.igc, g.jgc)
+
     output_kernel!(
         f.u_tend, f.v_tend, f.w_tend,
+        f.p,
         g.dxi, g.dyi, g.dzhi,
         g.is, g.ie, g.js, g.je, g.ks, g.ke)
 end
