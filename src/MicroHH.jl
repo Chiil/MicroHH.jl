@@ -15,6 +15,7 @@ include("Boundary.jl")
 include("Timeloop.jl")
 include("Dynamics.jl")
 include("Pressure.jl")
+include("Diagnostics.jl")
 
 struct Model
     grid::Grid
@@ -42,7 +43,9 @@ end
 
 function prepare_model!(model::Model)
     calc_rhs!(model)
-    println("Divergence = ", calc_divergence(model.fields, model.grid))
+    println(
+        "Div = ", calc_divergence(model.fields, model.grid),
+        ", CFL = ", calc_cfl(model.fields, model.grid, model.timeloop))
 end
 
 function step_model!(model::Model)
@@ -53,7 +56,9 @@ function step_model!(model::Model)
         calc_rhs!(model)
     end
 
-    println("Divergence = ", calc_divergence(model.fields, model.grid))
+    println(
+        "Div = ", calc_divergence(model.fields, model.grid),
+        ", CFL = ", calc_cfl(model.fields, model.grid, model.timeloop))
     return model.timeloop.time < model.timeloop.end_time
 end
 

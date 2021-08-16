@@ -3,6 +3,7 @@ using MicroHH
 using Tullio
 using HDF5
 using Statistics
+# using Profile
 
 
 ## Model settings.
@@ -26,8 +27,8 @@ settings_boundary = Dict(
 
 settings_timeloop = Dict(
     "start_time" => 0.,
-    "end_time" => 1800.,
-    "dt" => 5. )
+    "end_time" => 7200.,
+    "dt" => 2.)
 
 settings = Dict(
     "grid"     => settings_grid,
@@ -45,6 +46,7 @@ z = range(g.dz[1]/2, g.zsize, step=g.dz[1]) |> collect
 rand2d = rand(g.itot, g.jtot)
 rand2d .-= mean(rand2d)
 s[:, :, 1] .+= rand2d[:, :]
+f.s_bot[:, :] .= 3.
 @tullio s[i, j, k] += 0.003 * z[k]
 
 
@@ -55,6 +57,7 @@ in_progress = true
 while in_progress
     duration = @timed global in_progress = step_model!(model)
     println(duration.time, " ", model.timeloop.time)
+    # @profile global in_progress = step_model!(model)
 end
 
 

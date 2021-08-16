@@ -3,7 +3,7 @@ using Printf
 using HDF5
 
 struct Pressure
-    fft_forward 
+    fft_forward
     fft_backward
     bmati
     bmatj
@@ -53,24 +53,6 @@ function Pressure(g::Grid)
     Pressure(fft_plan_f, fft_plan_b, bmati, bmatj, a, c)
 end
 
-function divergence_kernel(
-    u, v, w,
-    dxi, dyi, dzi,
-    is, ie, js, je, ks, ke)
-
-    divmax = 0.
-    @inbounds for k in ks:ke
-        for j in js:je
-            for i in is:ie
-                div = @fd (u, v, w) gradx(u) + grady(v) + gradz(w)
-                divmax = max(divmax, div)
-            end
-        end
-    end
-
-    return divmax
-end
-
 function input_kernel!(
     p,
     u, v, w,
@@ -98,8 +80,12 @@ function solve_pre_kernel!(
     end
 
     # Set the BCs of all wave numbers to Neumann = 0.
-    @inbounds @. b[:, :, 1] += a[1]
-    @inbounds @. b[:, :, ktot] += c[ktot]
+    @tturbo for j in 1:jtot
+        for i in 1:itot
+            b[i, j, 1] += a[1]
+            b[i, j, ktot] += c[ktot]
+        end
+    end
 
     # Set the wave number 0 to Dirichlet = 0.
     b[1, 1, ktot] -= 2c[ktot]
@@ -108,20 +94,32 @@ end
 function solve_tdma_kernel!(
     p, work3d, work2d,
     a, b, c,
-    ktot)
+    itot, jtot, ktot)
 
-    @inbounds @. work2d[:, :] = b[:, :, 1]
-    @inbounds @. p[:, :, 1] /= work2d[:, :]
+    @tturbo for j in 1:jtot
+        for i in 1:itot
+            work2d[i, j] = b[i, j, 1]
+            p[i, j, 1] /= work2d[i, j]
+        end
+    end
 
     for k in 2:ktot
-        @inbounds @. work3d[:, :, k] = c[k-1] / work2d[:, :]
-        @inbounds @. work2d[:, :] = b[:, :, k] - a[k]*work3d[:, :, k]
-        @inbounds @. p[:, :, k] -= a[k] * p[:, :, k-1]
-        @inbounds @. p[:, :, k] /= work2d[:, :]
+        @tturbo for j in 1:jtot
+            for i in 1:itot
+                work3d[i, j, k] = c[k-1] / work2d[i, j]
+                work2d[i, j] = b[i, j, k] - a[k]*work3d[i, j, k]
+                p[i, j, k] -= a[k] * p[i, j, k-1]
+                p[i, j, k] /= work2d[i, j]
+            end
+        end
     end
 
     for k in ktot-1:-1:1
-        @inbounds @. p[:, :, k] -= work3d[:, :, k+1] * p[:, :, k+1]
+        @tturbo for j in 1:jtot
+            for i in 1:itot
+                p[i, j, k] -= work3d[i, j, k+1] * p[i, j, k+1]
+            end
+        end
     end
 end
 
@@ -157,10 +155,14 @@ function calc_pressure_tend!(f::Fields, g::Grid, t::Timeloop, p::Pressure)
 
     # Set the boundaries of wtend to zero.
     # CvH: Fix this later.
-    @inbounds @. f.w_tend[:, :, g.ks ] = 0.
-    @inbounds @. f.w_tend[:, :, g.keh] = 0.
+    @tturbo for j in 1:g.jcells
+        for i in 1:g.icells
+            f.w_tend[i, j, g.ks ] = 0.
+            f.w_tend[i, j, g.keh] = 0.
+        end
+    end
 
-    p_nogc = zeros(g.itot, g.jtot, g.ktot)
+    p_nogc = Array{Float64, 3}(undef, g.itot, g.jtot, g.ktot)
 
     dti_sub = 1/get_sub_dt(t)
 
@@ -173,19 +175,20 @@ function calc_pressure_tend!(f::Fields, g::Grid, t::Timeloop, p::Pressure)
 
     p_fft = p.fft_forward * p_nogc
 
-    b = zeros(g.itot, g.jtot, g.ktot)
+    b = Array{Float64, 3}(undef, g.itot, g.jtot, g.ktot)
+
     solve_pre_kernel!(
         p_fft, b,
         g.dz, p.bmati, p.bmatj, p.a, p.c,
         g.itot, g.jtot, g.ktot, g.kgc)
 
-    work3d = zeros(g.itot, g.jtot, g.ktot)
-    work2d = zeros(g.itot, g.jtot)
+    work3d = Array{Float64, 3}(undef, g.itot, g.jtot, g.ktot)
+    work2d = Array{Float64, 2}(undef, g.itot, g.jtot)
 
     solve_tdma_kernel!(
         p_fft, work3d, work2d,
         p.a, b, p.c,
-        g.ktot)
+        g.itot, g.jtot, g.ktot)
 
     p_nogc = (p.fft_backward * p_fft) ./ (g.itot * g.jtot)
 
@@ -195,8 +198,12 @@ function calc_pressure_tend!(f::Fields, g::Grid, t::Timeloop, p::Pressure)
         g.igc, g.jgc, g.kgc)
 
     # Set the bot and top bc's
-    @inbounds @. f.p[:, :, g.ks-1] = f.p[:, :, g.ks]
-    @inbounds @. f.p[:, :, g.ke+1] = f.p[:, :, g.ke]
+    @tturbo for j in 1:g.jcells
+        for i in 1:g.icells
+            f.p[i, j, g.ks-1] = f.p[i, j, g.ks]
+            f.p[i, j, g.ke+1] = f.p[i, j, g.ke]
+        end
+    end
 
     boundary_cyclic_kernel!(
         f.p, g.is, g.ie, g.js, g.je, g.igc, g.jgc)
@@ -205,12 +212,5 @@ function calc_pressure_tend!(f::Fields, g::Grid, t::Timeloop, p::Pressure)
         f.u_tend, f.v_tend, f.w_tend,
         f.p,
         g.dxi, g.dyi, g.dzhi,
-        g.is, g.ie, g.js, g.je, g.ks, g.ke)
-end
-
-function calc_divergence(f::Fields, g::Grid)
-    div = divergence_kernel(
-        f.u, f.v, f.w,
-        g.dxi, g.dyi, g.dzi,
         g.is, g.ie, g.js, g.je, g.ks, g.ke)
 end
