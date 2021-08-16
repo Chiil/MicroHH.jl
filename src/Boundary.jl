@@ -31,21 +31,41 @@ end
 function boundary_cyclic_kernel!(
     a, is, ie, js, je, igc, jgc)
     # East-west BCs
-    @inbounds @. a[1:igc, :, :] = a[ie-igc+1:ie, :, :]
-    @inbounds @. a[ie+1:end, :, :] = a[is:is+igc-1, :, :]
+    @tturbo for k in 1:size(a, 3)
+        for j in 1:size(a, 2)
+            for i in 1:igc
+                a[i, j, k] = a[ie-i+1, j, k]
+                a[ie+i, j, k] = a[is+i-1, j, k]
+            end
+        end
+    end
 
     # North-south BCs
-    @inbounds @. a[:, 1:jgc, :] = a[:, je-jgc+1:je, :]
-    @inbounds @. a[:, je+1:end, :] = a[:, js:js+igc-1, :]
+    @tturbo for k in 1:size(a, 3)
+        for j in 1:jgc
+            for i in 1:size(a, 1)
+                a[i, j, k] = a[i, je-j+1, k]
+                a[i, je+j, k] = a[i, js+j-1, k]
+            end
+        end
+    end
 end
 
 function set_ghost_cells_bot_kernel!(
     a, a_bot, a_gradbot, dzh, ks, bot_type::Boundary_type)
 
     if bot_type == Dirichlet::Boundary_type
-        @inbounds @. a[:, :, ks-1] = 2a_bot[:, :] - a[:, :, ks]
+        @tturbo for j in 1:size(a, 2)
+            for i in 1:size(a, 1)
+                a[i, j, ks-1] = 2a_bot[i, j] - a[i, j, ks]
+            end
+        end
     elseif bot_type == Neumann::Boundary_type
-        @inbounds @. a[:, :, ks-1] = -a_gradbot[:, :]*dzh[ks] + a[:, :, ks]
+        @tturbo for j in 1:size(a, 2)
+            for i in 1:size(a, 1)
+                a[i, j, ks-1] = -a_gradbot[i, j]*dzh[ks] + a[i, j, ks]
+            end
+        end
     end
 end
 
@@ -53,9 +73,17 @@ function set_ghost_cells_top_kernel!(
     a, a_top, a_gradtop, dzh, ke, bot_type::Boundary_type)
 
     if bot_type == Dirichlet::Boundary_type
-        @inbounds @. a[:, :, ke+1] = 2a_top[:, :] - a[:, :, ke]
+        @tturbo for j in 1:size(a, 2)
+            for i in 1:size(a, 1)
+                a[i, j, ke+1] = 2a_top[i, j] - a[i, j, ke]
+            end
+        end
     elseif bot_type == Neumann::Boundary_type
-        @inbounds @. a[:, :, ke+1] = a_gradtop[:, :]*dzh[ke+1] + a[:, :, ke]
+        @tturbo for j in 1:size(a, 2)
+            for i in 1:size(a, 1)
+                a[i, j, ke+1] = a_gradtop[i, j]*dzh[ke+1] + a[i, j, ke]
+            end
+        end
     end
 end
 
