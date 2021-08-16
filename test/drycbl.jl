@@ -1,7 +1,6 @@
 ## Loading packages.
 using MicroHH
 using Tullio
-using HDF5
 using Statistics
 # using Profile
 
@@ -28,6 +27,7 @@ settings_boundary = Dict(
 settings_timeloop = Dict(
     "start_time" => 0.,
     "end_time" => 7200.,
+    "save_time" => 300.,
     "dt" => 2.)
 
 settings = Dict(
@@ -36,7 +36,7 @@ settings = Dict(
     "boundary" => settings_boundary,
     "timeloop" => settings_timeloop)
 
-model = Model(settings)
+model = Model("drycbl", settings)
 
 
 ## Fields initialization.
@@ -61,10 +61,3 @@ while in_progress
 end
 
 
-## Save some fields.
-h5open("drycbl.end.h5", "w") do fid
-    write(fid, "u", model.fields.u[:, :, :])
-    write(fid, "v", model.fields.v[:, :, :])
-    write(fid, "w", model.fields.w[:, :, :])
-    write(fid, "s", model.fields.s[:, :, :])
-end

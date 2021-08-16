@@ -3,6 +3,7 @@ using .StencilBuilder
 mutable struct Timeloop
     start_time::Float64
     end_time::Float64
+    save_time::Float64
     dt::Float64
 
     time::Float64
@@ -12,10 +13,12 @@ end
 function Timeloop(d::Dict)
     start_time = d["start_time"]
     end_time = d["end_time"]
+    save_time = d["save_time"]
     dt = d["dt"]
     rkstep = 1
+    time = start_time
 
-    Timeloop(start_time, end_time, dt, start_time, rkstep)
+    Timeloop(start_time, end_time, save_time, dt, time, rkstep)
 end
 
 function integrate_time_kernel!(
@@ -38,35 +41,35 @@ function integrate_time_kernel!(
 end
 
 function integrate_time!(
-    fields::Fields, grid::Grid, timeloop::Timeloop)
+    f::Fields, g::Grid, t::Timeloop)
 
     integrate_time_kernel!(
-        fields.u, fields.u_tend,
-        timeloop.rkstep, timeloop.dt,
-        grid.is, grid.ie, grid.js, grid.je, grid.ks, grid.ke)
+        f.u, f.u_tend,
+        t.rkstep, t.dt,
+        g.is, g.ie, g.js, g.je, g.ks, g.ke)
 
     integrate_time_kernel!(
-        fields.v, fields.v_tend,
-        timeloop.rkstep, timeloop.dt,
-        grid.is, grid.ie, grid.js, grid.je, grid.ks, grid.ke)
+        f.v, f.v_tend,
+        t.rkstep, t.dt,
+        g.is, g.ie, g.js, g.je, g.ks, g.ke)
 
     integrate_time_kernel!(
-        fields.w, fields.w_tend,
-        timeloop.rkstep, timeloop.dt,
-        grid.is, grid.ie, grid.js, grid.je, grid.ks, grid.keh)
+        f.w, f.w_tend,
+        t.rkstep, t.dt,
+        g.is, g.ie, g.js, g.je, g.ks, g.keh)
 
     integrate_time_kernel!(
-        fields.s, fields.s_tend,
-        timeloop.rkstep, timeloop.dt,
-        grid.is, grid.ie, grid.js, grid.je, grid.ks, grid.ke)
+        f.s, f.s_tend,
+        t.rkstep, t.dt,
+        g.is, g.ie, g.js, g.je, g.ks, g.ke)
 end
 
-function step_time!(timeloop::Timeloop)
-    timeloop.rkstep += 1
+function step_time!(t::Timeloop)
+    t.rkstep += 1
 
-    if timeloop.rkstep > 3
-        timeloop.rkstep = 1
-        timeloop.time += timeloop.dt
+    if t.rkstep > 3
+        t.rkstep = 1
+        t.time += t.dt
     end
 end
 
