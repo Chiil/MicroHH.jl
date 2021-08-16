@@ -10,6 +10,7 @@ LoopVectorization = "bdcacae8-1622-11e9-2a5c-532679323890"
 Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
 
 [compat]
+LoopVectorization = "0.12"
 julia = "1"
 
 [extras]
