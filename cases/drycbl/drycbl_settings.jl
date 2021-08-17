@@ -21,7 +21,7 @@ settings_timeloop = Dict(
     "start_time" => 0.,
     "end_time" => 7200.,
     "save_time" => 1800.,
-    "dt" => 1.)
+    "dt" => 4.)
 
 settings = Dict(
     "grid"     => settings_grid,

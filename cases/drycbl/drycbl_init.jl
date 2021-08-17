@@ -8,6 +8,10 @@ using Statistics
 include("drycbl_settings.jl")
 
 
+## Initialize the model.
+model = Model("drycbl", settings)
+
+
 ## Create the initials fields.
 f = model.fields; g = model.grid
 s = @view f.s[g.is:g.ie, g.js:g.je, g.ks:g.ke]
@@ -20,5 +24,5 @@ f.s_gradbot[:, :] .= - 0.1 / settings["fields"]["visc"]
 
 
 ## Save the restart files.
-save_model!(model)
+save_model(model)
 

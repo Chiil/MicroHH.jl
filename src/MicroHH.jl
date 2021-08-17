@@ -4,7 +4,7 @@ module MicroHH
 export Model
 
 # Export the functions.
-export prepare_model!, step_model!
+export prepare_model!, step_model!, save_model, load_model!
 
 using LoopVectorization
 using Printf
@@ -46,8 +46,6 @@ end
 
 function prepare_model!(model::Model)
     calc_rhs!(model)
-    # CvH: This should move somewhere else with restart times.
-    save_model(model)
     println(
         "Div = ", calc_divergence(model.fields, model.grid),
         ", CFL = ", calc_cfl(model.fields, model.grid, model.timeloop))
@@ -63,7 +61,23 @@ function save_model(model::Model)
         write(fid, "v", f.v[g.is:g.ie, g.js:g.je, g.ks:g.ke ])
         write(fid, "w", f.w[g.is:g.ie, g.js:g.je, g.ks:g.keh])
         write(fid, "s", f.s[g.is:g.ie, g.js:g.je, g.ks:g.ke ])
+        write(fid, "s_bot", f.s_bot[g.is:g.ie, g.js:g.je])
         write(fid, "s_gradbot", f.s_gradbot[g.is:g.ie, g.js:g.je])
+    end
+end
+
+function load_model!(model::Model)
+    f = model.fields
+    g = model.grid
+
+    filename = @sprintf("%s.%02i.%08i.h5", model.name, 1, round(model.timeloop.time))
+    h5open(filename, "r") do fid
+        f.u[g.is:g.ie, g.js:g.je, g.ks:g.ke ] = read(fid, "u")
+        f.v[g.is:g.ie, g.js:g.je, g.ks:g.ke ] = read(fid, "v")
+        f.w[g.is:g.ie, g.js:g.je, g.ks:g.keh] = read(fid, "w")
+        f.s[g.is:g.ie, g.js:g.je, g.ks:g.ke ] = read(fid, "s")
+        f.s_bot[g.is:g.ie, g.js:g.je] = read(fid, "s_bot")
+        f.s_gradbot[g.is:g.ie, g.js:g.je] = read(fid, "s_gradbot")
     end
 end
 
@@ -72,7 +86,7 @@ function step_model!(model::Model)
     while (model.timeloop.time < time_next)
         integrate_time!(model.fields, model.grid, model.timeloop)
         step_time!(model.timeloop)
-        if isapprox(model.timeloop.time % model.timeloop.save_time, 0.) && model.timeloop.rkstep == 1
+        if isapprox(model.timeloop.time % model.timeloop.save_time, 0.) && model.timeloop.rkstep == 1 && !isapprox(model.timeloop.time, 0.)
             save_model(model)
         end
         calc_rhs!(model)
