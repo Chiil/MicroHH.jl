@@ -55,15 +55,18 @@ function set_ghost_cells_bot_kernel!(
     a, a_bot, a_gradbot, dzh, ks, bot_type::Boundary_type)
 
     if bot_type == Dirichlet::Boundary_type
+        dzhi = 1. / dzh[ks]
         @tturbo for j in 1:size(a, 2)
             for i in 1:size(a, 1)
                 a[i, j, ks-1] = 2a_bot[i, j] - a[i, j, ks]
+                a_gradbot[i, j] = (a[i, j, ks] - a[i, j, ks-1]) * dzhi
             end
         end
     elseif bot_type == Neumann::Boundary_type
         @tturbo for j in 1:size(a, 2)
             for i in 1:size(a, 1)
                 a[i, j, ks-1] = -a_gradbot[i, j]*dzh[ks] + a[i, j, ks]
+                a_bot[i, j] = 0.5 * (a[i, j, ks-1] + a[i, j, ks])
             end
         end
     end
@@ -73,15 +76,18 @@ function set_ghost_cells_top_kernel!(
     a, a_top, a_gradtop, dzh, ke, bot_type::Boundary_type)
 
     if bot_type == Dirichlet::Boundary_type
+        dzhi = 1. / dzh[ks]
         @tturbo for j in 1:size(a, 2)
             for i in 1:size(a, 1)
                 a[i, j, ke+1] = 2a_top[i, j] - a[i, j, ke]
+                a_gradtop[i, j] = (a[i, j, ke+1] - a[i, j, ke]) * dzhi
             end
         end
     elseif bot_type == Neumann::Boundary_type
         @tturbo for j in 1:size(a, 2)
             for i in 1:size(a, 1)
                 a[i, j, ke+1] = a_gradtop[i, j]*dzh[ke+1] + a[i, j, ke]
+                a_top[i, j] = 0.5 * (a[i, j, ke] + a[i, j, ke+1])
             end
         end
     end

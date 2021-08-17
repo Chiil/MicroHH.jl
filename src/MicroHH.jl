@@ -45,8 +45,9 @@ function calc_rhs!(model::Model)
 end
 
 function prepare_model!(model::Model)
-    save_model(model)
     calc_rhs!(model)
+    # CvH: This should move somewhere else with restart times.
+    save_model(model)
     println(
         "Div = ", calc_divergence(model.fields, model.grid),
         ", CFL = ", calc_cfl(model.fields, model.grid, model.timeloop))
@@ -62,6 +63,7 @@ function save_model(model::Model)
         write(fid, "v", f.v[g.is:g.ie, g.js:g.je, g.ks:g.ke ])
         write(fid, "w", f.w[g.is:g.ie, g.js:g.je, g.ks:g.keh])
         write(fid, "s", f.s[g.is:g.ie, g.js:g.je, g.ks:g.ke ])
+        write(fid, "s_gradbot", f.s_gradbot[g.is:g.ie, g.js:g.je])
     end
 end
 
