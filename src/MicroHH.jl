@@ -90,7 +90,9 @@ function step_model!(model::Model)
         calc_rhs!(model)
     end
 
-    check_model(model)
+    if isapprox(model.timeloop.time % model.timeloop.check_time, 0.)
+        check_model(model)
+    end
 
     return model.timeloop.time < model.timeloop.end_time
 end
