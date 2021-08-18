@@ -46,9 +46,7 @@ end
 
 function prepare_model!(model::Model)
     calc_rhs!(model)
-    println(
-        "Div = ", calc_divergence(model.fields, model.grid),
-        ", CFL = ", calc_cfl(model.fields, model.grid, model.timeloop))
+    check_model(model)
 end
 
 function save_model(model::Model)
@@ -92,10 +90,18 @@ function step_model!(model::Model)
         calc_rhs!(model)
     end
 
-    println(
-        "Div = ", calc_divergence(model.fields, model.grid),
-        ", CFL = ", calc_cfl(model.fields, model.grid, model.timeloop))
+    check_model(model)
+
     return model.timeloop.time < model.timeloop.end_time
+end
+
+function check_model(model::Model)
+    status_string = @sprintf("(%8.2f) Div = {%6.2E}, CFL = {%3.2f}",
+        model.timeloop.time,
+        calc_divergence(model.fields, model.grid),
+        calc_cfl(model.fields, model.grid, model.timeloop))
+
+    println(status_string)
 end
 
 end
