@@ -86,7 +86,7 @@ function step_model!(model::Model)
     while (model.timeloop.time < time_next)
         integrate_time!(model.fields, model.grid, model.timeloop)
         step_time!(model.timeloop)
-        if isapprox(model.timeloop.time % model.timeloop.save_time, 0.) && model.timeloop.rkstep == 1 && !isapprox(model.timeloop.time, 0.)
+        if isapprox(model.timeloop.time % model.timeloop.save_time, 0.) && model.timeloop.rkstep == 1 && !isapprox(model.timeloop.time, model.timeloop.start_time)
             save_model(model)
         end
         calc_rhs!(model)
