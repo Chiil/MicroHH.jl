@@ -4,6 +4,7 @@ mutable struct Timeloop
     start_time::Float64
     end_time::Float64
     save_time::Float64
+    check_time::Float64
     dt::Float64
 
     time::Float64
@@ -14,11 +15,12 @@ function Timeloop(d::Dict)
     start_time = d["start_time"]
     end_time = d["end_time"]
     save_time = d["save_time"]
+    check_time = d["check_time"]
     dt = d["dt"]
     rkstep = 1
     time = start_time
 
-    Timeloop(start_time, end_time, save_time, dt, time, rkstep)
+    Timeloop(start_time, end_time, save_time, check_time, dt, time, rkstep)
 end
 
 function integrate_time_kernel!(

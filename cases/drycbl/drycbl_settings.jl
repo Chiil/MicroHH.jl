@@ -21,6 +21,7 @@ settings_timeloop = Dict(
     "start_time" => 0.,
     "end_time" => 7200.,
     "save_time" => 1800.,
+    "check_time" => 60.,
     "dt" => 5.)
 
 settings = Dict(
