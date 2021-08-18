@@ -26,6 +26,8 @@ struct Model
     boundary::Boundary
     timeloop::Timeloop
     pressure::Pressure
+
+    last_measured_time::Ref{UInt64}
 end
 
 function Model(name, settings::Dict)
@@ -35,7 +37,7 @@ function Model(name, settings::Dict)
     timeloop = Timeloop(settings["timeloop"])
     pressure = Pressure(grid)
 
-    Model(name, grid, fields, boundary, timeloop, pressure)
+    Model(name, grid, fields, boundary, timeloop, pressure, 0)
 end
 
 function calc_rhs!(model::Model)
@@ -46,6 +48,7 @@ end
 
 function prepare_model!(model::Model)
     calc_rhs!(model)
+    model.last_measured_time[] = time_ns()
     check_model(model)
 end
 
@@ -81,12 +84,16 @@ end
 
 function step_model!(model::Model)
     time_next = model.timeloop.time + model.timeloop.dt
+
     while (model.timeloop.time < time_next)
         integrate_time!(model.fields, model.grid, model.timeloop)
         step_time!(model.timeloop)
-        if isapprox(model.timeloop.time % model.timeloop.save_time, 0.) && model.timeloop.rkstep == 1 && !isapprox(model.timeloop.time, model.timeloop.start_time)
+
+        if (isapprox(model.timeloop.time % model.timeloop.save_time, 0.)
+            && model.timeloop.rkstep == 1 && !isapprox(model.timeloop.time, model.timeloop.start_time))
             save_model(model)
         end
+
         calc_rhs!(model)
     end
 
@@ -98,8 +105,11 @@ function step_model!(model::Model)
 end
 
 function check_model(model::Model)
-    status_string = @sprintf("(%8.2f) Div = {%6.2E}, CFL = {%3.2f}",
+    old_time = model.last_measured_time[]
+    model.last_measured_time[] = time_ns()
+    status_string = @sprintf("(%11.2f) Time/iter = %8.3f, Div = %6.3E, CFL = %6.3f",
         model.timeloop.time,
+        (model.last_measured_time[] - old_time) * 1e-9 * model.timeloop.dt / model.timeloop.check_time,
         calc_divergence(model.fields, model.grid),
         calc_cfl(model.fields, model.grid, model.timeloop))
 

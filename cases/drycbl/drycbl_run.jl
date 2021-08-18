@@ -22,8 +22,7 @@ prepare_model!(model)
 
 in_progress = true
 while in_progress
-    duration = @timed global in_progress = step_model!(model)
-    println(duration.time, " ", model.timeloop.time)
+    global in_progress = step_model!(model)
     # @profile global in_progress = step_model!(model)
 end
 
