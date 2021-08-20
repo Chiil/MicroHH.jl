@@ -15,7 +15,7 @@ m = Model("drycbl", n_domains, settings)
 
 ## Create the initials fields.
 for i in 1:n_domains
-    f = m.domains[i].fields; g = m.domains[i].grid
+    f = m.fields[i]; g = m.grid[i]
     s = @view f.s[g.is:g.ie, g.js:g.je, g.ks:g.ke]
     z = range(g.dz[1]/2, g.zsize, step=g.dz[1]) |> collect
     rand2d = rand(g.itot, g.jtot)

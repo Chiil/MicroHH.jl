@@ -1,7 +1,5 @@
 ## Loading packages.
 using MicroHH
-using Tullio
-using Statistics
 # using Profile
 
 

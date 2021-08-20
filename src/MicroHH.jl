@@ -19,64 +19,54 @@ include("Dynamics.jl")
 include("Pressure.jl")
 include("Diagnostics.jl")
 
-# Domain data.
-struct Domain
-    grid::Grid
-    fields::Fields
-    boundary::Boundary
-    timeloop::Timeloop
-    pressure::Pressure
-end
-
-function Domain(settings::Dict)
-    grid = Grid(settings["grid"])
-    fields = Fields(grid, settings["fields"])
-    boundary = Boundary(settings["boundary"])
-    timeloop = Timeloop(settings["timeloop"])
-    pressure = Pressure(grid)
-
-    Domain(grid, fields, boundary, timeloop, pressure)
-end
 
 # Global model data.
 struct Model
     name::String
-    n_domains
-    domains::Vector{Domain}
+    n_domains::Int
     last_measured_time::Ref{UInt64}
+
+    grid::Vector{Grid}
+    fields::Vector{Fields}
+    boundary::Vector{Boundary}
+    timeloop::Vector{Timeloop}
+    pressure::Vector{Pressure}
 end
 
 function Model(name, n_domains, settings)
-    m = Model(name, n_domains, [], 0)
+    m = Model(name, n_domains, 0, [], [], [], [], [])
     for i in 1:n_domains
-        push!(m.domains, Domain(settings[i]))
+        push!(m.grid, Grid(settings[i]["grid"]))
+        push!(m.fields, Fields(m.grid[i], settings[i]["fields"]))
+        push!(m.boundary, Boundary(settings[i]["boundary"]))
+        push!(m.timeloop, Timeloop(settings[i]["timeloop"]))
+        push!(m.pressure, Pressure(m.grid[i]))
     end
 
     return m
 end
 
-function calc_rhs!(d::Domain)
-    set_boundary!(d.fields, d.grid, d.boundary)
-    calc_dynamics_tend!(d.fields, d.grid)
-    calc_pressure_tend!(d.fields, d.grid, d.timeloop, d.pressure)
+function calc_rhs!(m::Model, i)
+    set_boundary!(m.fields[i], m.grid[i], m.boundary[i])
+    calc_dynamics_tend!(m.fields[i], m.grid[i])
+    calc_pressure_tend!(m.fields[i], m.grid[i], m.timeloop[i], m.pressure[i])
 end
 
 function prepare_model!(m::Model)
     m.last_measured_time[] = time_ns()
 
     for i in 1:m.n_domains
-        d = m.domains[i]
-        calc_rhs!(d)
+        calc_rhs!(m, i)
     end
     check_model(m)
 end
 
-function save_domain(d::Domain, name, i_domain)
-    f = d.fields
-    g = d.grid
-    t = d.timeloop
+function save_domain(m::Model, i)
+    f = m.fields[i]
+    g = m.grid[i]
+    t = m.timeloop[i]
 
-    filename = @sprintf("%s.%02i.%08i.h5", name, i_domain, round(t.time))
+    filename = @sprintf("%s.%02i.%08i.h5", m.name, i, round(t.time))
     h5open(filename, "w") do fid
         write(fid, "u", f.u[g.is:g.ie, g.js:g.je, g.ks:g.ke ])
         write(fid, "v", f.v[g.is:g.ie, g.js:g.je, g.ks:g.ke ])
@@ -89,16 +79,16 @@ end
 
 function save_model(m::Model)
     for i in 1:m.n_domains
-        save_domain(m.domains[i], m.name, i)
+        save_domain(m, i)
     end
 end
 
-function load_domain!(d::Domain, name, i_domain)
-    f = d.fields
-    g = d.grid
-    t = d.timeloop
+function load_domain!(m::Model, i)
+    f = m.fields[i]
+    g = m.grid[i]
+    t = m.timeloop[i]
 
-    filename = @sprintf("%s.%02i.%08i.h5", name, i_domain, round(t.time))
+    filename = @sprintf("%s.%02i.%08i.h5", m.name, i, round(t.time))
     h5open(filename, "r") do fid
         f.u[g.is:g.ie, g.js:g.je, g.ks:g.ke ] = read(fid, "u")
         f.v[g.is:g.ie, g.js:g.je, g.ks:g.ke ] = read(fid, "v")
@@ -111,53 +101,51 @@ end
 
 function load_model!(m::Model)
     for i in 1:m.n_domains
-        load_domain!(m.domains[i], m.name, i)
+        load_domain!(m, i)
     end
 end
 
 function step_model!(m::Model)
-    time_next = m.domains[1].timeloop.time + m.domains[1].timeloop.dt
+    time_next = m.timeloop[1].time + m.timeloop[1].dt
 
     for i in 1:m.n_domains
-        d = m.domains[i]
+        while (m.timeloop[i].time < time_next)
+            integrate_time!(m.fields[i], m.grid[i], m.timeloop[i])
+            step_time!(m.timeloop[i])
 
-        while (d.timeloop.time < time_next)
-            integrate_time!(d.fields, d.grid, d.timeloop)
-            step_time!(d.timeloop)
-
-            if (isapprox(d.timeloop.time % d.timeloop.save_time, 0.)
-                && d.timeloop.rkstep == 1 && !isapprox(d.timeloop.time, d.timeloop.start_time))
-                save_domain(d, m.name, i)
+            if (isapprox(m.timeloop[i].time % m.timeloop[i].save_time, 0.)
+                && m.timeloop[i].rkstep == 1 && !isapprox(m.timeloop[i].time, m.timeloop[i].start_time))
+                save_domain(m, i)
             end
 
-            calc_rhs!(d)
+            calc_rhs!(m, i)
         end
     end
 
-    if isapprox(m.domains[1].timeloop.time % m.domains[1].timeloop.check_time, 0.)
+    if isapprox(m.timeloop[1].time % m.timeloop[1].check_time, 0.)
         check_model(m)
     end
 
-    return m.domains[1].timeloop.time < m.domains[1].timeloop.end_time
+    return m.timeloop[1].time < m.timeloop[1].end_time
 end
 
 function check_model(m::Model)
+    # Calculate the time since the last check.
     old_time = m.last_measured_time[]
     m.last_measured_time[] = time_ns()
 
     # First, print the model time and the wall clock since last sample.
     status_string = @sprintf("(%11.2f) Time = %8.3f",
-        m.domains[1].timeloop.time,
+        m.timeloop[1].time,
         (m.last_measured_time[] - old_time) * 1e-9)
     println(status_string)
 
     # Second, compute the divergence and CFL for each domain.
     for i in 1:m.n_domains
-        d = m.domains[i]
         status_string = @sprintf("  (%02i) Div = %6.3E, CFL = %6.3f",
             i,
-            calc_divergence(d.fields, d.grid),
-            calc_cfl(d.fields, d.grid, d.timeloop))
+            calc_divergence(m.fields[i], m.grid[i]),
+            calc_cfl(m.fields[i], m.grid[i], m.timeloop[i]))
         println(status_string)
     end
 end

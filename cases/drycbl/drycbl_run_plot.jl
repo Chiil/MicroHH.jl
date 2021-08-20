@@ -14,7 +14,7 @@ n_domains = 1
 m = Model("drycbl", n_domains, settings)
 load_model!(m)
 prepare_model!(m)
-f = m.domains[1].fields; g = m.domains[1].grid
+f = m.fields[1]; g = m.grid[1]
 s = @view f.s[g.is:g.ie, g.js:g.je, 2]
 node = Node(s .- mean(s))
 heatmap(node)
