@@ -1,8 +1,8 @@
-## Model settings.
+## Settings.
 settings_grid = Dict(
-    "itot" => 96,
-    "jtot" => 96,
-    "ktot" => 96,
+    "itot" => 48,
+    "jtot" => 48,
+    "ktot" => 48,
 
     "xsize" => 3200.,
     "ysize" => 3200.,
@@ -20,13 +20,15 @@ settings_boundary = Dict(
 settings_timeloop = Dict(
     "start_time" => 0.,
     "end_time" => 7200.,
-    "save_time" => 1800.,
+    "save_time" => 100.,
     "check_time" => 60.,
     "dt" => 5.)
 
-settings = Dict(
+settings_d01 = Dict(
     "grid"     => settings_grid,
     "fields"   => settings_fields,
     "boundary" => settings_boundary,
     "timeloop" => settings_timeloop)
+
+settings = [ settings_d01 ]
 
