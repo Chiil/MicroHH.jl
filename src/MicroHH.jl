@@ -142,18 +142,24 @@ function step_model!(m::Model)
 end
 
 function check_model(m::Model)
-    println(m.domains[1].timeloop.time)
-    """
     old_time = m.last_measured_time[]
     m.last_measured_time[] = time_ns()
-    status_string = @sprintf("(%11.2f) Time/iter = %8.3f, Div = %6.3E, CFL = %6.3f",
-        m.timeloop.time,
-        (m.last_measured_time[] - old_time) * 1e-9 * m.timeloop.dt / m.timeloop.check_time,
-        calc_divergence(m.fields, m.grid),
-        calc_cfl(m.fields, m.grid, m.timeloop))
 
+    # First, print the model time and the wall clock since last sample.
+    status_string = @sprintf("(%11.2f) Time = %8.3f",
+        m.domains[1].timeloop.time,
+        (m.last_measured_time[] - old_time) * 1e-9)
     println(status_string)
-    """
+
+    # Second, compute the divergence and CFL for each domain.
+    for i in 1:m.n_domains
+        d = m.domains[i]
+        status_string = @sprintf("  (%02i) Div = %6.3E, CFL = %6.3f",
+            i,
+            calc_divergence(d.fields, d.grid),
+            calc_cfl(d.fields, d.grid, d.timeloop))
+        println(status_string)
+    end
 end
 
 end
