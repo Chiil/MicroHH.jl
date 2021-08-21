@@ -17,7 +17,7 @@ m = Model("drycbl", n_domains, settings)
 for i in 1:n_domains
     f = m.fields[i]; g = m.grid[i]
     s = @view f.s[g.is:g.ie, g.js:g.je, g.ks:g.ke]
-    z = range(g.dz[1]/2, g.zsize, step=g.dz[1]) |> collect
+    z = @view g.z[g.ks:g.ke]
     rand2d = rand(g.itot, g.jtot)
     rand2d .-= mean(rand2d)
     s[:, :, 1] .+= rand2d[:, :]
