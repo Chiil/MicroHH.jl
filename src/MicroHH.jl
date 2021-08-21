@@ -21,7 +21,7 @@ include("Diagnostics.jl")
 
 
 # Global model data.
-struct Model
+struct Model{TF <: Union{Float32, Float64}}
     name::String
     n_domains::Int
     last_measured_time::Ref{UInt64}
@@ -33,10 +33,10 @@ struct Model
     pressure::Vector{Pressure}
 end
 
-function Model(name, n_domains, settings)
-    m = Model(name, n_domains, 0, [], [], [], [], [])
+function Model(name, n_domains, settings, TF)
+    m = Model{TF}(name, n_domains, 0, [], [], [], [], [])
     for i in 1:n_domains
-        push!(m.grid, Grid(settings[i]["grid"]))
+        push!(m.grid, Grid(settings[i]["grid"], TF))
         push!(m.fields, Fields(m.grid[i], settings[i]["fields"]))
         push!(m.boundary, Boundary(settings[i]["boundary"]))
         push!(m.timeloop, Timeloop(settings[i]["timeloop"]))

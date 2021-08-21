@@ -1,13 +1,13 @@
-struct Grid
+struct Grid{TF <: Union{Float32, Float64}}
     # Specified by user.
     itot::Int64
     jtot::Int64
     ktot::Int64
     ktoth::Int64
 
-    xsize::Float64
-    ysize::Float64
-    zsize::Float64
+    xsize::TF
+    ysize::TF
+    zsize::TF
 
     igc::Int64
     jgc::Int64
@@ -27,25 +27,25 @@ struct Grid
     ke::Int64
     keh::Int64
 
-    x::Vector{Float64}
-    xh::Vector{Float64}
-    y::Vector{Float64}
-    yh::Vector{Float64}
-    z::Vector{Float64}
-    zh::Vector{Float64}
+    x::Vector{TF}
+    xh::Vector{TF}
+    y::Vector{TF}
+    yh::Vector{TF}
+    z::Vector{TF}
+    zh::Vector{TF}
 
-    dx::Float64
-    dy::Float64
-    dz::Vector{Float64}
-    dzh::Vector{Float64}
+    dx::TF
+    dy::TF
+    dz::Vector{TF}
+    dzh::Vector{TF}
 
-    dxi::Float64
-    dyi::Float64
-    dzi::Vector{Float64}
-    dzhi::Vector{Float64}
+    dxi::TF
+    dyi::TF
+    dzi::Vector{TF}
+    dzhi::Vector{TF}
 end
 
-function Grid(d::Dict)
+function Grid(d::Dict, TF)
     itot = d["itot"]
     jtot = d["jtot"]
     ktot = d["ktot"]
@@ -112,7 +112,7 @@ function Grid(d::Dict)
 
     dzi = 1. ./ dz[:]
 
-    g = Grid(
+    g = Grid{TF}(
         itot, jtot, ktot, ktoth,
         xsize, ysize, zsize,
         igc, jgc, kgc,
