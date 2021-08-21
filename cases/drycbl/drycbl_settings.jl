@@ -1,3 +1,11 @@
+## Grid generation function.
+function make_grid(zsize, ktot)
+    dz = zsize / ktot
+    z = range(0.5*dz, step=dz, length=ktot) |> collect
+    return z
+end
+
+
 ## Settings.
 settings_grid = Dict{String, Any}(
     "itot" => 48,
@@ -8,11 +16,6 @@ settings_grid = Dict{String, Any}(
     "ysize" => 3200.,
     "zsize" => 3200.)
 
-zsize = settings_grid["zsize"]
-ktot = settings_grid["ktot"]
-dz = zsize / ktot
-z = range(0.5*dz, step=dz, length=ktot) |> collect
-settings_grid["z"] = z
 
 settings_fields = Dict(
     "visc" => 5.)
@@ -35,5 +38,7 @@ settings_d01 = Dict(
     "fields"   => settings_fields,
     "boundary" => settings_boundary,
     "timeloop" => settings_timeloop)
+
+settings_d01["grid"]["z"] = make_grid(settings_d01["grid"]["zsize"], settings_d01["grid"]["ktot"])
 
 settings = [ settings_d01 ]
