@@ -12,6 +12,7 @@ struct Pressure
     work3d
     work2d
     b
+    p_nogc
 end
 
 function Pressure(g::Grid)
@@ -54,8 +55,9 @@ function Pressure(g::Grid)
     work3d = zeros(g.itot, g.jtot, g.ktot)
     work2d = zeros(g.itot, g.jtot)
     b = zeros(g.itot, g.jtot, g.ktot)
+    p_nogc = zeros(g.itot, g.jtot, g.ktot)
 
-    Pressure(fft_plan_f, fft_plan_b, bmati, bmatj, a, c, work3d, work2d, b)
+    Pressure(fft_plan_f, fft_plan_b, bmati, bmatj, a, c, work3d, work2d, b, p_nogc)
 end
 
 function input_kernel!(
@@ -166,8 +168,6 @@ function calc_pressure_tend!(f::Fields, g::Grid, t::Timeloop, p::Pressure)
             f.w_tend[i, j, g.keh] = 0.
         end
     end
-
-    p_nogc = Array{Float64, 3}(undef, g.itot, g.jtot, g.ktot)
 
     dti_sub = 1/get_sub_dt(t)
 
