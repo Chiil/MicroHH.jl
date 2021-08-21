@@ -66,7 +66,7 @@ function set_ghost_cells_bot_kernel!(
         @tturbo for j in 1:size(a, 2)
             for i in 1:size(a, 1)
                 a[i, j, ks-1] = -a_gradbot[i, j]*dzh[ks] + a[i, j, ks]
-                a_bot[i, j] = 0.5 * (a[i, j, ks-1] + a[i, j, ks])
+                a_bot[i, j] = 1//2 * (a[i, j, ks-1] + a[i, j, ks])
             end
         end
     end
@@ -87,7 +87,7 @@ function set_ghost_cells_top_kernel!(
         @tturbo for j in 1:size(a, 2)
             for i in 1:size(a, 1)
                 a[i, j, ke+1] = a_gradtop[i, j]*dzh[ke+1] + a[i, j, ke]
-                a_top[i, j] = 0.5 * (a[i, j, ke] + a[i, j, ke+1])
+                a_top[i, j] = 1//2 * (a[i, j, ke] + a[i, j, ke+1])
             end
         end
     end

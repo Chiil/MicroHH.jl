@@ -15,7 +15,8 @@ z = range(0.5*dz, step=dz, length=ktot) |> collect
 settings_grid["z"] = z
 
 settings_fields = Dict(
-    "visc" => 5.)
+    "visc" => 5.,
+    "alpha" => 9.81 / 300)
 
 settings_boundary = Dict(
     "mom_bot_type" => "Dirichlet",

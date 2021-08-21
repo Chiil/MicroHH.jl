@@ -34,11 +34,9 @@ end
 
 function dynamics_w_kernel!(
     wt, u, v, w, s,
-    visc,
+    visc, alpha,
     dxi, dyi, dzi, dzhi,
     is, ie, js, je, ks, ke)
-
-    alpha = 9.81/300;
 
     @fast3d begin
         @fd (wt, u, v, w, s) wt += (
@@ -81,7 +79,7 @@ function calc_dynamics_tend!(f::Fields, g::Grid)
 
     dynamics_w_kernel!(
         f.w_tend, f.u, f.v, f.w, f.s,
-        f.visc,
+        f.visc, f.alpha,
         g.dxi, g.dyi, g.dzi, g.dzhi,
         g.is, g.ie, g.js, g.je, g.ks, g.ke)
 

@@ -48,7 +48,7 @@ end
 
 
 function process_expr(ex, arrays, i, j, k)
-    ci1 = 1/2; ci2 = 1/2;
+    ci1 = 1//2; ci2 = 1//2;
     cg1 = -1; cg2 = 1;
 
     n = 1

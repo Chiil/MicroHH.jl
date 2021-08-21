@@ -37,7 +37,7 @@ function Model(name, n_domains, settings, TF)
     m = Model{TF}(name, n_domains, 0, [], [], [], [], [])
     for i in 1:n_domains
         push!(m.grid, Grid(settings[i]["grid"], TF))
-        push!(m.fields, Fields(m.grid[i], settings[i]["fields"]))
+        push!(m.fields, Fields(m.grid[i], settings[i]["fields"], TF))
         push!(m.boundary, Boundary(settings[i]["boundary"]))
         push!(m.timeloop, Timeloop(settings[i]["timeloop"]))
         push!(m.pressure, Pressure(m.grid[i]))

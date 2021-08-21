@@ -1,43 +1,45 @@
-struct Fields
-    u::Array{Float64, 3}
-    v::Array{Float64, 3}
-    w::Array{Float64, 3}
-    s::Array{Float64, 3}
+struct Fields{TF <: Union{Float32, Float64}}
+    u::Array{TF, 3}
+    v::Array{TF, 3}
+    w::Array{TF, 3}
+    s::Array{TF, 3}
 
-    u_tend::Array{Float64, 3}
-    v_tend::Array{Float64, 3}
-    w_tend::Array{Float64, 3}
-    s_tend::Array{Float64, 3}
+    u_tend::Array{TF, 3}
+    v_tend::Array{TF, 3}
+    w_tend::Array{TF, 3}
+    s_tend::Array{TF, 3}
 
-    u_bot::Array{Float64, 2}
-    v_bot::Array{Float64, 2}
-    w_bot::Array{Float64, 2}
-    s_bot::Array{Float64, 2}
+    u_bot::Array{TF, 2}
+    v_bot::Array{TF, 2}
+    w_bot::Array{TF, 2}
+    s_bot::Array{TF, 2}
 
-    u_gradbot::Array{Float64, 2}
-    v_gradbot::Array{Float64, 2}
-    w_gradbot::Array{Float64, 2}
-    s_gradbot::Array{Float64, 2}
+    u_gradbot::Array{TF, 2}
+    v_gradbot::Array{TF, 2}
+    w_gradbot::Array{TF, 2}
+    s_gradbot::Array{TF, 2}
 
-    u_top::Array{Float64, 2}
-    v_top::Array{Float64, 2}
-    w_top::Array{Float64, 2}
-    s_top::Array{Float64, 2}
+    u_top::Array{TF, 2}
+    v_top::Array{TF, 2}
+    w_top::Array{TF, 2}
+    s_top::Array{TF, 2}
 
-    u_gradtop::Array{Float64, 2}
-    v_gradtop::Array{Float64, 2}
-    w_gradtop::Array{Float64, 2}
-    s_gradtop::Array{Float64, 2}
+    u_gradtop::Array{TF, 2}
+    v_gradtop::Array{TF, 2}
+    w_gradtop::Array{TF, 2}
+    s_gradtop::Array{TF, 2}
 
-    p::Array{Float64, 3}
+    p::Array{TF, 3}
 
-    visc::Float64
+    visc::TF
+    alpha::TF
 end
 
-function Fields(g::Grid, d::Dict)
+function Fields(g::Grid, d::Dict, TF)
     visc = d["visc"]
+    alpha = d["alpha"]
 
-    Fields(
+    Fields{TF}(
         zeros(g.icells, g.jcells, g.kcells), # u
         zeros(g.icells, g.jcells, g.kcells), # v
         zeros(g.icells, g.jcells, g.kcells), # w
@@ -70,5 +72,5 @@ function Fields(g::Grid, d::Dict)
 
         zeros(g.icells, g.jcells, g.kcells), # p
 
-        visc)
+        visc, alpha)
 end
