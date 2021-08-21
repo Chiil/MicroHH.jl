@@ -2,23 +2,24 @@ using FFTW
 using Printf
 using HDF5
 
-struct Pressure
+struct Pressure{TF <: Union{Float32, Float64}}
     fft_forward
     fft_backward
-    bmati
-    bmatj
-    a
-    c
-    work3d
-    work2d
-    b
+    bmati::Vector{TF}
+    bmatj::Vector{TF}
+    a::Vector{TF}
+    c::Vector{TF}
+    work3d::Array{TF, 3}
+    work2d::Array{TF, 2}
+    b::Array{TF, 3}
 end
 
-function Pressure(g::Grid)
+function Pressure(g::Grid, TF)
     nthreads = (Threads.nthreads() == 1) ? 1 : 2*Threads.nthreads()
     FFTW.set_num_threads(nthreads)
 
-    tmp = rand(g.itot, g.jtot, g.ktot)
+    # We set the type of rand here explictly to trigger the right precision in FFTW
+    tmp = rand(TF, g.itot, g.jtot, g.ktot)
     fft_plan_f = FFTW.plan_r2r(tmp, FFTW.R2HC, [1, 2], flags=FFTW.MEASURE)
     fft_plan_b = FFTW.plan_r2r(tmp, FFTW.HC2R, [1, 2], flags=FFTW.MEASURE)
 
@@ -31,7 +32,7 @@ function Pressure(g::Grid)
     dyidyi = g.dyi^2
 
     for j in 0:g.jtot÷2
-        bmatj[j+1] = 2. * (cos(2pi*j/g.jtot) - 1.) * dyidyi;
+        bmatj[j+1] = 2 * (cos(2pi*j/g.jtot) - 1) * dyidyi;
     end
 
     for j in g.jtot÷2+1:g.jtot-1
@@ -39,7 +40,7 @@ function Pressure(g::Grid)
     end
 
     for i in 0:g.itot÷2
-        bmati[i+1] = 2. * (cos(2pi*i/g.itot) - 1.) * dxidxi;
+        bmati[i+1] = 2 * (cos(2pi*i/g.itot) - 1) * dxidxi;
     end
 
     for i in g.itot÷2+1:g.itot-1
@@ -55,7 +56,7 @@ function Pressure(g::Grid)
     work2d = zeros(g.itot, g.jtot)
     b = zeros(g.itot, g.jtot, g.ktot)
 
-    Pressure(fft_plan_f, fft_plan_b, bmati, bmatj, a, c, work3d, work2d, b)
+    Pressure{TF}(fft_plan_f, fft_plan_b, bmati, bmatj, a, c, work3d, work2d, b)
 end
 
 function input_kernel!(
@@ -162,8 +163,8 @@ function calc_pressure_tend!(f::Fields, g::Grid, t::Timeloop, p::Pressure)
     # CvH: Fix this later.
     @tturbo for j in 1:g.jcells
         for i in 1:g.icells
-            f.w_tend[i, j, g.ks ] = 0.
-            f.w_tend[i, j, g.keh] = 0.
+            f.w_tend[i, j, g.ks ] = 0
+            f.w_tend[i, j, g.keh] = 0
         end
     end
 

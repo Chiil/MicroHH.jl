@@ -40,7 +40,7 @@ function Model(name, n_domains, settings, TF)
         push!(m.fields, Fields(m.grid[i], settings[i]["fields"], TF))
         push!(m.boundary, Boundary(settings[i]["boundary"]))
         push!(m.timeloop, Timeloop(settings[i]["timeloop"]))
-        push!(m.pressure, Pressure(m.grid[i]))
+        push!(m.pressure, Pressure(m.grid[i], TF))
     end
 
     return m

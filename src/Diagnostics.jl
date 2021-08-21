@@ -3,7 +3,7 @@ function divergence_kernel(
     dxi, dyi, dzi,
     is, ie, js, je, ks, ke)
 
-    divmax = 0.
+    divmax = 0
     @inbounds for k in ks:ke
         for j in js:je
             for i in is:ie
@@ -21,7 +21,7 @@ function cfl_kernel(
     dxi, dyi, dzi, dt,
     is, ie, js, je, ks, ke)
 
-    cflmax = 0.
+    cflmax = 0
     @inbounds for k in ks:ke
         for j in js:je
             for i in is:ie

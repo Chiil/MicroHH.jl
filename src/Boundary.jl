@@ -55,7 +55,7 @@ function set_ghost_cells_bot_kernel!(
     a, a_bot, a_gradbot, dzh, ks, bot_type::Boundary_type)
 
     if bot_type == Dirichlet::Boundary_type
-        dzhi = 1. / dzh[ks]
+        dzhi = 1 / dzh[ks]
         @tturbo for j in 1:size(a, 2)
             for i in 1:size(a, 1)
                 a[i, j, ks-1] = 2a_bot[i, j] - a[i, j, ks]
@@ -76,7 +76,7 @@ function set_ghost_cells_top_kernel!(
     a, a_top, a_gradtop, dzh, ke, bot_type::Boundary_type)
 
     if bot_type == Dirichlet::Boundary_type
-        dzhi = 1. / dzh[ks]
+        dzhi = 1 / dzh[ks]
         @tturbo for j in 1:size(a, 2)
             for i in 1:size(a, 1)
                 a[i, j, ke+1] = 2a_top[i, j] - a[i, j, ke]
