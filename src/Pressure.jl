@@ -12,7 +12,7 @@ struct Pressure{TF <: Union{Float32, Float64}}
     work3d::Array{TF, 3}
     work2d::Array{TF, 2}
     b::Array{TF, 3}
-    p_nogc
+    p_nogc::Array{TF, 3}
 end
 
 function Pressure(g::Grid, TF)
