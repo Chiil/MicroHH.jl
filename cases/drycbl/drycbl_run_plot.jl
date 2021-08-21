@@ -15,14 +15,16 @@ m = Model("drycbl", n_domains, settings)
 load_model!(m)
 prepare_model!(m)
 f = m.fields[1]; g = m.grid[1]
-s = @view f.s[g.is:g.ie, g.js:g.je, 2]
-node = Node(s .- mean(s))
-heatmap(node)
+x = @view g.x[g.is:g.ie]
+y = @view g.y[g.js:g.je]
+s_bot = @view f.s_bot[g.is:g.ie, g.js:g.je]
+node = Node(s_bot .- mean(s_bot))
+heatmap(x, y, node)
 
 
 ## Run the model.
 in_progress = true
 while in_progress
     global in_progress = step_model!(m)
-    node[] = s .- mean(s)
+    node[] = s_bot .- mean(s_bot)
 end

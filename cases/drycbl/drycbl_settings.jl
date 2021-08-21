@@ -1,5 +1,5 @@
 ## Settings.
-settings_grid = Dict(
+settings_grid = Dict{String, Any}(
     "itot" => 48,
     "jtot" => 48,
     "ktot" => 48,
@@ -7,6 +7,12 @@ settings_grid = Dict(
     "xsize" => 3200.,
     "ysize" => 3200.,
     "zsize" => 3200.)
+
+zsize = settings_grid["zsize"]
+ktot = settings_grid["ktot"]
+dz = zsize / ktot
+z = range(0.5*dz, step=dz, length=ktot) |> collect
+settings_grid["z"] = z
 
 settings_fields = Dict(
     "visc" => 5.)
