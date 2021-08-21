@@ -172,13 +172,13 @@ function calc_pressure_tend!(f::Fields, g::Grid, t::Timeloop, p::Pressure)
     dti_sub = 1/get_sub_dt(t)
 
     input_kernel!(
-        p_nogc,
+        p.p_nogc,
         f.u, f.v, f.w,
         f.u_tend, f.v_tend, f.w_tend,
         g.dxi, g.dyi, g.dzi, dti_sub,
         g.is, g.ie, g.js, g.je, g.ks, g.ke)
 
-    p_fft = p.fft_forward * p_nogc
+    p_fft = p.fft_forward * p.p_nogc
 
     solve_pre_kernel!(
         p_fft, p.b,
@@ -190,10 +190,10 @@ function calc_pressure_tend!(f::Fields, g::Grid, t::Timeloop, p::Pressure)
         p.a, p.b, p.c,
         g.itot, g.jtot, g.ktot)
 
-    p_nogc = (p.fft_backward * p_fft) ./ (g.itot * g.jtot)
+    p.p_nogc[:, :, :] = (p.fft_backward * p_fft) ./ (g.itot * g.jtot)
 
     solve_post_kernel!(
-        f.p, p_nogc,
+        f.p, p.p_nogc,
         g.is, g.ie, g.js, g.je, g.ks, g.ke,
         g.igc, g.jgc, g.kgc)
 
