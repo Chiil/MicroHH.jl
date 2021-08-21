@@ -12,6 +12,7 @@ struct Pressure{TF <: Union{Float32, Float64}}
     work3d::Array{TF, 3}
     work2d::Array{TF, 2}
     b::Array{TF, 3}
+    p_nogc
 end
 
 function Pressure(g::Grid, TF)
@@ -55,8 +56,9 @@ function Pressure(g::Grid, TF)
     work3d = zeros(g.itot, g.jtot, g.ktot)
     work2d = zeros(g.itot, g.jtot)
     b = zeros(g.itot, g.jtot, g.ktot)
+    p_nogc = zeros(g.itot, g.jtot, g.ktot)
 
-    Pressure{TF}(fft_plan_f, fft_plan_b, bmati, bmatj, a, c, work3d, work2d, b)
+    Pressure{TF}(fft_plan_f, fft_plan_b, bmati, bmatj, a, c, work3d, work2d, b, p_nogc)
 end
 
 function input_kernel!(
@@ -168,18 +170,17 @@ function calc_pressure_tend!(f::Fields, g::Grid, t::Timeloop, p::Pressure)
         end
     end
 
-    p_nogc = Array{Float64, 3}(undef, g.itot, g.jtot, g.ktot)
 
     dti_sub = 1/get_sub_dt(t)
 
     input_kernel!(
-        p_nogc,
+        p.p_nogc,
         f.u, f.v, f.w,
         f.u_tend, f.v_tend, f.w_tend,
         g.dxi, g.dyi, g.dzi, dti_sub,
         g.is, g.ie, g.js, g.je, g.ks, g.ke)
 
-    p_fft = p.fft_forward * p_nogc
+    p_fft = p.fft_forward * p.p_nogc
 
     solve_pre_kernel!(
         p_fft, p.b,
@@ -191,10 +192,10 @@ function calc_pressure_tend!(f::Fields, g::Grid, t::Timeloop, p::Pressure)
         p.a, p.b, p.c,
         g.itot, g.jtot, g.ktot)
 
-    p_nogc = (p.fft_backward * p_fft) ./ (g.itot * g.jtot)
+    p.p_nogc[:, :, :] = (p.fft_backward * p_fft) ./ (g.itot * g.jtot)
 
     solve_post_kernel!(
-        f.p, p_nogc,
+        f.p, p.p_nogc,
         g.is, g.ie, g.js, g.je, g.ks, g.ke,
         g.igc, g.jgc, g.kgc)
 
