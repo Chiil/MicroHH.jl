@@ -4,13 +4,9 @@ function divergence_kernel(
     is, ie, js, je, ks, ke)
 
     divmax = 0
-    @inbounds for k in ks:ke
-        for j in js:je
-            for i in is:ie
-                div = @fd (u, v, w) gradx(u) + grady(v) + gradz(w)
-                divmax = max(divmax, div)
-            end
-        end
+    @fast3d begin
+        div = @fd (u, v, w) gradx(u) + grady(v) + gradz(w)
+        divmax = max(divmax, div)
     end
 
     return divmax
@@ -22,13 +18,9 @@ function cfl_kernel(
     is, ie, js, je, ks, ke)
 
     cflmax = 0
-    @inbounds for k in ks:ke
-        for j in js:je
-            for i in is:ie
-                cfl = @fd (u, v, w) abs(interpx(u))*dxi + abs(interpy(v))*dyi + abs(interpz(w))*dzi[k]
-                cflmax = max(cflmax, cfl)
-            end
-        end
+    @fast3d begin
+        cfl = @fd (u, v, w) abs(interpx(u))*dxi + abs(interpy(v))*dyi + abs(interpz(w))*dzi[k]
+        cflmax = max(cflmax, cfl)
     end
 
     return cflmax*dt
