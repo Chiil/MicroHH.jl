@@ -6,11 +6,12 @@ function divergence_kernel(
     divmax = 0
     @fast3d begin
         div = @fd (u, v, w) gradx(u) + grady(v) + gradz(w)
-        divmax = max(divmax, div)
+        divmax = max(divmax, abs(div))
     end
 
     return divmax
 end
+
 
 function cfl_kernel(
     u, v, w,
@@ -26,12 +27,14 @@ function cfl_kernel(
     return cflmax*dt
 end
 
+
 function calc_divergence(f::Fields, g::Grid)
     div = divergence_kernel(
         f.u, f.v, f.w,
         g.dxi, g.dyi, g.dzi,
         g.is, g.ie, g.js, g.je, g.ks, g.ke)
 end
+
 
 function calc_cfl(f::Fields, g::Grid, t::Timeloop)
     cfl = cfl_kernel(

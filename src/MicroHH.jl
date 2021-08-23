@@ -1,5 +1,6 @@
 module MicroHH
 
+## Exports
 # Export the types.
 export Model
 
@@ -10,6 +11,12 @@ using LoopVectorization
 using Printf
 using HDF5
 
+
+## Prevent slow single precision performance due to subnormals.
+set_zero_subnormals(true)
+
+
+## Include the necessary files.
 include("StencilBuilder.jl")
 include("Grid.jl")
 include("Fields.jl")
@@ -20,7 +27,7 @@ include("Pressure.jl")
 include("Diagnostics.jl")
 
 
-# Global model data.
+## Global model data.
 struct Model{TF <: Union{Float32, Float64}}
     name::String
     n_domains::Int
@@ -32,6 +39,7 @@ struct Model{TF <: Union{Float32, Float64}}
     timeloop::Vector{Timeloop}
     pressure::Vector{Pressure}
 end
+
 
 function Model(name, n_domains, settings, TF)
     m = Model{TF}(name, n_domains, 0, [], [], [], [], [])
@@ -46,11 +54,13 @@ function Model(name, n_domains, settings, TF)
     return m
 end
 
+
 function calc_rhs!(m::Model, i)
     set_boundary!(m.fields[i], m.grid[i], m.boundary[i])
     calc_dynamics_tend!(m.fields[i], m.grid[i])
     calc_pressure_tend!(m.fields[i], m.grid[i], m.timeloop[i], m.pressure[i])
 end
+
 
 function prepare_model!(m::Model)
     m.last_measured_time[] = time_ns()
@@ -60,6 +70,7 @@ function prepare_model!(m::Model)
     end
     check_model(m)
 end
+
 
 function save_domain(m::Model, i)
     f = m.fields[i]
@@ -77,11 +88,13 @@ function save_domain(m::Model, i)
     end
 end
 
+
 function save_model(m::Model)
     for i in 1:m.n_domains
         save_domain(m, i)
     end
 end
+
 
 function load_domain!(m::Model, i)
     f = m.fields[i]
@@ -99,11 +112,13 @@ function load_domain!(m::Model, i)
     end
 end
 
+
 function load_model!(m::Model)
     for i in 1:m.n_domains
         load_domain!(m, i)
     end
 end
+
 
 function step_model!(m::Model)
     time_next = m.timeloop[1].time + m.timeloop[1].dt
@@ -128,6 +143,7 @@ function step_model!(m::Model)
 
     return m.timeloop[1].time < m.timeloop[1].end_time
 end
+
 
 function check_model(m::Model)
     # Calculate the time since the last check.
