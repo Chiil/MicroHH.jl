@@ -10,7 +10,7 @@ include("drycbl_settings.jl")
 
 ## Initialize the model.
 n_domains = 2
-m = Model("drycbl", n_domains, settings)
+m = Model("drycbl", n_domains, settings, Float64)
 
 
 ## Create the initials fields.

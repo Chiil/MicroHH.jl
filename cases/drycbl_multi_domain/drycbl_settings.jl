@@ -15,7 +15,8 @@ settings_grid = Dict{String, Any}(
     "zsize" => 3200.)
 
 settings_fields = Dict(
-    "visc" => 5.)
+    "visc" => 5.,
+    "alpha" => 9.81 / 300.)
 
 settings_boundary = Dict(
     "mom_bot_type" => "Dirichlet",
