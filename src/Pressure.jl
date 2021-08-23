@@ -170,8 +170,8 @@ function calc_pressure_tend!(f::Fields, g::Grid, t::Timeloop, p::Pressure)
         end
     end
 
-
-    dti_sub = 1/get_sub_dt(t)
+    # Convert the dti to the type of the arrays to prevent casting in kernel.
+    dti_sub = convert(typeof(f.u_tend[1]), 1/get_sub_dt(t))
 
     input_kernel!(
         p.p_nogc,

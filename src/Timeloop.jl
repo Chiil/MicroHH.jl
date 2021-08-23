@@ -45,24 +45,27 @@ end
 function integrate_time!(
     f::Fields, g::Grid, t::Timeloop)
 
+    # Make sure the dt is in Float32 if the array is.
+    dt = convert(typeof(f.u[1]), t.dt)
+
     integrate_time_kernel!(
         f.u, f.u_tend,
-        t.rkstep, t.dt,
+        t.rkstep, dt,
         g.is, g.ie, g.js, g.je, g.ks, g.ke)
 
     integrate_time_kernel!(
         f.v, f.v_tend,
-        t.rkstep, t.dt,
+        t.rkstep, dt,
         g.is, g.ie, g.js, g.je, g.ks, g.ke)
 
     integrate_time_kernel!(
         f.w, f.w_tend,
-        t.rkstep, t.dt,
+        t.rkstep, dt,
         g.is, g.ie, g.js, g.je, g.ks, g.keh)
 
     integrate_time_kernel!(
         f.s, f.s_tend,
-        t.rkstep, t.dt,
+        t.rkstep, dt,
         g.is, g.ie, g.js, g.je, g.ks, g.ke)
 end
 
@@ -76,6 +79,6 @@ function step_time!(t::Timeloop)
 end
 
 function get_sub_dt(t::Timeloop)
-    c_b = [1/3, 15/16, 8/15];
+    c_b = [1//3, 15//16, 8//15];
     return c_b[t.rkstep]*t.dt;
 end
