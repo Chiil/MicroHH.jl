@@ -25,6 +25,7 @@ include("Timeloop.jl")
 include("Dynamics.jl")
 include("Pressure.jl")
 include("Diagnostics.jl")
+include("MultiDomain.jl")
 
 
 ## Global model data.
