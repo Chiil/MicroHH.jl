@@ -37,7 +37,7 @@ function solve_taylorgreen(itot)
     d_timeloop["end_time"] = 1.
     d_timeloop["save_time"] = 100.
     d_timeloop["check_time"] = 0.1
-    d_timeloop["dt"] = 0.001
+    d_timeloop["dt"] = 0.005 * (128 / itot)
 
     settings = [ Dict(
         "grid"     => d_grid,
@@ -77,9 +77,9 @@ function solve_taylorgreen(itot)
     end
 
     dx = 1. / itot
-    u_err = sum(dx^2 * (u .- u_ref).^2)
-    w_err = sum(dx^2 * (w .- w_ref).^2)
-    p_err = sum(dx^2 * (p .- p_ref).^2)
+    u_err = sum(dx^2 * abs.(u .- u_ref))
+    w_err = sum(dx^2 * abs.(w .- w_ref))
+    p_err = sum(dx^2 * abs.(p .- p_ref))
 
     return u_err, w_err, p_err
 end
@@ -101,7 +101,8 @@ p_errs = [ p016, p032, p064, p128, p256 ]
 ## Plot the results
 figure()
 loglog(dxs, u_errs, "C0o-", label="u")
-loglog(dxs, w_errs, "C1o-", label="w")
+#loglog(dxs, w_errs, "C1o-", label="w")
 loglog(dxs, p_errs, "C2o-", label="p")
-legend(loc=0, frameon=False)
+loglog(dxs, 0.6*dxs.^2, "k:", label="2nd")
+legend(loc=0, frameon=false)
 display(gcf())
