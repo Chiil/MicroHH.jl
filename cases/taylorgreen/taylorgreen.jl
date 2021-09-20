@@ -101,7 +101,7 @@ p_errs = [ p016, p032, p064, p128, p256 ]
 ## Plot the results
 figure()
 loglog(dxs, u_errs, "C0o-", label="u")
-#loglog(dxs, w_errs, "C1o-", label="w")
+loglog(dxs, w_errs, "C1o-", label="w")
 loglog(dxs, p_errs, "C2o-", label="p")
 loglog(dxs, 0.6*dxs.^2, "k:", label="2nd")
 legend(loc=0, frameon=false)

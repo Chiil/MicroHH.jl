@@ -13,7 +13,7 @@ include("drycbl_settings.jl")
 n_domains = 2
 m = Model("drycbl", n_domains, settings, Float32)
 load_model!(m)
-prepare_model!(m)
+in_progress = prepare_model!(m)
 
 fig = Figure(resolution=(500, 800))
 f1 = m.fields[1]; g1 = m.grid[1]
@@ -31,8 +31,8 @@ node2 = Node(s_bot2 .- mean(s_bot2))
 h2 = heatmap(fig[2, 1], x2, y2, node2, colorrange=(-0.4, 0.4))
 fig
 
+
 ## Run the model.
-in_progress = true
 while in_progress
     global in_progress = step_model!(m)
     node1[] = s_bot1 .- mean(s_bot1)
