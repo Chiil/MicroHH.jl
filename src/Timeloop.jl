@@ -50,7 +50,7 @@ function integrate_time_kernel!(
     rkstep, dt,
     is, ie, js, je, ks, ke)
 
-    c_a = [0, 5//9, -153//128];
+    c_a = [0, -5//9, -153//128];
     c_b = [1//3, 15//16, 8//15];
 
     rkstep_next = (rkstep + 1) == 4 ? 1 : rkstep + 1
