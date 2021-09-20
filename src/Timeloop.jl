@@ -1,14 +1,25 @@
 using .StencilBuilder
 
+const ifactor = 1_000_000
+
 mutable struct Timeloop
+    # Float numbers.
     start_time::Float64
     end_time::Float64
     save_time::Float64
     check_time::Float64
     dt::Float64
-
     time::Float64
-    rkstep::Int
+
+    # Integer values.
+    istart_time::Int64
+    iend_time::Int64
+    isave_time::Int64
+    icheck_time::Int64
+    idt::Int64
+    itime::Int64
+
+    rkstep::Int64
 end
 
 function Timeloop(d::Dict)
@@ -17,10 +28,21 @@ function Timeloop(d::Dict)
     save_time = d["save_time"]
     check_time = d["check_time"]
     dt = d["dt"]
-    rkstep = 1
     time = start_time
 
-    Timeloop(start_time, end_time, save_time, check_time, dt, time, rkstep)
+    istart_time = round(Int64, start_time * ifactor)
+    iend_time = round(Int64, end_time * ifactor)
+    isave_time = round(Int64, save_time * ifactor)
+    icheck_time = round(Int64, check_time * ifactor)
+    idt = round(Int64, dt * ifactor)
+    itime = istart_time
+
+    rkstep = 1
+
+    Timeloop(
+        start_time, end_time, save_time, check_time, dt, time,
+        istart_time, iend_time, isave_time, icheck_time, idt, itime,
+        rkstep)
 end
 
 function integrate_time_kernel!(
@@ -74,7 +96,8 @@ function step_time!(t::Timeloop)
 
     if t.rkstep > 3
         t.rkstep = 1
-        t.time += t.dt
+        t.itime += t.idt
+        t.time = convert(Float64, t.itime) / ifactor
     end
 end
 

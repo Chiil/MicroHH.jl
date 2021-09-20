@@ -69,7 +69,10 @@ function prepare_model!(m::Model)
     for i in 1:m.n_domains
         calc_rhs!(m, i)
     end
+
     check_model(m)
+
+    return m.timeloop[1].itime < m.timeloop[1].iend_time
 end
 
 
@@ -122,15 +125,15 @@ end
 
 
 function step_model!(m::Model)
-    time_next = m.timeloop[1].time + m.timeloop[1].dt
+    itime_next = m.timeloop[1].itime + m.timeloop[1].idt
 
     for i in 1:m.n_domains
-        while (m.timeloop[i].time < time_next)
+        while (m.timeloop[i].itime < itime_next)
             integrate_time!(m.fields[i], m.grid[i], m.timeloop[i])
             step_time!(m.timeloop[i])
 
-            if (isapprox(m.timeloop[i].time % m.timeloop[i].save_time, 0.)
-                && m.timeloop[i].rkstep == 1 && !isapprox(m.timeloop[i].time, m.timeloop[i].start_time))
+            if (m.timeloop[i].itime % m.timeloop[i].isave_time == 0
+                && m.timeloop[i].rkstep == 1 && m.timeloop[i].itime != m.timeloop[i].istart_time)
                 save_domain(m, i)
             end
 
@@ -138,11 +141,11 @@ function step_model!(m::Model)
         end
     end
 
-    if isapprox(m.timeloop[1].time % m.timeloop[1].check_time, 0.)
+    if m.timeloop[1].itime % m.timeloop[1].icheck_time == 0
         check_model(m)
     end
 
-    return m.timeloop[1].time < m.timeloop[1].end_time
+    return m.timeloop[1].itime < m.timeloop[1].iend_time
 end
 
 
