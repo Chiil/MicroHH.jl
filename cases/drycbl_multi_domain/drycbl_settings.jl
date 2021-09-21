@@ -27,9 +27,9 @@ settings_boundary = Dict(
 settings_timeloop = Dict(
     "start_time" => 0.,
     "end_time" => 7200.,
-    "save_time" => 100.,
+    "save_time" => 100000.,
     "check_time" => 100.,
-    "dt" => 5.)
+    "dt" => 20.)
 
 settings_d01 = Dict(
     "grid"     => settings_grid,
@@ -45,7 +45,7 @@ settings_d02 = deepcopy(settings_d01)
 settings_d02["grid"]["itot"] = 96
 settings_d02["grid"]["jtot"] = 96
 settings_d02["grid"]["ktot"] = 96
-settings_d02["timeloop"]["dt"] = 2.5
+settings_d02["timeloop"]["dt"] = 10.
 
 settings_d02["grid"]["z"] = make_grid(settings_d02["grid"]["zsize"], settings_d02["grid"]["ktot"])
 
