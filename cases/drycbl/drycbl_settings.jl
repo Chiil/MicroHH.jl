@@ -8,9 +8,9 @@ end
 
 ## Settings.
 settings_grid = Dict{String, Any}(
-    "itot" => 256,
-    "jtot" => 256,
-    "ktot" => 256,
+    "itot" => 192,
+    "jtot" => 192,
+    "ktot" => 192,
 
     "xsize" => 3200.,
     "ysize" => 3200.,
