@@ -17,9 +17,8 @@ load_model!(m)
 
 
 ## Run the model.
-prepare_model!(m)
+in_progress = prepare_model!(m)
 
-in_progress = true
 while in_progress
     global in_progress = step_model!(m)
     # @profile global in_progress = step_model!(m)

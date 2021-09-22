@@ -8,17 +8,16 @@ end
 
 ## Settings.
 settings_grid = Dict{String, Any}(
-    "itot" => 48,
-    "jtot" => 48,
-    "ktot" => 48,
+    "itot" => 256,
+    "jtot" => 256,
+    "ktot" => 256,
 
     "xsize" => 3200.,
     "ysize" => 3200.,
     "zsize" => 3200.)
 
-
 settings_fields = Dict(
-    "visc" => 5.,
+    "visc" => 2.,
     "alpha" => 9.81 / 300)
 
 settings_boundary = Dict(
@@ -30,7 +29,7 @@ settings_boundary = Dict(
 settings_timeloop = Dict(
     "start_time" => 0.,
     "end_time" => 7200.,
-    "save_time" => 100.,
+    "save_time" => 7200.,
     "check_time" => 100.,
     "dt" => 5.)
 
