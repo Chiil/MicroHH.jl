@@ -6,9 +6,9 @@ end
 
 ## Settings domain 1.
 settings_grid = Dict{String, Any}(
-    "itot" => 48,
-    "jtot" => 48,
-    "ktot" => 48,
+    "itot" => 64,
+    "jtot" => 64,
+    "ktot" => 64,
 
     "xsize" => 3200.,
     "ysize" => 3200.,
@@ -26,10 +26,10 @@ settings_boundary = Dict(
 
 settings_timeloop = Dict(
     "start_time" => 0.,
-    "end_time" => 7200.,
+    "end_time" => 1800.,
     "save_time" => 100000.,
     "check_time" => 100.,
-    "dt" => 20.)
+    "dt" => 16.)
 
 settings_d01 = Dict(
     "grid"     => settings_grid,
@@ -42,10 +42,10 @@ settings_d01["grid"]["z"] = make_grid(settings_d01["grid"]["zsize"], settings_d0
 
 # Settings domain 2.
 settings_d02 = deepcopy(settings_d01)
-settings_d02["grid"]["itot"] = 96
-settings_d02["grid"]["jtot"] = 96
-settings_d02["grid"]["ktot"] = 96
-settings_d02["timeloop"]["dt"] = 10.
+settings_d02["grid"]["itot"] = 128
+settings_d02["grid"]["jtot"] = 128
+settings_d02["grid"]["ktot"] = 128
+settings_d02["timeloop"]["dt"] = 8.
 
 settings_d02["grid"]["z"] = make_grid(settings_d02["grid"]["zsize"], settings_d02["grid"]["ktot"])
 
