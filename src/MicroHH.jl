@@ -59,6 +59,12 @@ end
 function calc_rhs!(m::Model, i)
     set_boundary!(m.fields[i], m.grid[i], m.boundary[i])
     calc_dynamics_tend!(m.fields[i], m.grid[i])
+
+    # Apply nudging towards coarser resolution.
+    if i > 1
+        calc_nudge_tend!(m.fields[i], m.fields[i-1], m.grid[i], m.grid[i-1])
+    end
+
     calc_pressure_tend!(m.fields[i], m.grid[i], m.timeloop[i], m.pressure[i])
 end
 
