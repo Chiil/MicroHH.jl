@@ -39,17 +39,19 @@ struct Model{TF <: Union{Float32, Float64}}
     boundary::Vector{Boundary}
     timeloop::Vector{Timeloop}
     pressure::Vector{Pressure}
+    multidomain::Vector{MultiDomain}
 end
 
 
 function Model(name, n_domains, settings, TF)
-    m = Model{TF}(name, n_domains, 0, [], [], [], [], [])
+    m = Model{TF}(name, n_domains, 0, [], [], [], [], [], [])
     for i in 1:n_domains
         push!(m.grid, Grid(settings[i]["grid"], TF))
         push!(m.fields, Fields(m.grid[i], settings[i]["fields"], TF))
         push!(m.boundary, Boundary(settings[i]["boundary"]))
         push!(m.timeloop, Timeloop(settings[i]["timeloop"]))
         push!(m.pressure, Pressure(m.grid[i], TF))
+        push!(m.multidomain, MultiDomain(settings[i]["multidomain"], TF))
     end
 
     return m
@@ -59,10 +61,8 @@ end
 function calc_rhs!(m::Model, i)
     set_boundary!(m.fields[i], m.grid[i], m.boundary[i])
     calc_dynamics_tend!(m.fields[i], m.grid[i])
-
-    # Apply nudging towards coarser resolution.
     if i > 1
-        calc_nudge_tend!(m.fields[i], m.fields[i-1], m.grid[i], m.grid[i-1])
+        calc_nudge_tend!(m.fields[i], m.fields[i-1], m.grid[i], m.grid[i-1], m.multidomain[i])
     end
 
     calc_pressure_tend!(m.fields[i], m.grid[i], m.timeloop[i], m.pressure[i])

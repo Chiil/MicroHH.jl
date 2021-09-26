@@ -31,11 +31,15 @@ settings_timeloop = Dict(
     "check_time" => 50.,
     "dt" => 12.5)
 
+settings_multidomain = Dict{String, Any}(
+    "enable_nudge" => false)
+
 settings_d01 = Dict(
-    "grid"     => settings_grid,
-    "fields"   => settings_fields,
+    "grid" => settings_grid,
+    "fields" => settings_fields,
     "boundary" => settings_boundary,
-    "timeloop" => settings_timeloop)
+    "timeloop" => settings_timeloop,
+    "multidomain" => settings_multidomain)
 
 settings_d01["grid"]["z"] = make_grid(settings_d01["grid"]["zsize"], settings_d01["grid"]["ktot"])
 
@@ -46,6 +50,8 @@ settings_d02["grid"]["itot"] = 128
 settings_d02["grid"]["jtot"] = 128
 settings_d02["grid"]["ktot"] = 128
 settings_d02["timeloop"]["dt"] = 6.25
+settings_d02["multidomain"]["enable_nudge"] = true
+settings_d02["multidomain"]["nudge_time"] = 300
 
 settings_d02["grid"]["z"] = make_grid(settings_d02["grid"]["zsize"], settings_d02["grid"]["ktot"])
 

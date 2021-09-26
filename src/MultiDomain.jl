@@ -1,7 +1,25 @@
 using Interpolations
 
+struct MultiDomain{TF <: Union{Float32, Float64}}
+    enable_nudge::Bool
+    nudge_time::TF
+end
+
+
+# Constructor for multidomain struct.
+function MultiDomain(settings, TF)
+    enable_nudge = settings["enable_nudge"]
+    nudge_time = 1e12
+    if enable_nudge
+        nudge_time = settings["nudge_time"]
+    end
+
+    multidomain = MultiDomain{TF}(enable_nudge, nudge_time)
+end
+
+
 # Transfer the state
-function transfer_state(f_d, f_s, g_d, g_s)
+function transfer_state!(f_d::Fields, f_s::Fields, g_d::Grid, g_s::Grid)
     interp = LinearInterpolation((g_s.xh, g_s.y, g_s.z), f_s.u)
     f_d.u[g_d.is:g_d.ie, g_d.js:g_d.je, g_d.ks:g_d.ke] = interp(g_d.xh[g_d.is:g_d.ie], g_d.y[g_d.js:g_d.je], g_d.z[g_d.ks:g_d.ke])
 
@@ -25,9 +43,12 @@ function transfer_state(f_d, f_s, g_d, g_s)
 end
 
 
-function calc_nudge_tend!(f_d, f_s, g_d, g_s)
-    nudge_time = 300
-    c_nudge = 1 // nudge_time
+function calc_nudge_tend!(f_d::Fields, f_s::Fields, g_d::Grid, g_s::Grid, md::MultiDomain)
+    if !md.enable_nudge
+        return
+    end
+
+    c_nudge = 1 / md.nudge_time
 
     interp = LinearInterpolation((g_s.xh, g_s.y, g_s.z), f_s.u)
     f_d.u_tend[g_d.is:g_d.ie, g_d.js:g_d.je, g_d.ks:g_d.ke] -= c_nudge * (f_d.u[g_d.is:g_d.ie, g_d.js:g_d.je, g_d.ks:g_d.ke] - interp(g_d.xh[g_d.is:g_d.ie], g_d.y[g_d.js:g_d.je], g_d.z[g_d.ks:g_d.ke]))
