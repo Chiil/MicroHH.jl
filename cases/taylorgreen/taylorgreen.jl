@@ -39,11 +39,15 @@ function solve_taylorgreen(itot)
     d_timeloop["check_time"] = 0.1
     d_timeloop["dt"] = 0.005 * (128 / itot)
 
+    d_multidomain = Dict{String, Any}()
+    d_multidomain["enable_nudge"] = false
+
     settings = [ Dict(
-        "grid"     => d_grid,
-        "fields"   => d_fields,
+        "grid" => d_grid,
+        "fields" => d_fields,
         "boundary" => d_boundary,
-        "timeloop" => d_timeloop) ]
+        "timeloop" => d_timeloop,
+        "multidomain" => d_multidomain) ]
 
 
     # Initialize the model.
