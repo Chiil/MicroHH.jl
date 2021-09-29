@@ -28,9 +28,9 @@ settings_boundary = Dict(
 
 settings_timeloop = Dict(
     "start_time" => 0.,
-    "end_time" => 7200.,
-    "save_time" => 7200.,
-    "check_time" => 100.,
+    "end_time" => 900.,
+    "save_time" => 100.,
+    "check_time" => 50.,
     "dt" => 5.)
 
 settings_multidomain = Dict(

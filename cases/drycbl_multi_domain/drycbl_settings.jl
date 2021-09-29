@@ -50,8 +50,8 @@ settings_d02["grid"]["itot"] = 128
 settings_d02["grid"]["jtot"] = 128
 settings_d02["grid"]["ktot"] = 128
 settings_d02["timeloop"]["dt"] = 6.25
-# settings_d02["multidomain"]["enable_nudge"] = true
-# settings_d02["multidomain"]["nudge_time"] = 300
+settings_d02["multidomain"]["enable_nudge"] = true
+settings_d02["multidomain"]["nudge_time"] = 300
 
 settings_d02["grid"]["z"] = make_grid(settings_d02["grid"]["zsize"], settings_d02["grid"]["ktot"])
 
