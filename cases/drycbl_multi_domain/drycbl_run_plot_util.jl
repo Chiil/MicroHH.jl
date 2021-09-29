@@ -13,6 +13,8 @@ m.timeloop[1].iend_time += 900 * MicroHH.ifactor
 in_progress = true
 while in_progress
     global in_progress = step_model!(m)
-    node1[] = s_bot1 .- mean(s_bot1)
-    node2[] = s_bot2 .- mean(s_bot2)
+    node11[] = s_bot1 .- mean(s_bot1)
+    node21[] = s_bot2 .- mean(s_bot2)
+    node12[] = s1[:, 1, :] .- mean(s1, dims=(1, 2))[:, 1, :]
+    node22[] = s2[:, 1, :] .- mean(s2, dims=(1, 2))[:, 1, :]
 end
