@@ -27,7 +27,7 @@ settings_boundary = Dict(
 settings_timeloop = Dict(
     "start_time" => 0.,
     "end_time" => 1800.,
-    "save_time" => 1800.,
+    "save_time" => 300.,
     "check_time" => 50.,
     "dt" => 12.5)
 
@@ -51,7 +51,7 @@ settings_d02["grid"]["jtot"] = 128
 settings_d02["grid"]["ktot"] = 128
 settings_d02["timeloop"]["dt"] = 6.25
 settings_d02["multidomain"]["enable_nudge"] = true
-settings_d02["multidomain"]["nudge_time"] = 300
+settings_d02["multidomain"]["nudge_time"] = 600
 
 settings_d02["grid"]["z"] = make_grid(settings_d02["grid"]["zsize"], settings_d02["grid"]["ktot"])
 

@@ -8,8 +8,8 @@ node2[] = s_bot2 .- mean(s_bot2)
 
 
 ## Run the model for another 900 sec.
-m.timeloop[1].end_time += 900.
-m.timeloop[1].iend_time += 900 * MicroHH.ifactor
+m.timeloop[1].end_time += 1800.
+m.timeloop[1].iend_time += 1800 * MicroHH.ifactor
 in_progress = true
 while in_progress
     global in_progress = step_model!(m)

@@ -15,6 +15,8 @@ m = Model("drycbl", n_domains, settings, Float32)
 load_model!(m)
 in_progress = prepare_model!(m)
 
+
+## Make the figure.
 f = m.fields[1]; g = m.grid[1]
 x = @view g.x[g.is:g.ie]
 y = @view g.y[g.js:g.je]
