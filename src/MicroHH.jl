@@ -51,7 +51,7 @@ function Model(name, n_domains, settings, TF)
         push!(m.boundary, Boundary(settings[i]["boundary"]))
         push!(m.timeloop, Timeloop(settings[i]["timeloop"]))
         push!(m.pressure, Pressure(m.grid[i], TF))
-        push!(m.multidomain, MultiDomain(settings[i]["multidomain"], TF))
+        push!(m.multidomain, MultiDomain(m.grid[i], settings[i]["multidomain"], TF))
     end
 
     return m
@@ -61,10 +61,7 @@ end
 function calc_rhs!(m::Model, i)
     set_boundary!(m.fields[i], m.grid[i], m.boundary[i])
     calc_dynamics_tend!(m.fields[i], m.grid[i])
-    if i > 1
-        calc_nudge_tend!(m.fields[i], m.fields[i-1], m.grid[i], m.grid[i-1], m.multidomain[i])
-    end
-
+    calc_nudge_tend!(m.fields[i], m.grid[i], m.multidomain[i])
     calc_pressure_tend!(m.fields[i], m.grid[i], m.timeloop[i], m.pressure[i])
 end
 
@@ -134,6 +131,11 @@ function step_model!(m::Model)
     itime_next = m.timeloop[1].itime + m.timeloop[1].idt
 
     for i in 1:m.n_domains
+        # Compute the nudging fields, which remain constant throughout the step.
+        if i > 1
+            calc_nudge_fields!(m.multidomain[i], m.fields[i], m.fields[i-1], m.grid[i], m.grid[i-1])
+        end
+
         while (m.timeloop[i].itime < itime_next)
             integrate_time!(m.fields[i], m.grid[i], m.timeloop[i])
             step_time!(m.timeloop[i])
