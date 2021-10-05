@@ -80,6 +80,13 @@ function calc_nudge_fields!(md::MultiDomain, f_d::Fields, f_s::Fields, g_d::Grid
 end
 
 
+function nudge_kernel!(a_tend, a, a_nudge, c_nudge, is, ie, js, je, ks, ke)
+    @fast3d begin
+        @fd (a_tend, a, a_nudge) a_tend -= c_nudge * (a - a_nudge)
+    end
+end
+
+
 function calc_nudge_tend!(f::Fields, g::Grid, md::MultiDomain)
     if !md.enable_nudge
         return
@@ -87,8 +94,8 @@ function calc_nudge_tend!(f::Fields, g::Grid, md::MultiDomain)
 
     c_nudge = 1 / md.nudge_time
 
-    f.u_tend[g.is:g.ie, g.js:g.je, g.ks:g.ke ] -= c_nudge * (f.u[g.is:g.ie, g.js:g.je, g.ks:g.ke ] - md.u_nudge[g.is:g.ie, g.js:g.je, g.ks:g.ke ])
-    f.v_tend[g.is:g.ie, g.js:g.je, g.ks:g.ke ] -= c_nudge * (f.v[g.is:g.ie, g.js:g.je, g.ks:g.ke ] - md.v_nudge[g.is:g.ie, g.js:g.je, g.ks:g.ke ])
-    f.w_tend[g.is:g.ie, g.js:g.je, g.ks:g.keh] -= c_nudge * (f.w[g.is:g.ie, g.js:g.je, g.ks:g.keh] - md.w_nudge[g.is:g.ie, g.js:g.je, g.ks:g.keh])
-    f.s_tend[g.is:g.ie, g.js:g.je, g.ks:g.ke ] -= c_nudge * (f.s[g.is:g.ie, g.js:g.je, g.ks:g.ke ] - md.s_nudge[g.is:g.ie, g.js:g.je, g.ks:g.ke ])
+    nudge_kernel!(f.u_tend, f.u, md.u_nudge, c_nudge, g.is, g.ie, g.js, g.je, g.ks, g.ke )
+    nudge_kernel!(f.v_tend, f.v, md.v_nudge, c_nudge, g.is, g.ie, g.js, g.je, g.ks, g.ke )
+    nudge_kernel!(f.w_tend, f.w, md.w_nudge, c_nudge, g.is, g.ie, g.js, g.je, g.ks, g.keh)
+    nudge_kernel!(f.s_tend, f.s, md.s_nudge, c_nudge, g.is, g.ie, g.js, g.je, g.ks, g.ke )
 end
