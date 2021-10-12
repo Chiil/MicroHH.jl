@@ -81,7 +81,8 @@ function calc_dynamics_tend!(f::Fields, g::Grid)
         f.w_tend, f.u, f.v, f.w, f.s,
         f.visc, f.alpha,
         g.dxi, g.dyi, g.dzi, g.dzhi,
-        g.is, g.ie, g.js, g.je, g.ks, g.keh)
+        # g.is, g.ie, g.js, g.je, g.ks, g.keh) # CvH temporary hack
+        g.is, g.ie, g.js, g.je, g.ks+1, g.keh-1)
 
     dynamics_s_kernel!(
         f.s_tend, f.u, f.v, f.w, f.s,
