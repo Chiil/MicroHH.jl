@@ -86,6 +86,15 @@ function save_domain(m::Model, i)
 
     filename = @sprintf("%s.%02i.%08i.h5", m.name, i, round(t.time))
     h5open(filename, "w") do fid
+        # Save the grid.
+        write(fid, "x" , g.x[g.is:g.ie])
+        write(fid, "xh", g.xh[g.is:g.ie])
+        write(fid, "y" , g.y[g.js:g.je])
+        write(fid, "yh", g.yh[g.js:g.je])
+        write(fid, "z" , g.z[g.ks:g.ke])
+        write(fid, "zh", g.zh[g.ks:g.keh])
+
+        # Save the fields.
         write(fid, "u", f.u[g.is:g.ie, g.js:g.je, g.ks:g.ke ])
         write(fid, "v", f.v[g.is:g.ie, g.js:g.je, g.ks:g.ke ])
         write(fid, "w", f.w[g.is:g.ie, g.js:g.je, g.ks:g.keh])
