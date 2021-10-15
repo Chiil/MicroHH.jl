@@ -6,9 +6,9 @@ end
 
 ## Settings domain 1.
 settings_grid = Dict{String, Any}(
-    "itot" => 64,
-    "jtot" => 64,
-    "ktot" => 64,
+    "itot" => 128,
+    "jtot" => 128,
+    "ktot" => 128,
 
     "xsize" => 3200.,
     "ysize" => 3200.,
@@ -26,10 +26,10 @@ settings_boundary = Dict(
 
 settings_timeloop = Dict(
     "start_time" => 0.,
-    "end_time" => 1800.,
+    "end_time" => 7200.,
     "save_time" => 1800.,
     "check_time" => 50.,
-    "dt" => 10.)
+    "dt" => 5.)
 
 settings_multidomain = Dict{String, Any}(
     "enable_nudge" => false)
@@ -46,10 +46,11 @@ settings_d01["grid"]["z"] = make_grid(settings_d01["grid"]["zsize"], settings_d0
 
 # Settings domain 2.
 settings_d02 = deepcopy(settings_d01)
-settings_d02["grid"]["itot"] = 128
-settings_d02["grid"]["jtot"] = 128
-settings_d02["grid"]["ktot"] = 128
-settings_d02["timeloop"]["dt"] = 5.
+settings_d02["grid"]["itot"] = 256
+settings_d02["grid"]["jtot"] = 256
+settings_d02["grid"]["ktot"] = 256
+settings_d02["fields"]["visc"] /= 2^(4/3)
+settings_d02["timeloop"]["dt"] /= 2.
 settings_d02["multidomain"]["enable_nudge"] = true
 settings_d02["multidomain"]["nudge_time"] = 600
 
