@@ -94,6 +94,14 @@ function save_domain(m::Model, i)
         write(fid, "z" , g.z[g.ks:g.ke])
         write(fid, "zh", g.zh[g.ks:g.keh])
 
+        # Make the grid variables dimensions.
+        HDF5.h5ds_set_scale(fid["x"], "x")
+        HDF5.h5ds_set_scale(fid["xh"], "xh")
+        HDF5.h5ds_set_scale(fid["y"], "y")
+        HDF5.h5ds_set_scale(fid["yh"], "yh")
+        HDF5.h5ds_set_scale(fid["z"], "z")
+        HDF5.h5ds_set_scale(fid["zh"], "zh")
+
         # Save the fields.
         write(fid, "u", f.u[g.is:g.ie, g.js:g.je, g.ks:g.ke ])
         write(fid, "v", f.v[g.is:g.ie, g.js:g.je, g.ks:g.ke ])
@@ -101,6 +109,23 @@ function save_domain(m::Model, i)
         write(fid, "s", f.s[g.is:g.ie, g.js:g.je, g.ks:g.ke ])
         write(fid, "s_bot", f.s_bot[g.is:g.ie, g.js:g.je])
         write(fid, "s_gradbot", f.s_gradbot[g.is:g.ie, g.js:g.je])
+
+        # Attach the dimensions. Note the c-indexing.
+        HDF5.h5ds_attach_scale(fid["u"], fid["xh"], 2)
+        HDF5.h5ds_attach_scale(fid["u"], fid["y"], 1)
+        HDF5.h5ds_attach_scale(fid["u"], fid["z"], 0)
+
+        HDF5.h5ds_attach_scale(fid["v"], fid["x"], 2)
+        HDF5.h5ds_attach_scale(fid["v"], fid["yh"], 1)
+        HDF5.h5ds_attach_scale(fid["v"], fid["z"], 0)
+
+        HDF5.h5ds_attach_scale(fid["w"], fid["x"], 2)
+        HDF5.h5ds_attach_scale(fid["w"], fid["y"], 1)
+        HDF5.h5ds_attach_scale(fid["w"], fid["zh"], 0)
+
+        HDF5.h5ds_attach_scale(fid["s"], fid["x"], 2)
+        HDF5.h5ds_attach_scale(fid["s"], fid["y"], 1)
+        HDF5.h5ds_attach_scale(fid["s"], fid["z"], 0)
     end
 end
 

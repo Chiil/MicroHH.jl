@@ -12,5 +12,6 @@ h5open(filename, "w") do fid
     fid["z"] = z[:, :]
     HDF5.h5ds_set_scale(fid["x"], "x")
     HDF5.h5ds_set_scale(fid["y"], "y")
-    # HDF5.h5ds_attach_scale(fid["y"], fid["x"], 0)
+    HDF5.h5ds_attach_scale(fid["z"], fid["x"], 1)
+    HDF5.h5ds_attach_scale(fid["z"], fid["y"], 0)
 end
