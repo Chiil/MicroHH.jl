@@ -83,6 +83,10 @@ function save_domain(m::Model, i)
     f = m.fields[i]
     g = m.grid[i]
     t = m.timeloop[i]
+    b = m.boundary[i]
+
+    # Update the boundary.
+    set_boundary!(f, g, b)
 
     filename = @sprintf("%s.%02i.%08i.h5", m.name, i, round(t.time))
     h5open(filename, "w") do fid
@@ -155,6 +159,7 @@ function load_domain!(m::Model, i)
     f = m.fields[i]
     g = m.grid[i]
     t = m.timeloop[i]
+    b = m.boundary[i]
 
     filename = @sprintf("%s.%02i.%08i.h5", m.name, i, round(t.time))
     h5open(filename, "r") do fid
@@ -167,6 +172,8 @@ function load_domain!(m::Model, i)
         f.s_top[g.is:g.ie, g.js:g.je] = read(fid, "s_top")
         f.s_gradtop[g.is:g.ie, g.js:g.je] = read(fid, "s_gradtop")
     end
+
+    set_boundary!(f, g, b)
 end
 
 

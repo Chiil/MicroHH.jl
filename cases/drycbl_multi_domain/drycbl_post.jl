@@ -40,8 +40,10 @@ z = @view g2.z[g2.ks:g2.ke]
 slngrad_xy = @view slngrad[g2.is:g2.ie, g2.js:g2.je, 50]
 slngrad_xz = @view slngrad[g2.is:g2.ie, g2.js, g2.ks:g2.ke]
 
+smin = -25; smax = -11
+
 figure()
-pcolormesh(x, y, slngrad_xy', vmin=-28, vmax=-11, shading="nearest", cmap=plt.cm.magma)
+pcolormesh(x, y, slngrad_xy', vmin=smin, vmax=smax, shading="nearest", cmap=plt.cm.magma)
 xlabel("x (m)")
 ylabel("y (m)")
 colorbar()
@@ -49,7 +51,7 @@ tight_layout()
 display(gcf())
 
 figure()
-pcolormesh(x, z, slngrad_xz', vmin=-28, vmax=-11, shading="nearest", cmap=plt.cm.magma)
+pcolormesh(x, z, slngrad_xz', vmin=smin, vmax=smax, shading="nearest", cmap=plt.cm.magma)
 xlabel("x (m)")
 ylabel("z (m)")
 colorbar()
