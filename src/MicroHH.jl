@@ -109,6 +109,8 @@ function save_domain(m::Model, i)
         write(fid, "s", f.s[g.is:g.ie, g.js:g.je, g.ks:g.ke ])
         write(fid, "s_bot", f.s_bot[g.is:g.ie, g.js:g.je])
         write(fid, "s_gradbot", f.s_gradbot[g.is:g.ie, g.js:g.je])
+        write(fid, "s_top", f.s_top[g.is:g.ie, g.js:g.je])
+        write(fid, "s_gradtop", f.s_gradtop[g.is:g.ie, g.js:g.je])
 
         # Attach the dimensions. Note the c-indexing.
         HDF5.h5ds_attach_scale(fid["u"], fid["xh"], 2)
@@ -126,6 +128,18 @@ function save_domain(m::Model, i)
         HDF5.h5ds_attach_scale(fid["s"], fid["x"], 2)
         HDF5.h5ds_attach_scale(fid["s"], fid["y"], 1)
         HDF5.h5ds_attach_scale(fid["s"], fid["z"], 0)
+
+        HDF5.h5ds_attach_scale(fid["s_bot"], fid["x"], 1)
+        HDF5.h5ds_attach_scale(fid["s_bot"], fid["y"], 0)
+
+        HDF5.h5ds_attach_scale(fid["s_gradbot"], fid["x"], 1)
+        HDF5.h5ds_attach_scale(fid["s_gradbot"], fid["y"], 0)
+
+        HDF5.h5ds_attach_scale(fid["s_top"], fid["x"], 1)
+        HDF5.h5ds_attach_scale(fid["s_top"], fid["y"], 0)
+
+        HDF5.h5ds_attach_scale(fid["s_gradtop"], fid["x"], 1)
+        HDF5.h5ds_attach_scale(fid["s_gradtop"], fid["y"], 0)
     end
 end
 
@@ -150,6 +164,8 @@ function load_domain!(m::Model, i)
         f.s[g.is:g.ie, g.js:g.je, g.ks:g.ke ] = read(fid, "s")
         f.s_bot[g.is:g.ie, g.js:g.je] = read(fid, "s_bot")
         f.s_gradbot[g.is:g.ie, g.js:g.je] = read(fid, "s_gradbot")
+        f.s_top[g.is:g.ie, g.js:g.je] = read(fid, "s_top")
+        f.s_gradtop[g.is:g.ie, g.js:g.je] = read(fid, "s_gradtop")
     end
 end
 

@@ -22,6 +22,7 @@ for i in 1:n_domains
     rand2d .-= mean(rand2d)
     s[:, :, 1] .+= rand2d[:, :]
     f.s_gradbot[:, :] .= - 0.1 / settings[i]["fields"]["visc"]
+    f.s_gradtop[:, :] .= 0.003
     @tullio s[i, j, k] += 0.003 * z[k]
 end
 
