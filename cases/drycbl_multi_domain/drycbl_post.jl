@@ -23,7 +23,7 @@ function calc_scalar_dissipation!(
     is, ie, js, je, ks, ke)
 
     @fast3d begin
-        @fd (slngrad, s) s = gradx(gradx(s))^2 + grady(grady(s))^2 + gradz(gradz(s))^2
+        @fd (slngrad, s) slngrad = log(gradx(gradx(s))^2 + grady(grady(s))^2 + gradz(gradz(s))^2)
     end
 end
 
@@ -33,3 +33,12 @@ calc_scalar_dissipation!(
     slngrad, f2.s,
     g2.dxi, g2.dyi, g2.dzi, g2.dzhi,
     g2.is, g2.ie, g2.js, g2.je, g2.ks, g2.ke)
+
+x_p = @view g2.x[g2.is:g2.ie]
+y_p = @view g2.y[g2.js:g2.je]
+slngrad_p = @view slngrad[g2.is:g2.ie, g2.js:g2.je, 49]
+
+figure()
+pcolormesh(x_p, y_p, slngrad_p, vmin=-30, vmax=-10, shading="nearest")
+show()
+display(gcf())
