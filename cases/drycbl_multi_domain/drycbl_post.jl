@@ -39,6 +39,9 @@ y_p = @view g2.y[g2.js:g2.je]
 slngrad_p = @view slngrad[g2.is:g2.ie, g2.js:g2.je, 49]
 
 figure()
-pcolormesh(x_p, y_p, slngrad_p, vmin=-30, vmax=-10, shading="nearest")
+pcolormesh(x_p, y_p, slngrad_p, vmin=-28, vmax=-11, shading="nearest", cmap=plt.cm.magma)
+xlabel("x (m)")
+ylabel("y (m)")
+colorbar()
 show()
 display(gcf())
