@@ -34,14 +34,26 @@ calc_scalar_dissipation!(
     g2.dxi, g2.dyi, g2.dzi, g2.dzhi,
     g2.is, g2.ie, g2.js, g2.je, g2.ks, g2.ke)
 
-x_p = @view g2.x[g2.is:g2.ie]
-y_p = @view g2.y[g2.js:g2.je]
-slngrad_p = @view slngrad[g2.is:g2.ie, g2.js:g2.je, 49]
+x = @view g2.x[g2.is:g2.ie]
+y = @view g2.y[g2.js:g2.je]
+z = @view g2.z[g2.ks:g2.ke]
+slngrad_xy = @view slngrad[g2.is:g2.ie, g2.js:g2.je, 50]
+slngrad_xz = @view slngrad[g2.is:g2.ie, g2.js, g2.ks:g2.ke]
 
 figure()
-pcolormesh(x_p, y_p, slngrad_p, vmin=-28, vmax=-11, shading="nearest", cmap=plt.cm.magma)
+pcolormesh(x, y, slngrad_xy', vmin=-28, vmax=-11, shading="nearest", cmap=plt.cm.magma)
 xlabel("x (m)")
 ylabel("y (m)")
 colorbar()
-show()
+tight_layout()
 display(gcf())
+
+figure()
+pcolormesh(x, z, slngrad_xz', vmin=-28, vmax=-11, shading="nearest", cmap=plt.cm.magma)
+xlabel("x (m)")
+ylabel("z (m)")
+colorbar()
+tight_layout()
+display(gcf())
+
+show()
