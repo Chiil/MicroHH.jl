@@ -7,12 +7,12 @@ end
 
 
 ## Settings.
-float_type = Float64
+float_type = Float32
 
 settings_grid = Dict{String, Any}(
-    "itot" => 128,
-    "jtot" => 128,
-    "ktot" => 128,
+    "itot" => 256,
+    "jtot" => 256,
+    "ktot" => 256,
 
     "xsize" => 3200.,
     "ysize" => 3200.,
@@ -32,8 +32,8 @@ settings_timeloop = Dict(
     "start_time" => 0.,
     "end_time" => 3600.,
     "save_time" => 900.,
-    "check_time" => 50.,
-    "dt" => 5.)
+    "check_time" => 2.,
+    "dt" => 2.)
 
 settings_multidomain = Dict(
     "enable_nudge" => false)
