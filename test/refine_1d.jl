@@ -12,6 +12,8 @@ function refine_field_nn!(hi, lo, n_hi, n_lo)
         @tullio hi[2(i-1)+l] = lo[i] (l in 1:2)
     elseif n_hi ÷ n_lo == 3
         @tullio hi[3(i-1)+l] = lo[i] (l in 1:3)
+    else
+        throw(DomainError(n_hi/n_lo, "Refinement should be 2 or 3"))
     end
 end
 
@@ -31,6 +33,8 @@ function refine_field_int!(hi, lo, n_hi, n_lo)
             hi[i_hi+1] = lo[i_lo]
             hi[i_hi+2] = 2//3*lo[i_lo] + 1//3*lo[i_lo+1]
         end
+    else
+        throw(DomainError(n_hi/n_lo, "Refinement should be 2 or 3"))
     end
 end
 
