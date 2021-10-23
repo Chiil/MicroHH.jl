@@ -12,9 +12,9 @@ function refine_field_nn!(hi, lo)
 end
 
 function refine_field_int!(hi, lo)
-    for i in 0:2:size(hi, dims=1)-3
-        i_lo = i÷2+1
-        i_hi = i+1
+    for i in 0:2:size(hi, 1)-3
+        i_lo = i÷2+2
+        i_hi = i+2
         hi[i_hi  ] = 3/4*lo[i_lo] + 1/4*lo[i_lo-1]
         hi[i_hi+1] = 3/4*lo[i_lo] + 1/4*lo[i_lo+1]
     end
@@ -34,10 +34,10 @@ a_lo_gc = zeros(n_lo+2)
 a_hi_gc[2:n_hi+1] = a_hi[:]
 a_lo_gc[2:n_lo+1] = a_lo[:]
 
-a_hi_gc[1] = a_hi[end-1]
-a_hi_gc[end] = a_hi[2]
-a_lo_gc[1] = a_lo[end-1]
-a_lo_gc[end] = a_lo[2]
+a_hi_gc[1] = a_hi_gc[end-1]
+a_hi_gc[end] = a_hi_gc[2]
+a_lo_gc[1] = a_lo_gc[end-1]
+a_lo_gc[end] = a_lo_gc[2]
 
 
 ## Compute.
