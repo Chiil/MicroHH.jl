@@ -80,4 +80,5 @@ plot(x_lo, a_lo, "k:")
 display(gcf())
 show()
 
-println(a_lo)
+println(mean(a_lo) ≈ mean(a_hi_nn))
+println(mean(a_lo) ≈ mean(a_hi_int))
