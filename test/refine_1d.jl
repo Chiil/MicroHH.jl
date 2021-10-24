@@ -85,16 +85,16 @@ function refine_field_int3!(hi, hi_tmp, lo, n_hi, n_lo)
         @tturbo for i in 0:3:size(hi, 1)-3
             i_lo = i÷3+2
             i_hi = i+2
-            hi[i_hi  ] = lo[i_lo]
-            hi[i_hi+1] = lo[i_lo]
-            hi[i_hi+2] = lo[i_lo]
+            hi_tmp[i_hi  ] = lo[i_lo]
+            hi_tmp[i_hi+1] = lo[i_lo]
+            hi_tmp[i_hi+2] = lo[i_lo]
         end
 
-        hi[1] = hi[end-1]
-        hi[end] = hi[2]
+        hi_tmp[1] = hi_tmp[end-1]
+        hi_tmp[end] = hi_tmp[2]
 
         @tturbo for i in 2:size(hi, 1)-1
-            hi[i] = 1//4*hi[i-1] + 1//2*hi[i] + 1//4*hi[i+1]
+            hi[i] = 1//3*hi_tmp[i-1] + 1//3*hi_tmp[i] + 1//3*hi_tmp[i+1]
         end
     else
         throw(DomainError(n_hi/n_lo, "Refinement should be 2 or 3"))
@@ -103,8 +103,8 @@ end
 
 
 ## Set up the grids.
-n_hi = 32
-n_lo = n_hi ÷ 2
+n_hi = 48
+n_lo = n_hi ÷ 3
 
 a_lo = rand(n_lo)
 a_hi = zeros(n_hi)
