@@ -14,10 +14,9 @@ function refine_field_int!(hi, hi_tmp, lo, n_hi, n_lo)
                 j_lo = j + 2
                 i_hi = i*2 + 2
                 j_hi = j*2 + 2
-                hi_tmp[i_hi  , j_hi  ] = lo[i_lo, j_lo]
-                hi_tmp[i_hi+1, j_hi  ] = lo[i_lo, j_lo]
-                hi_tmp[i_hi  , j_hi+1] = lo[i_lo, j_lo]
-                hi_tmp[i_hi+1, j_hi+1] = lo[i_lo, j_lo]
+                for jj in 0:1, ii in 0:1
+                    hi_tmp[i_hi+ii, j_hi+jj] = lo[i_lo, j_lo]
+                end
             end
         end
 
@@ -42,15 +41,9 @@ function refine_field_int!(hi, hi_tmp, lo, n_hi, n_lo)
                 j_lo = j + 2
                 i_hi = i*3 + 2
                 j_hi = j*3 + 2
-                hi_tmp[i_hi  , j_hi  ] = lo[i_lo, j_lo]
-                hi_tmp[i_hi+1, j_hi  ] = lo[i_lo, j_lo]
-                hi_tmp[i_hi+2, j_hi  ] = lo[i_lo, j_lo]
-                hi_tmp[i_hi  , j_hi+1] = lo[i_lo, j_lo]
-                hi_tmp[i_hi+1, j_hi+1] = lo[i_lo, j_lo]
-                hi_tmp[i_hi+2, j_hi+1] = lo[i_lo, j_lo]
-                hi_tmp[i_hi  , j_hi+2] = lo[i_lo, j_lo]
-                hi_tmp[i_hi+1, j_hi+2] = lo[i_lo, j_lo]
-                hi_tmp[i_hi+2, j_hi+2] = lo[i_lo, j_lo]
+                for jj in 0:2, ii in 0:2
+                    hi_tmp[i_hi+ii, j_hi+jj] = lo[i_lo, j_lo]
+                end
             end
         end
 
@@ -73,7 +66,7 @@ end
 
 
 ## Set up the grids.
-n_hi = 36
+n_hi = 12
 n_lo = n_hi ÷ 3
 
 a_lo = rand(n_lo, n_lo)
