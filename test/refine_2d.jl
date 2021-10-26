@@ -26,11 +26,15 @@ function refine_field_int!(hi, hi_tmp, lo, n_hi, n_lo)
         hi_tmp[:, 1] = hi_tmp[:, end-1]
         hi_tmp[:, end] = hi_tmp[:, 2]
 
-        hi[:, :] = hi_tmp[:, :]
+        # hi[:, :] = hi_tmp[:, :]
 
-        # @tturbo for i in 2:size(hi, 1)-1
-        #     hi[i] = 1//4*hi_tmp[i-1] + 1//2*hi_tmp[i] + 1//4*hi_tmp[i+1]
-        # end
+        @tturbo for j in 2:size(hi, 2)-1
+            for i in 2:size(hi, 1)-1
+                hi[i, j] = ( 1//16*hi_tmp[i-1, j-1] + 1//8*hi_tmp[i, j-1] + 1//16*hi_tmp[i+1, j-1]
+                           + 1// 8*hi_tmp[i-1, j  ] + 1//4*hi_tmp[i, j  ] + 1// 8*hi_tmp[i+1, j  ]
+                           + 1//16*hi_tmp[i-1, j+1] + 1//8*hi_tmp[i, j+1] + 1//16*hi_tmp[i+1, j+1] )
+            end
+        end
     elseif n_hi ÷ n_lo == 3
         @tturbo for j in 0:size(lo, 2)-3
             for i in 0:size(lo, 1)-3
@@ -103,10 +107,11 @@ println(mean(a_lo) ≈ mean(a_hi_int))
 
 
 ## Plot the output.
-# figure()
-# plot(x_hi, a_hi_int[1, :], "C1-o")
-# plot(x_lo, a_lo[1, :], "k:")
-# display(gcf())
+figure()
+plot(x_hi, a_hi_int[1, :], "C1-o")
+plot(x_hi, a_hi_int[2, :], "C2-+")
+plot(x_lo, a_lo[1, :], "k:")
+display(gcf())
 
 xh_hi = 0:dx_hi:1 |> collect
 xh_lo = 0:dx_lo:1 |> collect
