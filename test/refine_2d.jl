@@ -8,12 +8,12 @@ using PyPlot
 ## Create the refine function.
 function refine_field_int!(hi, hi_tmp, lo, n_hi, n_lo)
     if n_hi ÷ n_lo == 2
-        @tturbo for j in 0:2:size(hi, 2)-3
-            for i in 0:2:size(hi, 1)-3
-                i_lo = i÷2 + 2
-                j_lo = j÷2 + 2
-                i_hi = i + 2
-                j_hi = j + 2
+        @tturbo for j in 0:size(lo, 2)-3
+            for i in 0:size(lo, 1)-3
+                i_lo = i + 2
+                j_lo = j + 2
+                i_hi = i*2 + 2
+                j_hi = j*2 + 2
                 hi_tmp[i_hi  , j_hi  ] = lo[i_lo, j_lo]
                 hi_tmp[i_hi+1, j_hi  ] = lo[i_lo, j_lo]
                 hi_tmp[i_hi  , j_hi+1] = lo[i_lo, j_lo]
@@ -32,12 +32,12 @@ function refine_field_int!(hi, hi_tmp, lo, n_hi, n_lo)
         #     hi[i] = 1//4*hi_tmp[i-1] + 1//2*hi_tmp[i] + 1//4*hi_tmp[i+1]
         # end
     elseif n_hi ÷ n_lo == 3
-        for j in 0:3:size(hi, 2)-3
-            for i in 0:3:size(hi, 1)-3
-                i_lo = i÷3 + 2
-                j_lo = j÷3 + 2
-                i_hi = i + 2
-                j_hi = j + 2
+        @tturbo for j in 0:size(lo, 2)-3
+            for i in 0:size(lo, 1)-3
+                i_lo = i + 2
+                j_lo = j + 2
+                i_hi = i*3 + 2
+                j_hi = j*3 + 2
                 hi_tmp[i_hi  , j_hi  ] = lo[i_lo, j_lo]
                 hi_tmp[i_hi+1, j_hi  ] = lo[i_lo, j_lo]
                 hi_tmp[i_hi+2, j_hi  ] = lo[i_lo, j_lo]
@@ -67,7 +67,7 @@ end
 
 
 ## Set up the grids.
-n_hi = 12
+n_hi = 36
 n_lo = n_hi ÷ 2
 
 a_lo = rand(n_lo, n_lo)
