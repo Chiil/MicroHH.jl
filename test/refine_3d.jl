@@ -9,24 +9,22 @@ using PyPlot
 ## Create the refine functions.
 function refine_field_int!(hi, hi_tmp, lo, n_hi, n_lo)
     if n_hi ÷ n_lo == 2
-        @tturbo for k in 0:size(lo, 3)-3
-            for j in 0:size(lo, 2)-3
-                for i in 0:size(lo, 1)-3
-                    i_lo = i + 2
-                    j_lo = j + 2
-                    k_lo = k + 2
-                    i_hi = i*2 + 2
-                    j_hi = j*2 + 2
-                    k_hi = k*2 + 2
-                    for kk in 0:1, jj in 0:1, ii in 0:1
-                        #hi_tmp[i_hi+ii, j_hi+jj, k_hi+kk] = lo[i_lo, j_lo, k_lo]
-                        hi[i_hi+ii, j_hi+jj, k_hi+kk] = lo[i_lo, j_lo, k_lo]
-                    end
-                end
+        @tturbo for k in 0:size(lo, 3)-3, j in 0:size(lo, 2)-3, i in 0:size(lo, 1)-3
+            i_lo = i + 2
+            j_lo = j + 2
+            k_lo = k + 2
+            i_hi = i*2 + 2
+            j_hi = j*2 + 2
+            k_hi = k*2 + 2
+            for kk in 0:1, jj in 0:1, ii in 0:1
+                hi_tmp[i_hi+ii, j_hi+jj, k_hi+kk] = lo[i_lo, j_lo, k_lo]
+                # hi[i_hi+ii, j_hi+jj, k_hi+kk] = lo[i_lo, j_lo, k_lo]
             end
         end
 
-        #hi[:, :, :] = hi_tmp[:, :, :]
+        @tturbo for k in 2:size(hi, 3)-1, j in 2:size(hi, 2)-1, i in 2:size(hi, 1)-1
+            hi[i, j, k] = hi_tmp[i, j, k]
+        end
 
         # hi_tmp[1, :] = hi_tmp[end-1, :]
         # hi_tmp[end, :] = hi_tmp[2, :]
@@ -41,24 +39,22 @@ function refine_field_int!(hi, hi_tmp, lo, n_hi, n_lo)
         #     end
         # end
     elseif n_hi ÷ n_lo == 3
-        @tturbo for k in 0:size(lo, 3)-3
-            for j in 0:size(lo, 2)-3
-                for i in 0:size(lo, 1)-3
-                    i_lo = i + 2
-                    j_lo = j + 2
-                    k_lo = k + 2
-                    i_hi = i*3 + 2
-                    j_hi = j*3 + 2
-                    k_hi = k*3 + 2
-                    for kk in 0:2, jj in 0:2, ii in 0:2
-                        #hi_tmp[i_hi+ii, j_hi+jj, k_hi+kk] = lo[i_lo, j_lo, k_lo]
-                        hi[i_hi+ii, j_hi+jj, k_hi+kk] = lo[i_lo, j_lo, k_lo]
-                    end
-                end
+        @tturbo for k in 0:size(lo, 3)-3, j in 0:size(lo, 2)-3, i in 0:size(lo, 1)-3
+            i_lo = i + 2
+            j_lo = j + 2
+            k_lo = k + 2
+            i_hi = i*3 + 2
+            j_hi = j*3 + 2
+            k_hi = k*3 + 2
+            for kk in 0:2, jj in 0:2, ii in 0:2
+                hi_tmp[i_hi+ii, j_hi+jj, k_hi+kk] = lo[i_lo, j_lo, k_lo]
+                # hi[i_hi+ii, j_hi+jj, k_hi+kk] = lo[i_lo, j_lo, k_lo]
             end
         end
 
-        #hi[:, :, :] = hi_tmp[:, :, :]
+        @tturbo for k in 2:size(hi, 3)-1, j in 2:size(hi, 2)-1, i in 2:size(hi, 1)-1
+            hi[i, j, k] = hi_tmp[i, j, k]
+        end
 
         # hi_tmp[1, :] = hi_tmp[end-1, :]
         # hi_tmp[end, :] = hi_tmp[2, :]
