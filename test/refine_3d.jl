@@ -6,7 +6,7 @@ using BenchmarkTools
 using PyPlot
 
 
-## Create the refine function.
+## Create the refine functions.
 function refine_field_int!(hi, hi_tmp, lo, n_hi, n_lo)
     if n_hi ÷ n_lo == 2
         @tturbo for k in 0:size(lo, 3)-3
@@ -83,6 +83,7 @@ function refine_field_int_ref!(hi, hi_tmp, lo, x_hi, x_lo, n_hi, n_lo)
     hi[2:end-1, 2:end-1, 2:end-1] = interp(x_hi[2:end-1], x_hi[2:end-1], x_hi[2:end-1])
 end
 
+
 ## Set up the grids.
 n_hi = 384
 n_lo = n_hi ÷ 3
@@ -96,7 +97,8 @@ a_lo_gc = zeros(n_lo+2, n_lo+2, n_lo+2)
 a_hi_gc[2:n_hi+1, 2:n_hi+1, 2:n_hi+1] = a_hi[:, :, :]
 a_lo_gc[2:n_lo+1, 2:n_lo+1, 2:n_lo+1] = a_lo[:, :, :]
 
-# Cyclic BCs in all 3 directions.
+
+## Cyclic BCs in all 3 directions.
 a_hi_gc[1, :, :] = a_hi_gc[end-1, :, :]
 a_hi_gc[end, :, :] = a_hi_gc[2, :, :]
 a_hi_gc[:, 1, :] = a_hi_gc[:, end-1, :]
@@ -121,10 +123,12 @@ xh_lo = 0:dx_lo:1 |> collect
 x_hi_gc = -dx_hi/2:dx_hi:1+dx_hi |> collect
 x_lo_gc = -dx_lo/2:dx_lo:1+dx_lo |> collect
 
+
 ## Compute.
 a_hi_tmp = zeros(size(a_hi_gc))
 @btime refine_field_int!(a_hi_gc, a_hi_tmp, a_lo_gc, n_hi, n_lo)
 a_hi_int = a_hi_gc[2:end-1, 2:end-1, 2:end-1]
+
 
 ## Compute a reference using Interpolations.jl
 a_hi_tmp = zeros(size(a_hi_gc))
