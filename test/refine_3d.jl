@@ -42,18 +42,9 @@ function refine_field_int!(hi, hi_tmp, lo, n_hi, n_lo)
         @tturbo for k in 2:size(hi, 3)-1, j in 2:size(hi, 2)-1, i in 2:size(hi, 1)-1
             hi[i, j, k] = 0
             for kk in -1:1, jj in -1:1, ii in -1:1
-                # hi[i, j, k] += (1//2)^(3 + abs(ii) + abs(jj) + abs(kk)) * hi_tmp[i+ii, j+jj, k+kk]
                 hi[i, j, k] += coef[ii, jj, kk] * hi_tmp[i+ii, j+jj, k+kk]
             end
         end
-
-        # @tturbo for j in 2:size(hi, 2)-1
-        #     for i in 2:size(hi, 1)-1
-        #         hi[i, j] = ( 1//16*hi_tmp[i-1, j-1] + 1//8*hi_tmp[i, j-1] + 1//16*hi_tmp[i+1, j-1]
-        #                    + 1// 8*hi_tmp[i-1, j  ] + 1//4*hi_tmp[i, j  ] + 1// 8*hi_tmp[i+1, j  ]
-        #                    + 1//16*hi_tmp[i-1, j+1] + 1//8*hi_tmp[i, j+1] + 1//16*hi_tmp[i+1, j+1] )
-        #     end
-        # end
     elseif n_hi ÷ n_lo == 3
         @tturbo for k in 0:size(lo, 3)-3, j in 0:size(lo, 2)-3, i in 0:size(lo, 1)-3
             i_lo = i + 2
