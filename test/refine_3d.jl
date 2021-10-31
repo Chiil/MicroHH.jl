@@ -79,9 +79,12 @@ end
 
 
 function refine_field_int_ref!(hi, hi_tmp, lo, x_hi, x_lo, n_hi, n_lo)
-    interp = LinearInterpolation((x_lo, x_lo, x_lo), lo)
-    # interp = interpolate((x_lo, x_lo, x_lo), lo, (Gridded(Linear()), Gridded(Linear()), Gridded(Linear())))
+    # interp = LinearInterpolation((x_lo, x_lo, x_lo), lo)
+    interp = interpolate((x_lo, x_lo, x_lo), lo, (Gridded(Linear()), Gridded(Linear()), Gridded(Linear())))
     # interp = interpolate((x_lo, x_lo, x_lo), lo, (Gridded(Constant()), Gridded(Constant()), Gridded(Constant())))
+    # dx_lo = x_lo[2] - x_lo[1]
+    # interp = scale(interpolate(lo, (BSpline(Linear()), BSpline(Linear()), BSpline(Linear()))),
+    #                -dx_lo/2:dx_lo:1+dx_lo, -dx_lo/2:dx_lo:1+dx_lo, -dx_lo/2:dx_lo:1+dx_lo)
     hi[2:end-1, 2:end-1, 2:end-1] = interp(x_hi[2:end-1], x_hi[2:end-1], x_hi[2:end-1])
 end
 
