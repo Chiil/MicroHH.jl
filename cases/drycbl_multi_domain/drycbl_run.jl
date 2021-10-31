@@ -16,9 +16,11 @@ m = Model("drycbl", n_domains, settings, Float32)
 load_model!(m)
 
 
-## Run the model.
+## Prepare the time loop.
 in_progress = prepare_model!(m)
 
+
+## Start the time loop.
 while in_progress
     global in_progress = step_model!(m)
     # @profile global in_progress = step_model!(m)
