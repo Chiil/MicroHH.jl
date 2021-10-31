@@ -1,6 +1,7 @@
 ## Load the packages.
 using LoopVectorization
 using Interpolations
+using OffsetArrays
 using Statistics
 using BenchmarkTools
 using PyPlot
@@ -22,14 +23,29 @@ function refine_field_int!(hi, hi_tmp, lo, n_hi, n_lo)
             end
         end
 
-        @tturbo for k in 2:size(hi, 3)-1, j in 2:size(hi, 2)-1, i in 2:size(hi, 1)-1
-            hi[i, j, k] = hi_tmp[i, j, k]
+        # @tturbo for k in 2:size(hi, 3)-1, j in 2:size(hi, 2)-1, i in 2:size(hi, 1)-1
+        #     hi[i, j, k] = hi_tmp[i, j, k]
+        # end
+
+        @tturbo a_hi_tmp[1, :, :] = a_hi_tmp[end-1, :, :]
+        @tturbo a_hi_tmp[end, :, :] = a_hi_tmp[2, :, :]
+        @tturbo a_hi_tmp[:, 1, :] = a_hi_tmp[:, end-1, :]
+        @tturbo a_hi_tmp[:, end, :] = a_hi_tmp[:, 2, :]
+        @tturbo a_hi_tmp[:, :, 1] = a_hi_tmp[:, :, end-1, :]
+        @tturbo a_hi_tmp[:, :, end] = a_hi_tmp[:, :, 2]
+
+        coef = OffsetArray(zeros(3, 3, 3), -1:1, -1:1, -1:1)
+        for kk in -1:1, jj in -1:1, ii in -1:1
+            coef[ii, jj, kk] = (1//2)^(3 + abs(ii) + abs(jj) + abs(kk))
         end
 
-        # hi_tmp[1, :] = hi_tmp[end-1, :]
-        # hi_tmp[end, :] = hi_tmp[2, :]
-        # hi_tmp[:, 1] = hi_tmp[:, end-1]
-        # hi_tmp[:, end] = hi_tmp[:, 2]
+        @tturbo for k in 2:size(hi, 3)-1, j in 2:size(hi, 2)-1, i in 2:size(hi, 1)-1
+            hi[i, j, k] = 0
+            for kk in -1:1, jj in -1:1, ii in -1:1
+                # hi[i, j, k] += (1//2)^(3 + abs(ii) + abs(jj) + abs(kk)) * hi_tmp[i+ii, j+jj, k+kk]
+                hi[i, j, k] += coef[ii, jj, kk] * hi_tmp[i+ii, j+jj, k+kk]
+            end
+        end
 
         # @tturbo for j in 2:size(hi, 2)-1
         #     for i in 2:size(hi, 1)-1
@@ -52,22 +68,23 @@ function refine_field_int!(hi, hi_tmp, lo, n_hi, n_lo)
             end
         end
 
-        @tturbo for k in 2:size(hi, 3)-1, j in 2:size(hi, 2)-1, i in 2:size(hi, 1)-1
-            hi[i, j, k] = hi_tmp[i, j, k]
-        end
-
-        # hi_tmp[1, :] = hi_tmp[end-1, :]
-        # hi_tmp[end, :] = hi_tmp[2, :]
-        # hi_tmp[:, 1] = hi_tmp[:, end-1]
-        # hi_tmp[:, end] = hi_tmp[:, 2]
-
-        # @tturbo for j in 2:size(hi, 2)-1
-        #     for i in 2:size(hi, 1)-1
-        #         hi[i, j] = ( 1//9*hi_tmp[i-1, j-1] + 1//9*hi_tmp[i, j-1] + 1//9*hi_tmp[i+1, j-1]
-        #                    + 1//9*hi_tmp[i-1, j  ] + 1//9*hi_tmp[i, j  ] + 1//9*hi_tmp[i+1, j  ]
-        #                    + 1//9*hi_tmp[i-1, j+1] + 1//9*hi_tmp[i, j+1] + 1//9*hi_tmp[i+1, j+1] )
-        #     end
+        # @tturbo for k in 2:size(hi, 3)-1, j in 2:size(hi, 2)-1, i in 2:size(hi, 1)-1
+        #     hi[i, j, k] = hi_tmp[i, j, k]
         # end
+
+        @tturbo a_hi_tmp[1, :, :] = a_hi_tmp[end-1, :, :]
+        @tturbo a_hi_tmp[end, :, :] = a_hi_tmp[2, :, :]
+        @tturbo a_hi_tmp[:, 1, :] = a_hi_tmp[:, end-1, :]
+        @tturbo a_hi_tmp[:, end, :] = a_hi_tmp[:, 2, :]
+        @tturbo a_hi_tmp[:, :, 1] = a_hi_tmp[:, :, end-1, :]
+        @tturbo a_hi_tmp[:, :, end] = a_hi_tmp[:, :, 2]
+
+        @tturbo for k in 2:size(hi, 3)-1, j in 2:size(hi, 2)-1, i in 2:size(hi, 1)-1
+            hi[i, j, k] = 0
+            for kk in -1:1, jj in -1:1, ii in -1:1
+                hi[i, j, k] += 1//27*hi_tmp[i+ii, j+jj, k+kk]
+            end
+        end
     else
         throw(DomainError(n_hi/n_lo, "Refinement should be 2 or 3"))
     end
@@ -87,7 +104,7 @@ end
 
 ## Set up the grids.
 n_hi = 384
-n_lo = n_hi ÷ 3
+n_lo = n_hi ÷ 2
 
 a_lo = rand(n_lo, n_lo, n_lo)
 a_hi = zeros(n_hi, n_hi, n_hi)
