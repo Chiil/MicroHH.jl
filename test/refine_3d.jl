@@ -80,6 +80,8 @@ end
 
 function refine_field_int_ref!(hi, hi_tmp, lo, x_hi, x_lo, n_hi, n_lo)
     interp = LinearInterpolation((x_lo, x_lo, x_lo), lo)
+    # interp = interpolate((x_lo, x_lo, x_lo), lo, (Gridded(Linear()), Gridded(Linear()), Gridded(Linear())))
+    # interp = interpolate((x_lo, x_lo, x_lo), lo, (Gridded(Constant()), Gridded(Constant()), Gridded(Constant())))
     hi[2:end-1, 2:end-1, 2:end-1] = interp(x_hi[2:end-1], x_hi[2:end-1], x_hi[2:end-1])
 end
 
@@ -132,6 +134,7 @@ a_hi_int = a_hi_gc[2:end-1, 2:end-1, 2:end-1]
 
 ## Compute a reference using Interpolations.jl
 a_hi_tmp = zeros(size(a_hi_gc))
+a_hi_gc[:, :, :] .= 0.
 @btime refine_field_int_ref!(a_hi_gc, a_hi_tmp, a_lo_gc, x_hi_gc, x_lo_gc, n_hi, n_lo)
 a_hi_int_ref = a_hi_gc[2:end-1, 2:end-1, 2:end-1]
 
