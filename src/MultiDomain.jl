@@ -38,26 +38,32 @@ end
 
 # Transfer the state
 function transfer_state!(f_d::Fields, f_s::Fields, g_d::Grid, g_s::Grid)
-    interp = LinearInterpolation((g_s.xh, g_s.y, g_s.z), f_s.u)
+    interp = interpolate((g_s.xh, g_s.y, g_s.z), f_s.u, (Gridded(Linear()), Gridded(Linear()), Gridded(Linear())))
     f_d.u[g_d.is:g_d.ie, g_d.js:g_d.je, g_d.ks:g_d.ke] = interp(g_d.xh[g_d.is:g_d.ie], g_d.y[g_d.js:g_d.je], g_d.z[g_d.ks:g_d.ke])
 
-    interp = LinearInterpolation((g_s.x, g_s.yh, g_s.z), f_s.v)
+    interp = interpolate((g_s.x, g_s.yh, g_s.z), f_s.v, (Gridded(Linear()), Gridded(Linear()), Gridded(Linear())))
     f_d.v[g_d.is:g_d.ie, g_d.js:g_d.je, g_d.ks:g_d.ke] = interp(g_d.x[g_d.is:g_d.ie], g_d.yh[g_d.js:g_d.je], g_d.z[g_d.ks:g_d.ke])
 
-    interp = LinearInterpolation((g_s.x, g_s.y, g_s.zh), f_s.w)
+    interp = interpolate((g_s.x, g_s.y, g_s.zh), f_s.w, (Gridded(Linear()), Gridded(Linear()), Gridded(Linear())))
     f_d.w[g_d.is:g_d.ie, g_d.js:g_d.je, g_d.ks:g_d.keh] = interp(g_d.x[g_d.is:g_d.ie], g_d.y[g_d.js:g_d.je], g_d.zh[g_d.ks:g_d.keh])
 
-    interp = LinearInterpolation((g_s.x, g_s.y, g_s.z), f_s.s)
+    interp = interpolate((g_s.x, g_s.y, g_s.z), f_s.s, (Gridded(Linear()), Gridded(Linear()), Gridded(Linear())))
     f_d.s[g_d.is:g_d.ie, g_d.js:g_d.je, g_d.ks:g_d.ke] = interp(g_d.x[g_d.is:g_d.ie], g_d.y[g_d.js:g_d.je], g_d.z[g_d.ks:g_d.ke])
 
-    interp = LinearInterpolation((g_s.x, g_s.y, g_s.z), f_s.p)
+    interp = interpolate((g_s.x, g_s.y, g_s.z), f_s.p, (Gridded(Linear()), Gridded(Linear()), Gridded(Linear())))
     f_d.p[g_d.is:g_d.ie, g_d.js:g_d.je, g_d.ks:g_d.ke] = interp(g_d.x[g_d.is:g_d.ie], g_d.y[g_d.js:g_d.je], g_d.z[g_d.ks:g_d.ke])
 
-    interp = LinearInterpolation((g_s.x, g_s.y), f_s.s_bot)
+    interp = interpolate((g_s.x, g_s.y), f_s.s_bot, (Gridded(Linear()), Gridded(Linear())))
     f_d.s_bot[g_d.is:g_d.ie, g_d.js:g_d.je] = interp(g_d.x[g_d.is:g_d.ie], g_d.y[g_d.js:g_d.je])
 
-    interp = LinearInterpolation((g_s.x, g_s.y), f_s.s_gradbot)
+    interp = interpolate((g_s.x, g_s.y), f_s.s_gradbot, (Gridded(Linear()), Gridded(Linear())))
     f_d.s_gradbot[g_d.is:g_d.ie, g_d.js:g_d.je] = interp(g_d.x[g_d.is:g_d.ie], g_d.y[g_d.js:g_d.je])
+
+    interp = interpolate((g_s.x, g_s.y), f_s.s_top, (Gridded(Linear()), Gridded(Linear())))
+    f_d.s_top[g_d.is:g_d.ie, g_d.js:g_d.je] = interp(g_d.x[g_d.is:g_d.ie], g_d.y[g_d.js:g_d.je])
+
+    interp = interpolate((g_s.x, g_s.y), f_s.s_gradtop, (Gridded(Linear()), Gridded(Linear())))
+    f_d.s_gradtop[g_d.is:g_d.ie, g_d.js:g_d.je] = interp(g_d.x[g_d.is:g_d.ie], g_d.y[g_d.js:g_d.je])
 end
 
 
@@ -66,16 +72,16 @@ function calc_nudge_fields!(md::MultiDomain, f_d::Fields, f_s::Fields, g_d::Grid
         return
     end
 
-    interp = LinearInterpolation((g_s.xh, g_s.y, g_s.z), f_s.u)
+    interp = interpolate((g_s.xh, g_s.y, g_s.z), f_s.u, (Gridded(Linear()), Gridded(Linear()), Gridded(Linear())))
     md.u_nudge[g_d.is:g_d.ie, g_d.js:g_d.je, g_d.ks:g_d.ke] = interp(g_d.xh[g_d.is:g_d.ie], g_d.y[g_d.js:g_d.je], g_d.z[g_d.ks:g_d.ke])
 
-    interp = LinearInterpolation((g_s.x, g_s.yh, g_s.z), f_s.v)
+    interp = interpolate((g_s.x, g_s.yh, g_s.z), f_s.v, (Gridded(Linear()), Gridded(Linear()), Gridded(Linear())))
     md.v_nudge[g_d.is:g_d.ie, g_d.js:g_d.je, g_d.ks:g_d.ke] = interp(g_d.x[g_d.is:g_d.ie], g_d.yh[g_d.js:g_d.je], g_d.z[g_d.ks:g_d.ke])
 
-    interp = LinearInterpolation((g_s.x, g_s.y, g_s.zh), f_s.w)
+    interp = interpolate((g_s.x, g_s.y, g_s.zh), f_s.w, (Gridded(Linear()), Gridded(Linear()), Gridded(Linear())))
     md.w_nudge[g_d.is:g_d.ie, g_d.js:g_d.je, g_d.ks:g_d.keh] = interp(g_d.x[g_d.is:g_d.ie], g_d.y[g_d.js:g_d.je], g_d.zh[g_d.ks:g_d.keh])
 
-    interp = LinearInterpolation((g_s.x, g_s.y, g_s.z), f_s.s)
+    interp = interpolate((g_s.x, g_s.y, g_s.z), f_s.s, (Gridded(Linear()), Gridded(Linear()), Gridded(Linear())))
     md.s_nudge[g_d.is:g_d.ie, g_d.js:g_d.je, g_d.ks:g_d.ke] = interp(g_d.x[g_d.is:g_d.ie], g_d.y[g_d.js:g_d.je], g_d.z[g_d.ks:g_d.ke])
 end
 
