@@ -27,7 +27,7 @@ function refine_field_int!(hi, hi_tmp, lo, n_hi, n_lo)
         @tturbo a_hi_tmp[end, :, :] = a_hi_tmp[2, :, :]
         @tturbo a_hi_tmp[:, 1, :] = a_hi_tmp[:, end-1, :]
         @tturbo a_hi_tmp[:, end, :] = a_hi_tmp[:, 2, :]
-        @tturbo a_hi_tmp[:, :, 1] = a_hi_tmp[:, :, end-1, :]
+        @tturbo a_hi_tmp[:, :, 1] = a_hi_tmp[:, :, end-1]
         @tturbo a_hi_tmp[:, :, end] = a_hi_tmp[:, :, 2]
 
         coef = OffsetArray(zeros(3, 3), -1:1, -1:1)
@@ -60,7 +60,7 @@ function refine_field_int!(hi, hi_tmp, lo, n_hi, n_lo)
         @tturbo a_hi_tmp[end, :, :] = a_hi_tmp[2, :, :]
         @tturbo a_hi_tmp[:, 1, :] = a_hi_tmp[:, end-1, :]
         @tturbo a_hi_tmp[:, end, :] = a_hi_tmp[:, 2, :]
-        @tturbo a_hi_tmp[:, :, 1] = a_hi_tmp[:, :, end-1, :]
+        @tturbo a_hi_tmp[:, :, 1] = a_hi_tmp[:, :, end-1]
         @tturbo a_hi_tmp[:, :, end] = a_hi_tmp[:, :, 2]
 
         @tturbo for k in 2:size(hi, 3)-1, j in 2:size(hi, 2)-1, i in 2:size(hi, 1)-1
@@ -82,8 +82,8 @@ end
 
 
 ## Set up the grids.
-n_hi = 24
-n_lo = n_hi ÷ 3
+n_hi = 384
+n_lo = n_hi ÷ 2
 
 a_lo = rand(n_lo, n_lo, n_lo)
 a_hi = zeros(n_hi, n_hi, n_hi)
@@ -100,14 +100,14 @@ a_hi_gc[1, :, :] = a_hi_gc[end-1, :, :]
 a_hi_gc[end, :, :] = a_hi_gc[2, :, :]
 a_hi_gc[:, 1, :] = a_hi_gc[:, end-1, :]
 a_hi_gc[:, end, :] = a_hi_gc[:, 2, :]
-a_hi_gc[:, :, 1] = a_hi_gc[:, :, end-1, :]
+a_hi_gc[:, :, 1] = a_hi_gc[:, :, end-1]
 a_hi_gc[:, :, end] = a_hi_gc[:, :, 2]
 
 a_lo_gc[1, :, :] = a_lo_gc[end-1, :, :]
 a_lo_gc[end, :, :] = a_lo_gc[2, :, :]
 a_lo_gc[:, 1, :] = a_lo_gc[:, end-1, :]
 a_lo_gc[:, end, :] = a_lo_gc[:, 2, :]
-a_lo_gc[:, :, 1] = a_lo_gc[:, :, end-1, :]
+a_lo_gc[:, :, 1] = a_lo_gc[:, :, end-1]
 a_lo_gc[:, :, end] = a_lo_gc[:, :, 2]
 
 
