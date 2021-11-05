@@ -23,12 +23,14 @@ function refine_field_int!(hi, hi_tmp, lo, n_hi, n_lo)
             end
         end
 
-        @tturbo a_hi_tmp[1, :, :] = a_hi_tmp[end-1, :, :]
-        @tturbo a_hi_tmp[end, :, :] = a_hi_tmp[2, :, :]
-        @tturbo a_hi_tmp[:, 1, :] = a_hi_tmp[:, end-1, :]
-        @tturbo a_hi_tmp[:, end, :] = a_hi_tmp[:, 2, :]
-        @tturbo a_hi_tmp[:, :, 1] = a_hi_tmp[:, :, end-1]
-        @tturbo a_hi_tmp[:, :, end] = a_hi_tmp[:, :, 2]
+        @views begin
+            @tturbo a_hi_tmp[1, :, :] .= a_hi_tmp[end-1, :, :]
+            @tturbo a_hi_tmp[end, :, :] .= a_hi_tmp[2, :, :]
+            @tturbo a_hi_tmp[:, 1, :] .= a_hi_tmp[:, end-1, :]
+            @tturbo a_hi_tmp[:, end, :] .= a_hi_tmp[:, 2, :]
+            @tturbo a_hi_tmp[:, :, 1] .= a_hi_tmp[:, :, end-1]
+            @tturbo a_hi_tmp[:, :, end] .= a_hi_tmp[:, :, 2]
+        end
 
         coef = OffsetArray(zeros(3, 3), -1:1, -1:1)
         for kk in -1:1, jj in -1:1
@@ -56,12 +58,14 @@ function refine_field_int!(hi, hi_tmp, lo, n_hi, n_lo)
             end
         end
 
-        @tturbo a_hi_tmp[1, :, :] = a_hi_tmp[end-1, :, :]
-        @tturbo a_hi_tmp[end, :, :] = a_hi_tmp[2, :, :]
-        @tturbo a_hi_tmp[:, 1, :] = a_hi_tmp[:, end-1, :]
-        @tturbo a_hi_tmp[:, end, :] = a_hi_tmp[:, 2, :]
-        @tturbo a_hi_tmp[:, :, 1] = a_hi_tmp[:, :, end-1]
-        @tturbo a_hi_tmp[:, :, end] = a_hi_tmp[:, :, 2]
+        @views begin
+            @tturbo a_hi_tmp[1, :, :] .= a_hi_tmp[end-1, :, :]
+            @tturbo a_hi_tmp[end, :, :] .= a_hi_tmp[2, :, :]
+            @tturbo a_hi_tmp[:, 1, :] .= a_hi_tmp[:, end-1, :]
+            @tturbo a_hi_tmp[:, end, :] .= a_hi_tmp[:, 2, :]
+            @tturbo a_hi_tmp[:, :, 1] .= a_hi_tmp[:, :, end-1]
+            @tturbo a_hi_tmp[:, :, end] .= a_hi_tmp[:, :, 2]
+        end
 
         @tturbo for k in 2:size(hi, 3)-1, j in 2:size(hi, 2)-1, i in 2:size(hi, 1)-1
             hi[i, j, k] = 0
