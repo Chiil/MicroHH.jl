@@ -23,10 +23,6 @@ function refine_field_int!(hi, hi_tmp, lo, n_hi, n_lo)
             end
         end
 
-        # @tturbo for k in 2:size(hi, 3)-1, j in 2:size(hi, 2)-1, i in 2:size(hi, 1)-1
-        #     hi[i, j, k] = hi_tmp[i, j, k]
-        # end
-
         @tturbo a_hi_tmp[1, :, :] = a_hi_tmp[end-1, :, :]
         @tturbo a_hi_tmp[end, :, :] = a_hi_tmp[2, :, :]
         @tturbo a_hi_tmp[:, 1, :] = a_hi_tmp[:, end-1, :]
@@ -42,7 +38,7 @@ function refine_field_int!(hi, hi_tmp, lo, n_hi, n_lo)
         @tturbo for k in 2:size(hi, 3)-1, j in 2:size(hi, 2)-1, i in 2:size(hi, 1)-1
             hi[i, j, k] = 0
             for kk in -1:1, jj in -1:1
-                hi[i, j, k] += coef[ii, jj, kk] * hi_tmp[i, j+jj, k+kk]
+                hi[i, j, k] += coef[jj, kk] * hi_tmp[i, j+jj, k+kk]
             end
         end
     elseif n_hi ÷ n_lo == 3
@@ -59,10 +55,6 @@ function refine_field_int!(hi, hi_tmp, lo, n_hi, n_lo)
                 hi_tmp[i_hi+2, j_hi+jj, k_hi+kk] = lo[i_lo+1, j_lo, k_lo]
             end
         end
-
-        # @tturbo for k in 2:size(hi, 3)-1, j in 2:size(hi, 2)-1, i in 2:size(hi, 1)-1
-        #      hi[i, j, k] = hi_tmp[i, j, k]
-        # end
 
         @tturbo a_hi_tmp[1, :, :] = a_hi_tmp[end-1, :, :]
         @tturbo a_hi_tmp[end, :, :] = a_hi_tmp[2, :, :]
@@ -82,7 +74,6 @@ function refine_field_int!(hi, hi_tmp, lo, n_hi, n_lo)
     end
 end
 
-
 function refine_field_int_ref!(hi, hi_tmp, lo, x_hi, xh_hi, x_lo, xh_lo, n_hi, n_lo)
     interp = interpolate((xh_lo, x_lo, x_lo), lo, (Gridded(Linear()), Gridded(Linear()), Gridded(Linear())))
     # interp = interpolate((xh_lo, x_lo, x_lo), lo, (Gridded(Constant()), Gridded(Constant()), Gridded(Constant())))
@@ -91,8 +82,8 @@ end
 
 
 ## Set up the grids.
-n_hi = 16
-n_lo = n_hi ÷ 2
+n_hi = 24
+n_lo = n_hi ÷ 3
 
 a_lo = rand(n_lo, n_lo, n_lo)
 a_hi = zeros(n_hi, n_hi, n_hi)
