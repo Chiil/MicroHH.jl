@@ -63,7 +63,7 @@ function transfer_state!(f_d::Fields, f_s::Fields, g_d::Grid, g_s::Grid)
     f_d.s_top[g_d.is:g_d.ie, g_d.js:g_d.je] .= interp(g_d.x[g_d.is:g_d.ie], g_d.y[g_d.js:g_d.je])
 
     interp = interpolate((g_s.x, g_s.y), f_s.s_gradtop, (Gridded(Linear()), Gridded(Linear())))
-    f_d.s_gradtop[g_d.is:g_d.ie, g_d.js:g_d.je] = interp(g_d.x[g_d.is:g_d.ie], g_d.y[g_d.js:g_d.je])
+    f_d.s_gradtop[g_d.is:g_d.ie, g_d.js:g_d.je] .= interp(g_d.x[g_d.is:g_d.ie], g_d.y[g_d.js:g_d.je])
 end
 
 
