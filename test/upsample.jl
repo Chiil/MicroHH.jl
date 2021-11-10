@@ -37,11 +37,15 @@ dx_lo = 1/itot_lo; dy_lo = 1/jtot_lo; dz_lo = 1/ktot_lo
 x_lo = -dx_lo/2:dx_lo:1+dx_lo |> collect
 y_lo = -dy_lo/2:dy_lo:1+dy_lo |> collect
 z_lo = -dz_lo/2:dz_lo:1+dz_lo |> collect
+xh_lo = -dx_lo:dx_lo:1 |> collect
+yh_lo = -dy_lo:dy_lo:1 |> collect
 
 dx_hi = dx_lo/ifac; dy_hi = dy_lo/jfac; dz_hi = dz_lo/kfac
 x_hi = -dx_hi/2:dx_hi:1+dx_hi |> collect
 y_hi = -dy_hi/2:dy_hi:1+dy_hi |> collect
 z_hi = -dz_hi/2:dz_hi:1+dz_hi |> collect
+xh_hi = -dx_hi:dx_hi:1 |> collect
+yh_hi = -dy_hi:dy_hi:1 |> collect
 
 
 ## Compute a reference using Interpolations.jl
@@ -58,20 +62,21 @@ println("Values equal to ref: ", a_hi_int ≈ a_hi_ref_int)
 
 
 ## Plot the output.
-xh_lo = 0:dx_lo:1 |> collect
-yh_lo = 0:dy_lo:1 |> collect
-xh_hi = 0:dx_hi:1 |> collect
-yh_hi = 0:dy_hi:1 |> collect
 x_lo_int = @view x_lo[2:end-1]
+xh_lo_int = @view xh_lo[2:end-1]
+yh_lo_int = @view yh_lo[2:end-1]
+
 x_hi_int = @view x_hi[2:end-1]
+xh_hi_int = @view xh_hi[2:end-1]
+yh_hi_int = @view yh_hi[2:end-1]
 
 figure(figsize=(12, 4))
 subplot(131)
-pcolormesh(xh_lo, yh_lo, a_lo_int[:, :, 1]', vmin=0, vmax=1)
+pcolormesh(xh_lo_int, yh_lo_int, a_lo_int[:, :, 1]', vmin=0, vmax=1)
 subplot(132)
-pcolormesh(xh_hi, yh_hi, a_hi_ref_int[:, :, 1]', vmin=0, vmax=1)
+pcolormesh(xh_hi_int, yh_hi_int, a_hi_ref_int[:, :, 1]', vmin=0, vmax=1)
 subplot(133)
-pcolormesh(xh_hi, yh_hi, a_hi_int[:, :, 1]', vmin=0, vmax=1)
+pcolormesh(xh_hi_int, yh_hi_int, a_hi_int[:, :, 1]', vmin=0, vmax=1)
 tight_layout()
 display(gcf())
 
