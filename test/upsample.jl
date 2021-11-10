@@ -63,12 +63,12 @@ println("Values equal to ref: ", a_hi_int ≈ a_hi_ref_int)
 
 ## Plot the output.
 x_lo_int = @view x_lo[2:end-1]
-xh_lo_int = @view xh_lo[2:end-1]
-yh_lo_int = @view yh_lo[2:end-1]
+xh_lo_int = @view xh_lo[2:end]
+yh_lo_int = @view yh_lo[2:end]
 
 x_hi_int = @view x_hi[2:end-1]
-xh_hi_int = @view xh_hi[2:end-1]
-yh_hi_int = @view yh_hi[2:end-1]
+xh_hi_int = @view xh_hi[2:end]
+yh_hi_int = @view yh_hi[2:end]
 
 figure(figsize=(12, 4))
 subplot(131)
@@ -83,6 +83,63 @@ display(gcf())
 figure()
 plot(x_hi_int, a_hi_int[:, 1, 1], "C0-o")
 plot(x_lo_int, a_lo_int[:, 1, 1], "k:+")
+tight_layout()
+display(gcf())
+
+show()
+
+
+## Compute a reference using Interpolations.jl
+u_lo = rand(itot_lo + 2, jtot_lo + 2, ktot_lo + 2)
+u_hi_ref = zeros(itot_lo*ifac + 2, jtot_lo*jfac + 2, ktot_lo*kfac + 2)
+u_hi = zeros(itot_lo*ifac + 2, jtot_lo*jfac + 2, ktot_lo*kfac + 2)
+
+@btime upsample_nn_ref!(u_hi_ref, u_lo, xh_hi, y_hi, z_hi, xh_lo, y_lo, z_lo)
+@btime upsample_nn!(u_hi, u_lo, itot_lo, jtot_lo, ktot_lo, ifac, jfac, kfac)
+
+u_lo_int = @view a_lo[2:end-1, 2:end-1, 2:end-1]
+u_hi_ref_int = @view a_hi_ref[2:end-1, 2:end-1, 2:end-1]
+u_hi_int = @view a_hi[2:end-1, 2:end-1, 2:end-1]
+
+println("Mean equal to lo: ", mean(u_lo_int) ≈ mean(u_hi_int))
+println("Mean equal to ref: ", mean(u_hi_ref_int) ≈ mean(u_hi_int))
+println("Values equal to ref: ", u_hi_int ≈ u_hi_ref_int)
+
+
+## Plot the output.
+# x_lo_int = @view x_lo[2:end-1]
+# xh_lo_int = @view xh_lo[2:end]
+# yh_lo_int = @view yh_lo[2:end]
+# 
+# x_hi_int = @view x_hi[2:end-1]
+# xh_hi_int = @view xh_hi[2:end]
+# yh_hi_int = @view yh_hi[2:end]
+# 
+x_lo_plot = copy(x_lo[2:end-1])
+x_hi_plot = copy(x_hi[2:end-1])
+pushfirst!(x_lo_plot, 0)
+pushfirst!(x_hi_plot, 0)
+push!(x_lo_plot, 1)
+push!(x_hi_plot, 1)
+# 
+u_lo_plot = @view u_lo[2:end, 2:end-1, 2:end-1]
+u_hi_ref_plot = @view u_hi_ref[2:end, 2:end-1, 2:end-1]
+u_hi_plot = @view u_hi[2:end, 2:end-1, 2:end-1]
+
+figure(figsize=(12, 4))
+subplot(131)
+pcolormesh(x_lo_plot, yh_lo_int, u_lo_plot[:, :, 1]', vmin=0, vmax=1)
+subplot(132)
+pcolormesh(x_hi_plot, yh_hi_int, u_hi_ref_plot[:, :, 1]', vmin=0, vmax=1)
+subplot(133)
+pcolormesh(x_hi_plot, yh_hi_int, u_hi_plot[:, :, 1]', vmin=0, vmax=1)
+tight_layout()
+display(gcf())
+
+figure()
+plot(xh_hi[2:end-1], u_hi_int[:, 1, 1], "C0-o")
+plot(xh_hi[2:end-1], u_hi_ref_int[:, 1, 1], "C1-^")
+plot(xh_lo[2:end-1], u_lo_int[:, 1, 1], "k:+")
 tight_layout()
 display(gcf())
 
