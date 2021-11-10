@@ -26,7 +26,7 @@ end
 
 
 ## Set up the grids.
-itot_lo = 256; jtot_lo = 192; ktot_lo = 128
+itot_lo = 4; jtot_lo = 2; ktot_lo = 6
 ifac = 2; jfac = 3; kfac = 2
 
 a_lo = rand(itot_lo + 2, jtot_lo + 2, ktot_lo + 2)
@@ -62,14 +62,23 @@ xh_lo = 0:dx_lo:1 |> collect
 yh_lo = 0:dy_lo:1 |> collect
 xh_hi = 0:dx_hi:1 |> collect
 yh_hi = 0:dy_hi:1 |> collect
+x_lo_int = @view x_lo[2:end-1]
+x_hi_int = @view x_hi[2:end-1]
 
 figure(figsize=(12, 4))
 subplot(131)
-pcolormesh(xh_lo, yh_lo, a_lo[2:end-1, 2:end-1, 2]', vmin=0, vmax=1)
+pcolormesh(xh_lo, yh_lo, a_lo_int[:, :, 1]', vmin=0, vmax=1)
 subplot(132)
-pcolormesh(xh_hi, yh_hi, a_hi_ref[2:end-1, 2:end-1, 2]', vmin=0, vmax=1)
+pcolormesh(xh_hi, yh_hi, a_hi_ref_int[:, :, 1]', vmin=0, vmax=1)
 subplot(133)
-pcolormesh(xh_hi, yh_hi, a_hi[2:end-1, 2:end-1, 2]', vmin=0, vmax=1)
+pcolormesh(xh_hi, yh_hi, a_hi_int[:, :, 1]', vmin=0, vmax=1)
 tight_layout()
 display(gcf())
+
+figure()
+plot(x_hi_int, a_hi_int[:, 1, 1], "C0-o")
+plot(x_lo_int, a_lo_int[:, 1, 1], "k:+")
+tight_layout()
+display(gcf())
+
 show()
