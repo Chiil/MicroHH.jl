@@ -8,16 +8,28 @@ using PyPlot
 
 
 ## Create the upsample functions.
-function upsample_nn!(hi, lo, itot, jtot, ktot, ifac, jfac, kfac)
+# function upsample_nn!(hi, lo, itot, jtot, ktot, ifac, jfac, kfac)
+#     @tturbo for k in 0:ktot-1, j in 0:jtot-1, i in 0:itot-1
+#         i_lo = i + 2; j_lo = j + 2; k_lo = k + 2
+#         i_hi = ifac*i + 2; j_hi = jfac*j + 2; k_hi = kfac*k + 2
+#         for kk in 0:kfac-1, jj in 0:jfac-1, ii in 0:ifac-1
+#             hi[i_hi+ii, j_hi+jj, k_hi+kk] = lo[i_lo, j_lo, k_lo]
+#         end
+#     end
+# end
+
+function upsample_nn!(hi, lo, itot, jtot, ktot, ifac, jfac, kfac, ioff, joff, koff)
     @tturbo for k in 0:ktot-1, j in 0:jtot-1, i in 0:itot-1
         i_lo = i + 2; j_lo = j + 2; k_lo = k + 2
         i_hi = ifac*i + 2; j_hi = jfac*j + 2; k_hi = kfac*k + 2
         for kk in 0:kfac-1, jj in 0:jfac-1, ii in 0:ifac-1
-            hi[i_hi+ii, j_hi+jj, k_hi+kk] = lo[i_lo, j_lo, k_lo]
+            iii = floor(Int, ioff + 1//ifac * ii)
+            jjj = floor(Int, joff + 1//ifac * ii)
+            kkk = floor(Int, koff + 1//ifac * ii)
+            hi[i_hi+ii, j_hi+jj, k_hi+kk] = lo[i_lo+iii, j_lo+jjj, k_lo+kkk]
         end
     end
 end
-
 
 function upsample_nn_ref!(hi, lo, x_hi, y_hi, z_hi, x_lo, y_lo, z_lo)
     interp = interpolate((x_lo, y_lo, z_lo), lo, (Gridded(Constant()), Gridded(Constant()), Gridded(Constant())))
@@ -27,7 +39,7 @@ end
 
 ## Set up the grids.
 itot_lo = 4; jtot_lo = 2; ktot_lo = 6
-ifac = 2; jfac = 3; kfac = 2
+ifac = 5; jfac = 3; kfac = 2
 
 a_lo = rand(itot_lo + 2, jtot_lo + 2, ktot_lo + 2)
 a_hi_ref = zeros(itot_lo*ifac + 2, jtot_lo*jfac + 2, ktot_lo*kfac + 2)
@@ -50,7 +62,7 @@ yh_hi = -dy_hi:dy_hi:1 |> collect
 
 ## Compute a reference using Interpolations.jl
 @btime upsample_nn_ref!(a_hi_ref, a_lo, x_hi, y_hi, z_hi, x_lo, y_lo, z_lo)
-@btime upsample_nn!(a_hi, a_lo, itot_lo, jtot_lo, ktot_lo, ifac, jfac, kfac)
+@btime upsample_nn!(a_hi, a_lo, itot_lo, jtot_lo, ktot_lo, ifac, jfac, kfac, 0, 0, 0)
 
 a_lo_int = @view a_lo[2:end-1, 2:end-1, 2:end-1]
 a_hi_ref_int = @view a_hi_ref[2:end-1, 2:end-1, 2:end-1]
@@ -70,23 +82,11 @@ x_hi_int = @view x_hi[2:end-1]
 xh_hi_int = @view xh_hi[2:end]
 yh_hi_int = @view yh_hi[2:end]
 
-figure(figsize=(12, 4))
-subplot(131)
-pcolormesh(xh_lo_int, yh_lo_int, a_lo_int[:, :, 1]', vmin=0, vmax=1)
-subplot(132)
-pcolormesh(xh_hi_int, yh_hi_int, a_hi_ref_int[:, :, 1]', vmin=0, vmax=1)
-subplot(133)
-pcolormesh(xh_hi_int, yh_hi_int, a_hi_int[:, :, 1]', vmin=0, vmax=1)
-tight_layout()
-display(gcf())
-
 figure()
 plot(x_hi_int, a_hi_int[:, 1, 1], "C0-o")
 plot(x_lo_int, a_lo_int[:, 1, 1], "k:+")
 tight_layout()
 display(gcf())
-
-show()
 
 
 ## Compute a reference using Interpolations.jl
@@ -95,11 +95,11 @@ u_hi_ref = zeros(itot_lo*ifac + 2, jtot_lo*jfac + 2, ktot_lo*kfac + 2)
 u_hi = zeros(itot_lo*ifac + 2, jtot_lo*jfac + 2, ktot_lo*kfac + 2)
 
 @btime upsample_nn_ref!(u_hi_ref, u_lo, xh_hi, y_hi, z_hi, xh_lo, y_lo, z_lo)
-@btime upsample_nn!(u_hi, u_lo, itot_lo, jtot_lo, ktot_lo, ifac, jfac, kfac)
+@btime upsample_nn!(u_hi, u_lo, itot_lo, jtot_lo, ktot_lo, ifac, jfac, kfac, 1//2, 0, 0)
 
-u_lo_int = @view a_lo[2:end-1, 2:end-1, 2:end-1]
-u_hi_ref_int = @view a_hi_ref[2:end-1, 2:end-1, 2:end-1]
-u_hi_int = @view a_hi[2:end-1, 2:end-1, 2:end-1]
+u_lo_int = @view u_lo[2:end-1, 2:end-1, 2:end-1]
+u_hi_ref_int = @view u_hi_ref[2:end-1, 2:end-1, 2:end-1]
+u_hi_int = @view u_hi[2:end-1, 2:end-1, 2:end-1]
 
 println("Mean equal to lo: ", mean(u_lo_int) ≈ mean(u_hi_int))
 println("Mean equal to ref: ", mean(u_hi_ref_int) ≈ mean(u_hi_int))
@@ -107,38 +107,9 @@ println("Values equal to ref: ", u_hi_int ≈ u_hi_ref_int)
 
 
 ## Plot the output.
-# x_lo_int = @view x_lo[2:end-1]
-# xh_lo_int = @view xh_lo[2:end]
-# yh_lo_int = @view yh_lo[2:end]
-# 
-# x_hi_int = @view x_hi[2:end-1]
-# xh_hi_int = @view xh_hi[2:end]
-# yh_hi_int = @view yh_hi[2:end]
-# 
-x_lo_plot = copy(x_lo[2:end-1])
-x_hi_plot = copy(x_hi[2:end-1])
-pushfirst!(x_lo_plot, 0)
-pushfirst!(x_hi_plot, 0)
-push!(x_lo_plot, 1)
-push!(x_hi_plot, 1)
-# 
-u_lo_plot = @view u_lo[2:end, 2:end-1, 2:end-1]
-u_hi_ref_plot = @view u_hi_ref[2:end, 2:end-1, 2:end-1]
-u_hi_plot = @view u_hi[2:end, 2:end-1, 2:end-1]
-
-figure(figsize=(12, 4))
-subplot(131)
-pcolormesh(x_lo_plot, yh_lo_int, u_lo_plot[:, :, 1]', vmin=0, vmax=1)
-subplot(132)
-pcolormesh(x_hi_plot, yh_hi_int, u_hi_ref_plot[:, :, 1]', vmin=0, vmax=1)
-subplot(133)
-pcolormesh(x_hi_plot, yh_hi_int, u_hi_plot[:, :, 1]', vmin=0, vmax=1)
-tight_layout()
-display(gcf())
-
 figure()
 plot(xh_hi[2:end-1], u_hi_int[:, 1, 1], "C0-o")
-plot(xh_hi[2:end-1], u_hi_ref_int[:, 1, 1], "C1-^")
+# plot(xh_hi[2:end-1], u_hi_ref_int[:, 1, 1], "C1-^")
 plot(xh_lo[2:end-1], u_lo_int[:, 1, 1], "k:+")
 tight_layout()
 display(gcf())
