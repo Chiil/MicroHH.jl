@@ -7,25 +7,15 @@ using BenchmarkTools
 using PyPlot
 
 
-## Create the upsample functions.
-# function upsample_nn!(hi, lo, itot, jtot, ktot, ifac, jfac, kfac)
-#     @tturbo for k in 0:ktot-1, j in 0:jtot-1, i in 0:itot-1
-#         i_lo = i + 2; j_lo = j + 2; k_lo = k + 2
-#         i_hi = ifac*i + 2; j_hi = jfac*j + 2; k_hi = kfac*k + 2
-#         for kk in 0:kfac-1, jj in 0:jfac-1, ii in 0:ifac-1
-#             hi[i_hi+ii, j_hi+jj, k_hi+kk] = lo[i_lo, j_lo, k_lo]
-#         end
-#     end
-# end
-
+## Define the upsample functions.
 function upsample_nn!(hi, lo, itot, jtot, ktot, ifac, jfac, kfac, ioff, joff, koff)
     @tturbo for k in 0:ktot-1, j in 0:jtot-1, i in 0:itot-1
         i_lo = i + 2; j_lo = j + 2; k_lo = k + 2
         i_hi = ifac*i + 2; j_hi = jfac*j + 2; k_hi = kfac*k + 2
         for kk in 0:kfac-1, jj in 0:jfac-1, ii in 0:ifac-1
             iii = floor(Int, ioff + 1//ifac * ii)
-            jjj = floor(Int, joff + 1//ifac * ii)
-            kkk = floor(Int, koff + 1//ifac * ii)
+            jjj = floor(Int, joff + 1//jfac * jj)
+            kkk = floor(Int, koff + 1//kfac * kk)
             hi[i_hi+ii, j_hi+jj, k_hi+kk] = lo[i_lo+iii, j_lo+jjj, k_lo+kkk]
         end
     end
@@ -38,8 +28,8 @@ end
 
 
 ## Set up the grids.
-itot_lo = 4; jtot_lo = 2; ktot_lo = 6
-ifac = 5; jfac = 3; kfac = 2
+itot_lo = 256; jtot_lo = 192; ktot_lo = 128
+ifac = 2; jfac = 2; kfac = 2
 
 a_lo = rand(itot_lo + 2, jtot_lo + 2, ktot_lo + 2)
 a_hi_ref = zeros(itot_lo*ifac + 2, jtot_lo*jfac + 2, ktot_lo*kfac + 2)
@@ -75,15 +65,11 @@ println("Values equal to ref: ", a_hi_int ≈ a_hi_ref_int)
 
 ## Plot the output.
 x_lo_int = @view x_lo[2:end-1]
-xh_lo_int = @view xh_lo[2:end]
-yh_lo_int = @view yh_lo[2:end]
-
 x_hi_int = @view x_hi[2:end-1]
-xh_hi_int = @view xh_hi[2:end]
-yh_hi_int = @view yh_hi[2:end]
 
 figure()
 plot(x_hi_int, a_hi_int[:, 1, 1], "C0-o")
+plot(x_hi_int, a_hi_ref_int[:, 1, 1], "C1-^")
 plot(x_lo_int, a_lo_int[:, 1, 1], "k:+")
 tight_layout()
 display(gcf())
@@ -107,10 +93,13 @@ println("Values equal to ref: ", u_hi_int ≈ u_hi_ref_int)
 
 
 ## Plot the output.
+xh_lo_int = @view xh_lo[2:end-1]
+xh_hi_int = @view xh_hi[2:end-1]
+
 figure()
-plot(xh_hi[2:end-1], u_hi_int[:, 1, 1], "C0-o")
-# plot(xh_hi[2:end-1], u_hi_ref_int[:, 1, 1], "C1-^")
-plot(xh_lo[2:end-1], u_lo_int[:, 1, 1], "k:+")
+plot(xh_hi_int, u_hi_int[:, 1, 1], "C0-o")
+plot(xh_hi_int, u_hi_ref_int[:, 1, 1], "C1-^")
+plot(xh_lo_int, u_lo_int[:, 1, 1], "k:+")
 tight_layout()
 display(gcf())
 
