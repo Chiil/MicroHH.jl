@@ -14,9 +14,9 @@ function upsample_nn!(hi, lo, itot, jtot, ktot, ifac, jfac, kfac, ioff, joff, ko
         i_lo = i + 2; j_lo = j + 2; k_lo = k + 2
         i_hi = ifac*i + 2; j_hi = jfac*j + 2; k_hi = kfac*k + 2
         for kk in 0:kfac-1, jj in 0:jfac-1, ii in 0:ifac-1
-            iii = floor(Int, ioff + 1//ifac * ii)
-            jjj = floor(Int, joff + 1//jfac * jj)
-            kkk = floor(Int, koff + 1//kfac * kk)
+            iii = floor(Int, ioff + 1/ifac * ii)
+            jjj = floor(Int, joff + 1/jfac * jj)
+            kkk = floor(Int, koff + 1/kfac * kk)
             hi[i_hi+ii, j_hi+jj, k_hi+kk] = lo[i_lo+iii, j_lo+jjj, k_lo+kkk]
         end
     end
@@ -47,39 +47,41 @@ function upsample_lin!(
         ioff, joff, koff)
 
     @inbounds for k in 0:ktot-1, j in 0:jtot-1, i in 0:itot-1
-        i_hi = i+2; j_hi = j+2; k_hi = k+2;
+        for kk in 0:kfac-1, jj in 0:jfac-1, ii in 0:ifac-1
+            i_hi = ifac*i+ii+2; j_hi = jfac*j+jj+2; k_hi = kfac*k+kk+2;
 
-        # Determine fractional distance and west, south, and bot point.
-        i_pos = -1//2 + (1//2 + i)/ifac
-        j_pos = -1//2 + (1//2 + j)/jfac
-        k_pos = -1//2 + (1//2 + k)/kfac
+            # Determine fractional distance and west, south, and bot point.
+            i_pos = -1/2 + (1/2 + ii)/ifac
+            j_pos = -1/2 + (1/2 + jj)/jfac
+            k_pos = -1/2 + (1/2 + kk)/kfac
 
-        i_lo = floor(Int, i_pos) + 2
-        j_lo = floor(Int, j_pos) + 2
-        k_lo = floor(Int, k_pos) + 2
+            fi = mod(i_pos, 1)
+            fj = mod(j_pos, 1)
+            fk = mod(k_pos, 1)
 
-        fi = mod(i_pos, 1)
-        fj = mod(j_pos, 1)
-        fk = mod(k_pos, 1)
+            coef_111 = (((1-fi)*fj+fi-1)*fk+(fi-1)*fj-fi+1)
+            coef_211 = ((fi*fj-fi)*fk-fi*fj+fi)
+            coef_121 = ((fi-1)*fj*fk+(1-fi)*fj)
+            coef_221 = (fi*fj-fi*fj*fk)
+            coef_112 = ((fi-1)*fj-fi+1)*fk
+            coef_212 = (fi-fi*fj)*fk
+            coef_122 = (1-fi)*fj*fk
+            coef_222 = fi*fj*fk
 
-        coef_111 = (((1-fi)*fj+fi-1)*fk+(fi-1)*fj-fi+1)
-        coef_211 = ((fi*fj-fi)*fk-fi*fj+fi)
-        coef_121 = ((fi-1)*fj*fk+(1-fi)*fj)
-        coef_221 = (fi*fj-fi*fj*fk)
-        coef_112 = ((fi-1)*fj-fi+1)*fk
-        coef_212 = (fi-fi*fj)*fk
-        coef_122 = (1-fi)*fj*fk
-        coef_222 = fi*fj*fk
+            i_lo = i + floor(Int, i_pos) + 2
+            j_lo = j + floor(Int, j_pos) + 2
+            k_lo = k + floor(Int, k_pos) + 2
 
-        hi[i_hi, j_hi, k_hi] = (
-            + coef_111 * lo[i_lo  , j_lo  , k_lo  ]
-            + coef_211 * lo[i_lo+1, j_lo  , k_lo  ]
-            + coef_121 * lo[i_lo  , j_lo+1, k_lo  ]
-            + coef_221 * lo[i_lo+1, j_lo+1, k_lo  ]
-            + coef_112 * lo[i_lo  , j_lo  , k_lo+1]
-            + coef_212 * lo[i_lo+1, j_lo  , k_lo+1]
-            + coef_122 * lo[i_lo  , j_lo+1, k_lo+1]
-            + coef_222 * lo[i_lo+1, j_lo+1, k_lo+1] )
+            hi[i_hi, j_hi, k_hi] = (
+                + coef_111 * lo[i_lo  , j_lo  , k_lo  ]
+                + coef_211 * lo[i_lo+1, j_lo  , k_lo  ]
+                + coef_121 * lo[i_lo  , j_lo+1, k_lo  ]
+                + coef_221 * lo[i_lo+1, j_lo+1, k_lo  ]
+                + coef_112 * lo[i_lo  , j_lo  , k_lo+1]
+                + coef_212 * lo[i_lo+1, j_lo  , k_lo+1]
+                + coef_122 * lo[i_lo  , j_lo+1, k_lo+1]
+                + coef_222 * lo[i_lo+1, j_lo+1, k_lo+1] )
+        end
     end
 end
 
@@ -114,7 +116,7 @@ yh_hi = -dy_hi:dy_hi:1 |> collect
 
 ## Compute a reference using Interpolations.jl
 @btime upsample_lin_ref!(a_hi_ref, a_lo, x_hi, y_hi, z_hi, x_lo, y_lo, z_lo)
-@btime upsample_lin!(a_hi, a_lo, itot_lo*ifac, jtot_lo*jfac, ktot_lo*kfac, ifac, jfac, kfac, 0, 0, 0)
+@btime upsample_lin!(a_hi, a_lo, itot_lo, jtot_lo, ktot_lo, ifac, jfac, kfac, 0, 0, 0)
 
 a_lo_int = @view a_lo[2:end-1, 2:end-1, 2:end-1]
 a_hi_ref_int = @view a_hi_ref[2:end-1, 2:end-1, 2:end-1]
