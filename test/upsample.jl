@@ -5,6 +5,7 @@ using OffsetArrays
 using Statistics
 using BenchmarkTools
 using PyPlot
+using Printf
 
 
 ## Define the upsample functions.
@@ -23,6 +24,67 @@ end
 
 function upsample_nn_ref!(hi, lo, x_hi, y_hi, z_hi, x_lo, y_lo, z_lo)
     interp = interpolate((x_lo, y_lo, z_lo), lo, (Gridded(Constant()), Gridded(Constant()), Gridded(Constant())))
+    hi[2:end-1, 2:end-1, 2:end-1] .= interp(x_hi[2:end-1], y_hi[2:end-1], z_hi[2:end-1])
+end
+
+function calc_coef(x, y, z)
+    coef = Array{Int}(undef, 2, 2, 2)
+    coef[1, 1, 1] = (((1-x)*y+x-1)*z+(x-1)*y-x+1)
+    coef[2, 1, 1] = ((x*y-x)*z-x*y+x)
+    coef[1, 2, 1] = ((x-1)*y*z+(1-x)*y)
+    coef[2, 2, 1] = (x*y-x*y*z)
+    coef[1, 1, 2] = ((x-1)*y-x+1)
+    coef[2, 1, 2] = (x-x*y)*z
+    coef[1, 2, 2] = (1-x)*y*z
+    coef[2, 2, 2] = x*y*z
+
+    return coef
+end
+
+function upsample_lin!(
+        hi, lo,
+        itot::Int, jtot::Int, ktot::Int, ifac::Int, jfac::Int, kfac::Int,
+        ioff, joff, koff)
+
+    @inbounds for k in 0:ktot-1, j in 0:jtot-1, i in 0:itot-1
+        i_hi = i+2; j_hi = j+2; k_hi = k+2;
+
+        # Determine fractional distance and west, south, and bot point.
+        i_pos = -1//2 + (1//2 + i)/ifac
+        j_pos = -1//2 + (1//2 + j)/jfac
+        k_pos = -1//2 + (1//2 + k)/kfac
+
+        i_lo = floor(Int, i_pos) + 2
+        j_lo = floor(Int, j_pos) + 2
+        k_lo = floor(Int, k_pos) + 2
+
+        fi = mod(i_pos, 1)
+        fj = mod(j_pos, 1)
+        fk = mod(k_pos, 1)
+
+        coef_111 = (((1-fi)*fj+fi-1)*fk+(fi-1)*fj-fi+1)
+        coef_211 = ((fi*fj-fi)*fk-fi*fj+fi)
+        coef_121 = ((fi-1)*fj*fk+(1-fi)*fj)
+        coef_221 = (fi*fj-fi*fj*fk)
+        coef_112 = ((fi-1)*fj-fi+1)*fk
+        coef_212 = (fi-fi*fj)*fk
+        coef_122 = (1-fi)*fj*fk
+        coef_222 = fi*fj*fk
+
+        hi[i_hi, j_hi, k_hi] = (
+            + coef_111 * lo[i_lo  , j_lo  , k_lo  ]
+            + coef_211 * lo[i_lo+1, j_lo  , k_lo  ]
+            + coef_121 * lo[i_lo  , j_lo+1, k_lo  ]
+            + coef_221 * lo[i_lo+1, j_lo+1, k_lo  ]
+            + coef_112 * lo[i_lo  , j_lo  , k_lo+1]
+            + coef_212 * lo[i_lo+1, j_lo  , k_lo+1]
+            + coef_122 * lo[i_lo  , j_lo+1, k_lo+1]
+            + coef_222 * lo[i_lo+1, j_lo+1, k_lo+1] )
+    end
+end
+
+function upsample_lin_ref!(hi, lo, x_hi, y_hi, z_hi, x_lo, y_lo, z_lo)
+    interp = interpolate((x_lo, y_lo, z_lo), lo, (Gridded(Linear()), Gridded(Linear()), Gridded(Linear())))
     hi[2:end-1, 2:end-1, 2:end-1] .= interp(x_hi[2:end-1], y_hi[2:end-1], z_hi[2:end-1])
 end
 
@@ -51,8 +113,8 @@ yh_hi = -dy_hi:dy_hi:1 |> collect
 
 
 ## Compute a reference using Interpolations.jl
-@btime upsample_nn_ref!(a_hi_ref, a_lo, x_hi, y_hi, z_hi, x_lo, y_lo, z_lo)
-@btime upsample_nn!(a_hi, a_lo, itot_lo, jtot_lo, ktot_lo, ifac, jfac, kfac, 0, 0, 0)
+@btime upsample_lin_ref!(a_hi_ref, a_lo, x_hi, y_hi, z_hi, x_lo, y_lo, z_lo)
+@btime upsample_lin!(a_hi, a_lo, itot_lo*ifac, jtot_lo*jfac, ktot_lo*kfac, ifac, jfac, kfac, 0, 0, 0)
 
 a_lo_int = @view a_lo[2:end-1, 2:end-1, 2:end-1]
 a_hi_ref_int = @view a_hi_ref[2:end-1, 2:end-1, 2:end-1]
@@ -75,6 +137,7 @@ tight_layout()
 display(gcf())
 
 
+"""
 ## Compute a reference using Interpolations.jl
 u_lo = rand(itot_lo + 2, jtot_lo + 2, ktot_lo + 2)
 u_hi_ref = zeros(itot_lo*ifac + 2, jtot_lo*jfac + 2, ktot_lo*kfac + 2)
@@ -102,5 +165,6 @@ plot(xh_hi_int, u_hi_ref_int[:, 1, 1], "C1-^")
 plot(xh_lo_int, u_lo_int[:, 1, 1], "k:+")
 tight_layout()
 display(gcf())
+"""
 
 show()
