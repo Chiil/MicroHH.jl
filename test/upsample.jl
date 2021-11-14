@@ -30,7 +30,7 @@ end
 macro upsample_lin_fast(suffix, ifac, jfac, kfac, ioff, joff, koff)
     ex_inner = []
     for kk in 0:kfac-1, jj in 0:jfac-1, ii in 0:ifac-1
-        push!(ex_inner, :(i_hi = $ifac*i+$ii+2), :(j_hi = $jfac*j+$jj+2), :(k_hi = $kfac*k+$kk+2))
+        push!(ex_inner, :(i_hi = $ifac*i+$(ii+2)), :(j_hi = $jfac*j+$(jj+2)), :(k_hi = $kfac*k+$(kk+2)))
 
         i_pos = -1/2 + (1/2 + ii)/ifac
         j_pos = -1/2 + (1/2 + jj)/jfac
@@ -54,7 +54,7 @@ macro upsample_lin_fast(suffix, ifac, jfac, kfac, ioff, joff, koff)
         coef_122 = (1-fi)*fj*fk
         coef_222 = fi*fj*fk
 
-        push!(ex_inner, :(hi[i_hi, j_hi, k_hi] = (
+        push!(ex_inner, :(@inbounds hi[i_hi, j_hi, k_hi] = (
             + $coef_111 * lo[i_lo  , j_lo  , k_lo  ]
             + $coef_211 * lo[i_lo+1, j_lo  , k_lo  ]
             + $coef_121 * lo[i_lo  , j_lo+1, k_lo  ]
@@ -66,16 +66,20 @@ macro upsample_lin_fast(suffix, ifac, jfac, kfac, ioff, joff, koff)
     end
 
     ex_inner_block = Expr(:block, ex_inner...)
-    # println(ex_inner_block)
 
     name = Symbol(@sprintf "upsample_lin_%s!" suffix)
     ex = quote
         function $name(hi, lo, itot, jtot, ktot)
-            @inbounds for k in 0:ktot-1, j in 0:jtot-1, i in 0:itot-1
-                $ex_inner_block
+            Threads.@threads for k in 0:ktot-1
+                for j in 0:jtot-1
+                    for i in 0:itot-1
+                        $ex_inner_block
+                    end
+                end
             end
         end
     end
+    # println(ex)
     return esc(ex)
 end
 
