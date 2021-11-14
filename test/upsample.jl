@@ -88,41 +88,45 @@ function upsample_lin!(
         itot, jtot, ktot,
         ifac, jfac, kfac, ioff, joff, koff)
 
-    @inbounds for k in 0:ktot-1, j in 0:jtot-1, i in 0:itot-1
-        for kk in 0:kfac-1, jj in 0:jfac-1, ii in 0:ifac-1
-            i_hi = ifac*i+ii+2; j_hi = jfac*j+jj+2; k_hi = kfac*k+kk+2;
+    Threads.@threads for k in 0:ktot-1
+        for j in 0:jtot-1
+            for i in 0:itot-1
+                for kk in 0:kfac-1, jj in 0:jfac-1, ii in 0:ifac-1
+                    i_hi = ifac*i+ii+2; j_hi = jfac*j+jj+2; k_hi = kfac*k+kk+2;
 
-            # Determine fractional distance and west, south, and bot point.
-            i_pos = -1/2 + (1/2 + ii)/ifac
-            j_pos = -1/2 + (1/2 + jj)/jfac
-            k_pos = -1/2 + (1/2 + kk)/kfac
+                    # Determine fractional distance and west, south, and bot point.
+                    i_pos = -1/2 + (1/2 + ii)/ifac
+                    j_pos = -1/2 + (1/2 + jj)/jfac
+                    k_pos = -1/2 + (1/2 + kk)/kfac
 
-            fi = mod(i_pos, 1)
-            fj = mod(j_pos, 1)
-            fk = mod(k_pos, 1)
+                    fi = mod(i_pos, 1)
+                    fj = mod(j_pos, 1)
+                    fk = mod(k_pos, 1)
 
-            coef_111 = (((1-fi)*fj+fi-1)*fk+(fi-1)*fj-fi+1)
-            coef_211 = ((fi*fj-fi)*fk-fi*fj+fi)
-            coef_121 = ((fi-1)*fj*fk+(1-fi)*fj)
-            coef_221 = (fi*fj-fi*fj*fk)
-            coef_112 = ((fi-1)*fj-fi+1)*fk
-            coef_212 = (fi-fi*fj)*fk
-            coef_122 = (1-fi)*fj*fk
-            coef_222 = fi*fj*fk
+                    coef_111 = (((1-fi)*fj+fi-1)*fk+(fi-1)*fj-fi+1)
+                    coef_211 = ((fi*fj-fi)*fk-fi*fj+fi)
+                    coef_121 = ((fi-1)*fj*fk+(1-fi)*fj)
+                    coef_221 = (fi*fj-fi*fj*fk)
+                    coef_112 = ((fi-1)*fj-fi+1)*fk
+                    coef_212 = (fi-fi*fj)*fk
+                    coef_122 = (1-fi)*fj*fk
+                    coef_222 = fi*fj*fk
 
-            i_lo = i + floor(Int, i_pos) + 2
-            j_lo = j + floor(Int, j_pos) + 2
-            k_lo = k + floor(Int, k_pos) + 2
+                    i_lo = i + floor(Int, i_pos) + 2
+                    j_lo = j + floor(Int, j_pos) + 2
+                    k_lo = k + floor(Int, k_pos) + 2
 
-            hi[i_hi, j_hi, k_hi] = (
-                + coef_111 * lo[i_lo  , j_lo  , k_lo  ]
-                + coef_211 * lo[i_lo+1, j_lo  , k_lo  ]
-                + coef_121 * lo[i_lo  , j_lo+1, k_lo  ]
-                + coef_221 * lo[i_lo+1, j_lo+1, k_lo  ]
-                + coef_112 * lo[i_lo  , j_lo  , k_lo+1]
-                + coef_212 * lo[i_lo+1, j_lo  , k_lo+1]
-                + coef_122 * lo[i_lo  , j_lo+1, k_lo+1]
-                + coef_222 * lo[i_lo+1, j_lo+1, k_lo+1] )
+                    @inbounds hi[i_hi, j_hi, k_hi] = (
+                        + coef_111 * lo[i_lo  , j_lo  , k_lo  ]
+                        + coef_211 * lo[i_lo+1, j_lo  , k_lo  ]
+                        + coef_121 * lo[i_lo  , j_lo+1, k_lo  ]
+                        + coef_221 * lo[i_lo+1, j_lo+1, k_lo  ]
+                        + coef_112 * lo[i_lo  , j_lo  , k_lo+1]
+                        + coef_212 * lo[i_lo+1, j_lo  , k_lo+1]
+                        + coef_122 * lo[i_lo  , j_lo+1, k_lo+1]
+                        + coef_222 * lo[i_lo+1, j_lo+1, k_lo+1] )
+                end
+            end
         end
     end
 end
