@@ -28,45 +28,51 @@ function upsample_nn_ref!(hi, lo, x_hi, y_hi, z_hi, x_lo, y_lo, z_lo)
 end
 
 macro upsample_lin_fast(suffix, ifac, jfac, kfac, ioff, joff, koff)
+    ex_inner = []
+    for kk in 0:kfac-1, jj in 0:jfac-1, ii in 0:ifac-1
+        push!(ex_inner, :(i_hi = $ifac*i+$ii+2), :(j_hi = $jfac*j+$jj+2), :(k_hi = $kfac*k+$kk+2))
+
+        i_pos = -1/2 + (1/2 + ii)/ifac
+        j_pos = -1/2 + (1/2 + jj)/jfac
+        k_pos = -1/2 + (1/2 + kk)/kfac
+
+        i_lo_off = floor(Int, i_pos) + 2
+        j_lo_off = floor(Int, j_pos) + 2
+        k_lo_off = floor(Int, k_pos) + 2
+        push!(ex_inner, :(i_lo = i + $i_lo_off), :(j_lo = j + $j_lo_off), :(k_lo = k + $k_lo_off))
+
+        fi = mod(i_pos, 1)
+        fj = mod(j_pos, 1)
+        fk = mod(k_pos, 1)
+
+        coef_111 = (((1-fi)*fj+fi-1)*fk+(fi-1)*fj-fi+1)
+        coef_211 = ((fi*fj-fi)*fk-fi*fj+fi)
+        coef_121 = ((fi-1)*fj*fk+(1-fi)*fj)
+        coef_221 = (fi*fj-fi*fj*fk)
+        coef_112 = ((fi-1)*fj-fi+1)*fk
+        coef_212 = (fi-fi*fj)*fk
+        coef_122 = (1-fi)*fj*fk
+        coef_222 = fi*fj*fk
+
+        push!(ex_inner, :(hi[i_hi, j_hi, k_hi] = (
+            + $coef_111 * lo[i_lo  , j_lo  , k_lo  ]
+            + $coef_211 * lo[i_lo+1, j_lo  , k_lo  ]
+            + $coef_121 * lo[i_lo  , j_lo+1, k_lo  ]
+            + $coef_221 * lo[i_lo+1, j_lo+1, k_lo  ]
+            + $coef_112 * lo[i_lo  , j_lo  , k_lo+1]
+            + $coef_212 * lo[i_lo+1, j_lo  , k_lo+1]
+            + $coef_122 * lo[i_lo  , j_lo+1, k_lo+1]
+            + $coef_222 * lo[i_lo+1, j_lo+1, k_lo+1] )) )
+    end
+
+    ex_inner_block = Expr(:block, ex_inner...)
+    # println(ex_inner_block)
+
     name = Symbol(@sprintf "upsample_lin_%s!" suffix)
     ex = quote
         function $name(hi, lo, itot, jtot, ktot)
             @inbounds for k in 0:ktot-1, j in 0:jtot-1, i in 0:itot-1
-                for kk in 0:$kfac-1, jj in 0:$jfac-1, ii in 0:$ifac-1
-                    i_hi = $ifac*i+ii+2; j_hi = $jfac*j+jj+2; k_hi = $kfac*k+kk+2;
-        
-                    # Determine fractional distance and west, south, and bot point.
-                    i_pos = -1/2 + (1/2 + ii)/$ifac
-                    j_pos = -1/2 + (1/2 + jj)/$jfac
-                    k_pos = -1/2 + (1/2 + kk)/$kfac
-        
-                    fi = mod(i_pos, 1)
-                    fj = mod(j_pos, 1)
-                    fk = mod(k_pos, 1)
-        
-                    coef_111 = (((1-fi)*fj+fi-1)*fk+(fi-1)*fj-fi+1)
-                    coef_211 = ((fi*fj-fi)*fk-fi*fj+fi)
-                    coef_121 = ((fi-1)*fj*fk+(1-fi)*fj)
-                    coef_221 = (fi*fj-fi*fj*fk)
-                    coef_112 = ((fi-1)*fj-fi+1)*fk
-                    coef_212 = (fi-fi*fj)*fk
-                    coef_122 = (1-fi)*fj*fk
-                    coef_222 = fi*fj*fk
-        
-                    i_lo = i + floor(Int, i_pos) + 2
-                    j_lo = j + floor(Int, j_pos) + 2
-                    k_lo = k + floor(Int, k_pos) + 2
-        
-                    hi[i_hi, j_hi, k_hi] = (
-                        + coef_111 * lo[i_lo  , j_lo  , k_lo  ]
-                        + coef_211 * lo[i_lo+1, j_lo  , k_lo  ]
-                        + coef_121 * lo[i_lo  , j_lo+1, k_lo  ]
-                        + coef_221 * lo[i_lo+1, j_lo+1, k_lo  ]
-                        + coef_112 * lo[i_lo  , j_lo  , k_lo+1]
-                        + coef_212 * lo[i_lo+1, j_lo  , k_lo+1]
-                        + coef_122 * lo[i_lo  , j_lo+1, k_lo+1]
-                        + coef_222 * lo[i_lo+1, j_lo+1, k_lo+1] )
-                end
+                $ex_inner_block
             end
         end
     end
