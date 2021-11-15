@@ -30,15 +30,15 @@ end
 macro upsample_lin_fast(suffix, ifac, jfac, kfac, ioff, joff, koff)
     ex_inner = []
     for kk in 0:kfac-1, jj in 0:jfac-1, ii in 0:ifac-1
-        push!(ex_inner, :(i_hi = $ifac*i+$(ii+2)), :(j_hi = $jfac*j+$(jj+2)), :(k_hi = $kfac*k+$(kk+2)))
+        push!(ex_inner, :(i_hi = $ifac*i+$ii+is_hi), :(j_hi = $jfac*j+$jj+js_hi), :(k_hi = $kfac*k+$kk+ks_hi))
 
         i_pos = -1/2 + ioff + (1/2 - ioff + ii)/ifac
         j_pos = -1/2 + joff + (1/2 - joff + jj)/jfac
         k_pos = -1/2 + koff + (1/2 - koff + kk)/kfac
 
-        i_lo_off = floor(Int, i_pos) + 2
-        j_lo_off = floor(Int, j_pos) + 2
-        k_lo_off = floor(Int, k_pos) + 2
+        i_lo_off = floor(Int, i_pos) + is_lo
+        j_lo_off = floor(Int, j_pos) + js_lo
+        k_lo_off = floor(Int, k_pos) + ks_lo
         push!(ex_inner, :(i_lo = i + $i_lo_off), :(j_lo = j + $j_lo_off), :(k_lo = k + $k_lo_off))
 
         fi = mod(i_pos, 1)
@@ -71,7 +71,7 @@ macro upsample_lin_fast(suffix, ifac, jfac, kfac, ioff, joff, koff)
 
     name = Symbol(@sprintf "upsample_lin_%s!" suffix)
     ex = quote
-        function $name(hi, lo, itot, jtot, ktot)
+        function $name(hi, lo, itot, jtot, ktot, is_hi, js_hi, ks_hi, is_lo, js_lo, ks_lo)
             Threads.@threads for k in 0:ktot-1
                 for j in 0:jtot-1
                     for i in 0:itot-1
@@ -87,6 +87,7 @@ end
 function upsample_lin!(
         hi, lo,
         itot, jtot, ktot,
+        is_hi, js_hi, ks_hi, is_lo, js_lo, ks_lo,
         ifac, jfac, kfac, ioff, joff, koff)
 
     Threads.@threads for k in 0:ktot-1
@@ -140,6 +141,8 @@ end
 
 ## Set up the grids.
 itot_lo = 256; jtot_lo = 192; ktot_lo = 128
+is_lo = 2; js_lo = 2; ks_lo = 2
+is_hi = 2; js_hi = 2; ks_hi = 2
 ifac = 2; jfac = 2; kfac = 2
 
 a_lo = rand(itot_lo + 2, jtot_lo + 2, ktot_lo + 2)
@@ -164,9 +167,13 @@ yh_hi = -dy_hi:dy_hi:1 |> collect
 
 ## Compute a reference using Interpolations.jl
 @btime upsample_lin_ref!(a_hi_ref, a_lo, x_hi, y_hi, z_hi, x_lo, y_lo, z_lo)
-@btime upsample_lin!(a_hi, a_lo, itot_lo, jtot_lo, ktot_lo, ifac, jfac, kfac, 0, 0, 0)
+@btime upsample_lin!(a_hi, a_lo, itot_lo, jtot_lo, ktot_lo,
+    is_hi, js_hi, ks_hi, is_lo, js_lo, ks_lo,
+    ifac, jfac, kfac, 0, 0, 0)
 @upsample_lin_fast("222", 2, 2, 2, 0, 0, 0)
-@btime upsample_lin_222!(a_hi_fast, a_lo, itot_lo, jtot_lo, ktot_lo)
+@btime upsample_lin_222!(
+    a_hi_fast, a_lo, itot_lo, jtot_lo, ktot_lo,
+    is_hi, js_hi, ks_hi, is_lo, js_lo, ks_lo)
 
 a_lo_int = @view a_lo[2:end-1, 2:end-1, 2:end-1]
 a_hi_ref_int = @view a_hi_ref[2:end-1, 2:end-1, 2:end-1]
@@ -197,9 +204,14 @@ u_hi = zeros(itot_lo*ifac + 2, jtot_lo*jfac + 2, ktot_lo*kfac + 2)
 u_hi_fast = zeros(itot_lo*ifac + 2, jtot_lo*jfac + 2, ktot_lo*kfac + 2)
 
 @btime upsample_lin_ref!(u_hi_ref, u_lo, xh_hi, y_hi, z_hi, xh_lo, y_lo, z_lo)
-@btime upsample_lin!(u_hi, u_lo, itot_lo, jtot_lo, ktot_lo, ifac, jfac, kfac, 0.5, 0, 0)
+@btime upsample_lin!(
+    u_hi, u_lo, itot_lo, jtot_lo, ktot_lo,
+    is_hi, js_hi, ks_hi, is_lo, js_lo, ks_lo,
+    ifac, jfac, kfac, 0.5, 0, 0)
 @upsample_lin_fast("222_u", 2, 2, 2, 0.5, 0, 0)
-@btime upsample_lin_222_u!(u_hi_fast, u_lo, itot_lo, jtot_lo, ktot_lo)
+@btime upsample_lin_222_u!(
+    u_hi_fast, u_lo, itot_lo, jtot_lo, ktot_lo,
+    is_hi, js_hi, ks_hi, is_lo, js_lo, ks_lo)
 
 u_lo_int = @view u_lo[2:end-1, 2:end-1, 2:end-1]
 u_hi_ref_int = @view u_hi_ref[2:end-1, 2:end-1, 2:end-1]
