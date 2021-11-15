@@ -45,24 +45,26 @@ macro upsample_lin_fast(suffix, ifac, jfac, kfac, ioff, joff, koff)
         fj = mod(j_pos, 1)
         fk = mod(k_pos, 1)
 
-        coef_111 = (((1-fi)*fj+fi-1)*fk+(fi-1)*fj-fi+1)
-        coef_211 = ((fi*fj-fi)*fk-fi*fj+fi)
-        coef_121 = ((fi-1)*fj*fk+(1-fi)*fj)
-        coef_221 = (fi*fj-fi*fj*fk)
-        coef_112 = ((fi-1)*fj-fi+1)*fk
-        coef_212 = (fi-fi*fj)*fk
-        coef_122 = (1-fi)*fj*fk
-        coef_222 = fi*fj*fk
+        coef = zeros(2, 2, 2)
+        coef[1, 1, 1] = (((1-fi)*fj+fi-1)*fk+(fi-1)*fj-fi+1)
+        coef[2, 1, 1] = ((fi*fj-fi)*fk-fi*fj+fi)
+        coef[1, 2, 1] = ((fi-1)*fj*fk+(1-fi)*fj)
+        coef[2, 2, 1] = (fi*fj-fi*fj*fk)
+        coef[1, 1, 2] = ((fi-1)*fj-fi+1)*fk
+        coef[2, 1, 2] = (fi-fi*fj)*fk
+        coef[1, 2, 2] = (1-fi)*fj*fk
+        coef[2, 2, 2] = fi*fj*fk
 
-        push!(ex_inner, :(@inbounds hi[i_hi, j_hi, k_hi] = (
-            + $coef_111 * lo[i_lo  , j_lo  , k_lo  ]
-            + $coef_211 * lo[i_lo+1, j_lo  , k_lo  ]
-            + $coef_121 * lo[i_lo  , j_lo+1, k_lo  ]
-            + $coef_221 * lo[i_lo+1, j_lo+1, k_lo  ]
-            + $coef_112 * lo[i_lo  , j_lo  , k_lo+1]
-            + $coef_212 * lo[i_lo+1, j_lo  , k_lo+1]
-            + $coef_122 * lo[i_lo  , j_lo+1, k_lo+1]
-            + $coef_222 * lo[i_lo+1, j_lo+1, k_lo+1] )) )
+        rhs_list = []
+        for kc in 1:2, jc in 1:2, ic in 1:2
+            if !(coef[ic, jc, kc] ≈ 0)
+                push!(rhs_list, :( $(coef[ic, jc, kc])*lo[i_lo+$(ic-1), j_lo+$(jc-1), k_lo+$(kc-1)] ))
+            end
+        end
+
+        rhs = Expr(:call, :+, rhs_list...)
+
+        push!(ex_inner, :(@inbounds hi[i_hi, j_hi, k_hi] = $rhs))
     end
 
     ex_inner_block = Expr(:block, ex_inner...)
@@ -79,7 +81,6 @@ macro upsample_lin_fast(suffix, ifac, jfac, kfac, ioff, joff, koff)
             end
         end
     end
-    # println(ex)
     return esc(ex)
 end
 
