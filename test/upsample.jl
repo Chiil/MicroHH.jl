@@ -64,7 +64,7 @@ macro upsample_lin_fast(suffix, ifac, jfac, kfac, ioff, joff, koff)
 
         rhs = Expr(:call, :+, rhs_list...)
 
-        push!(ex_inner, :(@inbounds hi[i_hi, j_hi, k_hi] = $rhs))
+        push!(ex_inner, :(hi[i_hi, j_hi, k_hi] = $rhs))
     end
 
     ex_inner_block = Expr(:block, ex_inner...)
@@ -141,37 +141,46 @@ end
 
 ## Set up the grids.
 itot_lo = 256; jtot_lo = 192; ktot_lo = 128
-is_lo = 2; js_lo = 2; ks_lo = 2
-is_hi = 2; js_hi = 2; ks_hi = 2
-ifac = 2; jfac = 2; kfac = 2
+itot_hi = 512; jtot_hi = 384; ktot_hi = 256
+igc_lo = 1; jgc_lo = 1; kgc_lo = 1
+igc_hi = 1; jgc_hi = 1; kgc_hi = 1
 
-a_lo = rand(itot_lo + 2, jtot_lo + 2, ktot_lo + 2)
-a_hi_ref = zeros(itot_lo*ifac + 2, jtot_lo*jfac + 2, ktot_lo*kfac + 2)
-a_hi = zeros(itot_lo*ifac + 2, jtot_lo*jfac + 2, ktot_lo*kfac + 2)
-a_hi_fast = zeros(itot_lo*ifac + 2, jtot_lo*jfac + 2, ktot_lo*kfac + 2)
+# Derive dimensions
+ifac = itot_hi÷itot_lo; jfac = jtot_hi÷jtot_lo; kfac = ktot_hi÷ktot_lo;
+icells_lo = itot_lo + 2igc_lo; jcells_lo = jtot_lo + 2jgc_lo; kcells_lo = ktot_lo + 2kgc_lo
+icells_hi = itot_hi + 2igc_hi; jcells_hi = jtot_hi + 2jgc_hi; kcells_hi = ktot_hi + 2kgc_hi
+is_lo = igc_lo+1; js_lo = jgc_lo+1; ks_lo = kgc_lo+1
+is_hi = igc_hi+1; js_hi = jgc_hi+1; ks_hi = kgc_hi+1
+ie_lo = igc_lo+itot_lo; je_lo = jgc_lo+jtot_lo; ke_lo = kgc_lo+ktot_lo
+ie_hi = igc_hi+itot_hi; je_hi = jgc_hi+jtot_hi; ke_hi = kgc_hi+ktot_hi
+
+a_lo = rand(icells_lo, jcells_lo, kcells_lo)
+a_hi_ref = zeros(icells_hi, jcells_hi, kcells_hi)
+a_hi = zeros(icells_hi, jcells_hi, kcells_hi)
+a_hi_fast = zeros(icells_hi, jcells_hi, kcells_hi)
 
 dx_lo = 1/itot_lo; dy_lo = 1/jtot_lo; dz_lo = 1/ktot_lo
-x_lo = -dx_lo/2:dx_lo:1+dx_lo |> collect
-y_lo = -dy_lo/2:dy_lo:1+dy_lo |> collect
-z_lo = -dz_lo/2:dz_lo:1+dz_lo |> collect
-xh_lo = -dx_lo:dx_lo:1 |> collect
-yh_lo = -dy_lo:dy_lo:1 |> collect
+x_lo = collect(range(0.5-igc_lo, length=icells_lo)) .* dx_lo
+y_lo = collect(range(0.5-jgc_lo, length=jcells_lo)) .* dy_lo
+z_lo = collect(range(0.5-kgc_lo, length=kcells_lo)) .* dz_lo
+xh_lo = collect(range(-igc_lo, length=icells_lo)) .* dx_lo
+yh_lo = collect(range(-jgc_lo, length=jcells_lo)) .* dy_lo
 
-dx_hi = dx_lo/ifac; dy_hi = dy_lo/jfac; dz_hi = dz_lo/kfac
-x_hi = -dx_hi/2:dx_hi:1+dx_hi |> collect
-y_hi = -dy_hi/2:dy_hi:1+dy_hi |> collect
-z_hi = -dz_hi/2:dz_hi:1+dz_hi |> collect
-xh_hi = -dx_hi:dx_hi:1 |> collect
-yh_hi = -dy_hi:dy_hi:1 |> collect
+dx_hi = 1/itot_hi; dy_hi = 1/jtot_hi; dz_hi = 1/ktot_hi
+x_hi = collect(range(0.5-igc_hi, length=icells_hi)) .* dx_hi
+y_hi = collect(range(0.5-jgc_hi, length=jcells_hi)) .* dy_hi
+z_hi = collect(range(0.5-kgc_hi, length=kcells_hi)) .* dz_hi
+xh_hi = collect(range(-igc_hi, length=icells_hi)) .* dx_hi
+yh_hi = collect(range(-jgc_hi, length=jcells_hi)) .* dy_hi
 
 
 ## Compute a reference using Interpolations.jl
-@btime upsample_lin_ref!(a_hi_ref, a_lo, x_hi, y_hi, z_hi, x_lo, y_lo, z_lo)
-@btime upsample_lin!(a_hi, a_lo, itot_lo, jtot_lo, ktot_lo,
+upsample_lin_ref!(a_hi_ref, a_lo, x_hi, y_hi, z_hi, x_lo, y_lo, z_lo)
+upsample_lin!(a_hi, a_lo, itot_lo, jtot_lo, ktot_lo,
     is_hi, js_hi, ks_hi, is_lo, js_lo, ks_lo,
     ifac, jfac, kfac, 0, 0, 0)
 @upsample_lin_fast("222", 2, 2, 2, 0, 0, 0)
-@btime upsample_lin_222!(
+upsample_lin_222!(
     a_hi_fast, a_lo, itot_lo, jtot_lo, ktot_lo,
     is_hi, js_hi, ks_hi, is_lo, js_lo, ks_lo)
 
@@ -198,10 +207,10 @@ display(gcf())
 
 
 ## Compute a reference using Interpolations.jl
-u_lo = rand(itot_lo + 2, jtot_lo + 2, ktot_lo + 2)
-u_hi_ref = zeros(itot_lo*ifac + 2, jtot_lo*jfac + 2, ktot_lo*kfac + 2)
-u_hi = zeros(itot_lo*ifac + 2, jtot_lo*jfac + 2, ktot_lo*kfac + 2)
-u_hi_fast = zeros(itot_lo*ifac + 2, jtot_lo*jfac + 2, ktot_lo*kfac + 2)
+u_lo = rand(icells_lo, jcells_lo, kcells_lo)
+u_hi_ref = zeros(icells_hi, jcells_hi, kcells_hi)
+u_hi = zeros(icells_hi, jcells_hi, kcells_hi)
+u_hi_fast = zeros(icells_hi, jcells_hi, kcells_hi)
 
 @btime upsample_lin_ref!(u_hi_ref, u_lo, xh_hi, y_hi, z_hi, xh_lo, y_lo, z_lo)
 @btime upsample_lin!(
