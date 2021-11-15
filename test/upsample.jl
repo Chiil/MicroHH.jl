@@ -32,9 +32,9 @@ macro upsample_lin_fast(suffix, ifac, jfac, kfac, ioff, joff, koff)
     for kk in 0:kfac-1, jj in 0:jfac-1, ii in 0:ifac-1
         push!(ex_inner, :(i_hi = $ifac*i+$(ii+2)), :(j_hi = $jfac*j+$(jj+2)), :(k_hi = $kfac*k+$(kk+2)))
 
-        i_pos = -1/2 + (1/2 + ii)/ifac
-        j_pos = -1/2 + (1/2 + jj)/jfac
-        k_pos = -1/2 + (1/2 + kk)/kfac
+        i_pos = -1/2 + ioff + (1/2 - ioff + ii)/ifac
+        j_pos = -1/2 + joff + (1/2 - joff + jj)/jfac
+        k_pos = -1/2 + koff + (1/2 - koff + kk)/kfac
 
         i_lo_off = floor(Int, i_pos) + 2
         j_lo_off = floor(Int, j_pos) + 2
@@ -95,9 +95,9 @@ function upsample_lin!(
                     i_hi = ifac*i+ii+2; j_hi = jfac*j+jj+2; k_hi = kfac*k+kk+2;
 
                     # Determine fractional distance and west, south, and bot point.
-                    i_pos = -1/2 + (1/2 + ii)/ifac
-                    j_pos = -1/2 + (1/2 + jj)/jfac
-                    k_pos = -1/2 + (1/2 + kk)/kfac
+                    i_pos = -1/2 + ioff + (1/2 - ioff + ii)/ifac
+                    j_pos = -1/2 + joff + (1/2 - joff + jj)/jfac
+                    k_pos = -1/2 + koff + (1/2 - koff + kk)/kfac
 
                     fi = mod(i_pos, 1)
                     fj = mod(j_pos, 1)
@@ -196,8 +196,8 @@ u_hi = zeros(itot_lo*ifac + 2, jtot_lo*jfac + 2, ktot_lo*kfac + 2)
 u_hi_fast = zeros(itot_lo*ifac + 2, jtot_lo*jfac + 2, ktot_lo*kfac + 2)
 
 @btime upsample_lin_ref!(u_hi_ref, u_lo, xh_hi, y_hi, z_hi, xh_lo, y_lo, z_lo)
-@btime upsample_lin!(u_hi, u_lo, itot_lo, jtot_lo, ktot_lo, ifac, jfac, kfac, 1//2, 0, 0)
-@upsample_lin_fast("222_u", 2, 2, 2, 1//2, 0, 0)
+@btime upsample_lin!(u_hi, u_lo, itot_lo, jtot_lo, ktot_lo, ifac, jfac, kfac, 0.5, 0, 0)
+@upsample_lin_fast("222_u", 2, 2, 2, 0.5, 0, 0)
 @btime upsample_lin_222_u!(u_hi_fast, u_lo, itot_lo, jtot_lo, ktot_lo)
 
 u_lo_int = @view u_lo[2:end-1, 2:end-1, 2:end-1]
