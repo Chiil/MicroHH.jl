@@ -184,18 +184,18 @@ upsample_lin_222!(
     a_hi_fast, a_lo, itot_lo, jtot_lo, ktot_lo,
     is_hi, js_hi, ks_hi, is_lo, js_lo, ks_lo)
 
-a_lo_int = @view a_lo[2:end-1, 2:end-1, 2:end-1]
-a_hi_ref_int = @view a_hi_ref[2:end-1, 2:end-1, 2:end-1]
-a_hi_int = @view a_hi[2:end-1, 2:end-1, 2:end-1]
-a_hi_fast_int = @view a_hi_fast[2:end-1, 2:end-1, 2:end-1]
+a_lo_int = @view a_lo[is_lo:ie_lo, js_lo:je_lo, ks_lo:ke_lo]
+a_hi_ref_int = @view a_hi_ref[is_hi:ie_hi, js_hi:je_hi, ks_hi:ke_hi]
+a_hi_int = @view a_hi[is_hi:ie_hi, js_hi:je_hi, ks_hi:ke_hi]
+a_hi_fast_int = @view a_hi_fast[is_hi:ie_hi, js_hi:je_hi, ks_hi:ke_hi]
 
 println("Standard equal to ref: ", a_hi_int ≈ a_hi_ref_int)
 println("Fast equal to ref: ", a_hi_fast_int ≈ a_hi_ref_int)
 
 
 ## Plot the output.
-x_lo_int = @view x_lo[2:end-1]
-x_hi_int = @view x_hi[2:end-1]
+x_lo_int = @view x_lo[is_lo:ie_lo]
+x_hi_int = @view x_hi[is_hi:ie_hi]
 
 figure()
 plot(x_hi_int, a_hi_int[:, 1, 1], "C0-o")
@@ -222,18 +222,18 @@ u_hi_fast = zeros(icells_hi, jcells_hi, kcells_hi)
     u_hi_fast, u_lo, itot_lo, jtot_lo, ktot_lo,
     is_hi, js_hi, ks_hi, is_lo, js_lo, ks_lo)
 
-u_lo_int = @view u_lo[2:end-1, 2:end-1, 2:end-1]
-u_hi_ref_int = @view u_hi_ref[2:end-1, 2:end-1, 2:end-1]
-u_hi_int = @view u_hi[2:end-1, 2:end-1, 2:end-1]
-u_hi_fast_int = @view u_hi_fast[2:end-1, 2:end-1, 2:end-1]
+u_lo_int = @view a_lo[is_lo:ie_lo, js_lo:je_lo, ks_lo:ke_lo]
+u_hi_ref_int = @view a_hi_ref[is_hi:ie_hi, js_hi:je_hi, ks_hi:ke_hi]
+u_hi_int = @view a_hi[is_hi:ie_hi, js_hi:je_hi, ks_hi:ke_hi]
+u_hi_fast_int = @view a_hi_fast[is_hi:ie_hi, js_hi:je_hi, ks_hi:ke_hi]
 
 println("Standard equal to ref: ", u_hi_int ≈ u_hi_ref_int)
 println("Fast equal to ref: ", u_hi_fast_int ≈ u_hi_ref_int)
 
 
 ## Plot the output.
-xh_lo_int = @view xh_lo[2:end-1]
-xh_hi_int = @view xh_hi[2:end-1]
+xh_lo_int = @view xh_lo[is_lo:ie_lo]
+xh_hi_int = @view xh_hi[is_hi:ie_hi]
 
 figure()
 plot(xh_hi_int, u_hi_int[:, 1, 1], "C0-o")
