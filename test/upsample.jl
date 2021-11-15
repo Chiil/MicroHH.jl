@@ -189,22 +189,24 @@ tight_layout()
 display(gcf())
 
 
-"""
 ## Compute a reference using Interpolations.jl
 u_lo = rand(itot_lo + 2, jtot_lo + 2, ktot_lo + 2)
 u_hi_ref = zeros(itot_lo*ifac + 2, jtot_lo*jfac + 2, ktot_lo*kfac + 2)
 u_hi = zeros(itot_lo*ifac + 2, jtot_lo*jfac + 2, ktot_lo*kfac + 2)
+u_hi_fast = zeros(itot_lo*ifac + 2, jtot_lo*jfac + 2, ktot_lo*kfac + 2)
 
-@btime upsample_nn_ref!(u_hi_ref, u_lo, xh_hi, y_hi, z_hi, xh_lo, y_lo, z_lo)
-@btime upsample_nn!(u_hi, u_lo, itot_lo, jtot_lo, ktot_lo, ifac, jfac, kfac, 1//2, 0, 0)
+@btime upsample_lin_ref!(u_hi_ref, u_lo, xh_hi, y_hi, z_hi, xh_lo, y_lo, z_lo)
+@btime upsample_lin!(u_hi, u_lo, itot_lo, jtot_lo, ktot_lo, ifac, jfac, kfac, 1//2, 0, 0)
+@upsample_lin_fast("222_u", 2, 2, 2, 1//2, 0, 0)
+@btime upsample_lin_222_u!(u_hi_fast, u_lo, itot_lo, jtot_lo, ktot_lo)
 
 u_lo_int = @view u_lo[2:end-1, 2:end-1, 2:end-1]
 u_hi_ref_int = @view u_hi_ref[2:end-1, 2:end-1, 2:end-1]
 u_hi_int = @view u_hi[2:end-1, 2:end-1, 2:end-1]
+u_hi_fast_int = @view u_hi_fast[2:end-1, 2:end-1, 2:end-1]
 
-println("Mean equal to lo: ", mean(u_lo_int) ≈ mean(u_hi_int))
-println("Mean equal to ref: ", mean(u_hi_ref_int) ≈ mean(u_hi_int))
-println("Values equal to ref: ", u_hi_int ≈ u_hi_ref_int)
+println("Standard equal to ref: ", u_hi_int ≈ u_hi_ref_int)
+println("Fast equal to ref: ", u_hi_fast_int ≈ u_hi_ref_int)
 
 
 ## Plot the output.
@@ -214,9 +216,9 @@ xh_hi_int = @view xh_hi[2:end-1]
 figure()
 plot(xh_hi_int, u_hi_int[:, 1, 1], "C0-o")
 plot(xh_hi_int, u_hi_ref_int[:, 1, 1], "C1-^")
+plot(xh_hi_int, u_hi_fast_int[:, 1, 1], "C2-*")
 plot(xh_lo_int, u_lo_int[:, 1, 1], "k:+")
 tight_layout()
 display(gcf())
-"""
 
 show()
