@@ -75,7 +75,7 @@ macro upsample_lin_fast(suffix, ifac, jfac, kfac, ioff, joff, koff)
         function $name(hi, lo, itot, jtot, ktot, is_hi, js_hi, ks_hi, is_lo, js_lo, ks_lo)
             Threads.@threads for k in 0:ktot-1
                 for j in 0:jtot-1
-                    for i in 0:itot-1
+                    @inbounds @simd for i in 0:itot-1
                         $ex_inner_block
                     end
                 end
@@ -93,7 +93,7 @@ function upsample_lin!(
 
     Threads.@threads for k in 0:ktot-1
         for j in 0:jtot-1
-            for i in 0:itot-1
+            @simd for i in 0:itot-1
                 for kk in 0:kfac-1, jj in 0:jfac-1, ii in 0:ifac-1
                     i_hi = ifac*i+ii+is_hi; j_hi = jfac*j+jj+js_hi; k_hi = kfac*k+kk+ks_hi;
 
