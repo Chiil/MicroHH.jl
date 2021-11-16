@@ -1,7 +1,6 @@
 ## Load the packages.
 using LoopVectorization
 using Interpolations
-using OffsetArrays
 using Statistics
 using BenchmarkTools
 using PyPlot
@@ -9,6 +8,7 @@ using Printf
 
 
 ## Define the upsample functions.
+"""
 function upsample_nn!(hi, lo, itot, jtot, ktot, ifac, jfac, kfac, ioff, joff, koff)
     @tturbo for k in 0:ktot-1, j in 0:jtot-1, i in 0:itot-1
         i_lo = i + 2; j_lo = j + 2; k_lo = k + 2
@@ -26,6 +26,7 @@ function upsample_nn_ref!(hi, lo, x_hi, y_hi, z_hi, x_lo, y_lo, z_lo)
     interp = interpolate((x_lo, y_lo, z_lo), lo, (Gridded(Constant()), Gridded(Constant()), Gridded(Constant())))
     hi[2:end-1, 2:end-1, 2:end-1] .= interp(x_hi[2:end-1], y_hi[2:end-1], z_hi[2:end-1])
 end
+"""
 
 macro upsample_lin_fast(suffix, ifac, jfac, kfac, ioff, joff, koff)
     ex_inner = []
@@ -94,7 +95,7 @@ function upsample_lin!(
         for j in 0:jtot-1
             for i in 0:itot-1
                 for kk in 0:kfac-1, jj in 0:jfac-1, ii in 0:ifac-1
-                    i_hi = ifac*i+ii+2; j_hi = jfac*j+jj+2; k_hi = kfac*k+kk+2;
+                    i_hi = ifac*i+ii+is_hi; j_hi = jfac*j+jj+js_hi; k_hi = kfac*k+kk+ks_hi;
 
                     # Determine fractional distance and west, south, and bot point.
                     i_pos = -1/2 + ioff + (1/2 - ioff + ii)/ifac
@@ -114,9 +115,9 @@ function upsample_lin!(
                     coef_122 = (1-fi)*fj*fk
                     coef_222 = fi*fj*fk
 
-                    i_lo = i + floor(Int, i_pos) + 2
-                    j_lo = j + floor(Int, j_pos) + 2
-                    k_lo = k + floor(Int, k_pos) + 2
+                    i_lo = i + floor(Int, i_pos) + is_lo
+                    j_lo = j + floor(Int, j_pos) + js_lo
+                    k_lo = k + floor(Int, k_pos) + ks_lo
 
                     @inbounds hi[i_hi, j_hi, k_hi] = (
                         + coef_111 * lo[i_lo  , j_lo  , k_lo  ]
@@ -133,9 +134,9 @@ function upsample_lin!(
     end
 end
 
-function upsample_lin_ref!(hi, lo, x_hi, y_hi, z_hi, x_lo, y_lo, z_lo)
+function upsample_lin_ref!(hi, lo, x_hi, y_hi, z_hi, x_lo, y_lo, z_lo, is_hi, js_hi, ks_hi, ie_hi, je_hi, ke_hi)
     interp = interpolate((x_lo, y_lo, z_lo), lo, (Gridded(Linear()), Gridded(Linear()), Gridded(Linear())))
-    hi[2:end-1, 2:end-1, 2:end-1] .= interp(x_hi[2:end-1], y_hi[2:end-1], z_hi[2:end-1])
+    hi[is_hi:ie_hi, js_hi:je_hi, ks_hi:ke_hi] .= interp(x_hi[is_hi:ie_hi], y_hi[js_hi:je_hi], z_hi[ks_hi:ke_hi])
 end
 
 
@@ -175,12 +176,14 @@ yh_hi = collect(range(-jgc_hi, length=jcells_hi)) .* dy_hi
 
 
 ## Compute a reference using Interpolations.jl
-upsample_lin_ref!(a_hi_ref, a_lo, x_hi, y_hi, z_hi, x_lo, y_lo, z_lo)
-upsample_lin!(a_hi, a_lo, itot_lo, jtot_lo, ktot_lo,
+@btime upsample_lin_ref!(
+    a_hi_ref, a_lo, x_hi, y_hi, z_hi, x_lo, y_lo, z_lo,
+    is_hi, js_hi, ks_hi, ie_hi, je_hi, ke_hi)
+@btime upsample_lin!(a_hi, a_lo, itot_lo, jtot_lo, ktot_lo,
     is_hi, js_hi, ks_hi, is_lo, js_lo, ks_lo,
     ifac, jfac, kfac, 0, 0, 0)
 @upsample_lin_fast("222", 2, 2, 2, 0, 0, 0)
-upsample_lin_222!(
+@btime upsample_lin_222!(
     a_hi_fast, a_lo, itot_lo, jtot_lo, ktot_lo,
     is_hi, js_hi, ks_hi, is_lo, js_lo, ks_lo)
 
@@ -212,7 +215,9 @@ u_hi_ref = zeros(icells_hi, jcells_hi, kcells_hi)
 u_hi = zeros(icells_hi, jcells_hi, kcells_hi)
 u_hi_fast = zeros(icells_hi, jcells_hi, kcells_hi)
 
-@btime upsample_lin_ref!(u_hi_ref, u_lo, xh_hi, y_hi, z_hi, xh_lo, y_lo, z_lo)
+@btime upsample_lin_ref!(
+     u_hi_ref, u_lo, xh_hi, y_hi, z_hi, xh_lo, y_lo, z_lo,
+     is_hi, js_hi, ks_hi, ie_hi, je_hi, ke_hi)
 @btime upsample_lin!(
     u_hi, u_lo, itot_lo, jtot_lo, ktot_lo,
     is_hi, js_hi, ks_hi, is_lo, js_lo, ks_lo,
