@@ -158,7 +158,7 @@ macro upsample_lin_fast(suffix, ifac, jfac, kfac, ioff, joff, koff, add_top)
             $ex_top_block
         end
     end
-    println(ex)
+
     return esc(ex)
 end
 
