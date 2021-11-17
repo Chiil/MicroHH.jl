@@ -58,37 +58,46 @@ function make_inner_loop!(ex_list, ii, jj, kk, ifac, jfac, kfac, ioff, joff, kof
     push!(ex_list, :(hi[i_hi, j_hi, k_hi] = $rhs))
 end
 
-macro upsample_lin_fast(suffix, ifac, jfac, kfac, ioff, joff, koff)
+macro upsample_lin_fast(suffix, ifac, jfac, kfac, ioff, joff, koff, add_top)
     ex_inner = []
     for kk in 0:kfac-1, jj in 0:jfac-1, ii in 0:ifac-1
         make_inner_loop!(ex_inner, ii, jj, kk, ifac, jfac, kfac, ioff, joff, koff, false)
     end
-    ex_inner_block = Expr(:block, ex_inner...)
-
-    ex_top = []
-    kk = 0
-    for jj in 0:jfac-1, ii in 0:ifac-1
-        make_inner_loop!(ex_top, ii, jj, kk, ifac, jfac, kfac, ioff, joff, koff, true)
-    end
-    ex_top_block = Expr(:block, ex_top...)
-
-    name = Symbol(@sprintf "upsample_lin_%s!" suffix)
-    ex = quote
-        function $name(hi, lo, itot, jtot, ktot, is_hi, js_hi, ks_hi, is_lo, js_lo, ks_lo)
-            Threads.@threads for k in 0:ktot-1
-                for j in 0:jtot-1
-                    @inbounds @simd for i in 0:itot-1
-                        $ex_inner_block
-                    end
-                end
-            end
-            Threads.@threads for j in 0:jtot-1
+    ex_inner_block = quote
+        Threads.@threads for k in 0:ktot-1
+            for j in 0:jtot-1
                 @inbounds @simd for i in 0:itot-1
-                    $ex_top_block
+                    $(Expr(:block, ex_inner...))
                 end
             end
         end
     end
+
+    if add_top
+        ex_top = []
+        kk = 0
+        for jj in 0:jfac-1, ii in 0:ifac-1
+            make_inner_loop!(ex_top, ii, jj, kk, ifac, jfac, kfac, ioff, joff, koff, true)
+        end
+        ex_top_block = quote
+            Threads.@threads for j in 0:jtot-1
+                @inbounds @simd for i in 0:itot-1
+                    $(Expr(:block, ex_top...))
+                end
+            end
+        end
+    else
+        ex_top_block = :()
+    end
+
+    name = Symbol(@sprintf "upsample_lin_%s!" suffix)
+    ex = quote
+        function $name(hi, lo, itot, jtot, ktot, is_hi, js_hi, ks_hi, is_lo, js_lo, ks_lo)
+            $ex_inner_block
+            $ex_top_block
+        end
+    end
+    println(ex)
     return esc(ex)
 end
 
@@ -135,7 +144,7 @@ zh_hi = collect(range(-kgc_hi, length=kcells_hi)) .* dz_hi
 
 
 ## Compute a reference using Interpolations.jl
-@upsample_lin_fast("222", 2, 2, 2, 0, 0, 0.5)
+@upsample_lin_fast("222", 2, 2, 2, 0, 0, 0.5, true)
 @btime upsample_lin_ref!(
     w_hi_ref, w_lo, x_hi, y_hi, zh_hi, x_lo, y_lo, zh_lo,
     is_hi, js_hi, ks_hi, ie_hi, je_hi, ke_hi)
