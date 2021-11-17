@@ -92,7 +92,7 @@ macro upsample_lin_fast(suffix, ifac, jfac, kfac, ioff, joff, koff, add_top)
 
     name = Symbol(@sprintf "upsample_lin_%s!" suffix)
     ex = quote
-        function $name(hi, lo, itot, jtot, ktot, is_hi, js_hi, ks_hi, is_lo, js_lo, ks_lo)
+        function $name(hi, lo, itot, jtot, ktot, is_hi, js_hi, ks_hi, ke_hi, is_lo, js_lo, ks_lo, ke_lo)
             $ex_inner_block
             $ex_top_block
         end
@@ -150,7 +150,7 @@ zh_hi = collect(range(-kgc_hi, length=kcells_hi)) .* dz_hi
     is_hi, js_hi, ks_hi, ie_hi, je_hi, ke_hi)
 @btime upsample_lin_222!(
     w_hi_fast, w_lo, itot_lo, jtot_lo, ktot_lo,
-    is_hi, js_hi, ks_hi, is_lo, js_lo, ks_lo)
+    is_hi, js_hi, ks_hi, ke_hi, is_lo, js_lo, ks_lo, ke_lo)
 
 w_lo_int = @view w_lo[is_lo:ie_lo, js_lo:je_lo, ks_lo:ke_lo]
 w_hi_ref_int = @view w_hi_ref[is_hi:ie_hi, js_hi:je_hi, ks_hi:ke_hi]
