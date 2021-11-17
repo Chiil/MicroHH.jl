@@ -20,14 +20,14 @@ function make_inner_loop!(ex_list, ii, jj, kk, ifac, jfac, kfac, ioff, joff, kof
     j_pos = -1/2 + joff + (1/2 - joff + jj)/jfac
     k_pos = -1/2 + koff + (1/2 - koff + kk)/kfac
 
-    i_lo_off = floor(Int, i_pos) + is_lo
-    j_lo_off = floor(Int, j_pos) + js_lo
-    k_lo_off = floor(Int, k_pos) + ks_lo
+    i_lo_off = floor(Int, i_pos)
+    j_lo_off = floor(Int, j_pos)
+    k_lo_off = floor(Int, k_pos)
 
     if is_top
-        push!(ex_list, :(i_lo = i + $i_lo_off), :(j_lo = j + $j_lo_off), :(k_lo = ke_lo))
+        push!(ex_list, :(i_lo = i + $i_lo_off + is_lo), :(j_lo = j + $j_lo_off + js_lo), :(k_lo = ke_lo))
     else
-        push!(ex_list, :(i_lo = i + $i_lo_off), :(j_lo = j + $j_lo_off), :(k_lo = k + $k_lo_off))
+        push!(ex_list, :(i_lo = i + $i_lo_off + is_lo), :(j_lo = j + $j_lo_off + js_lo), :(k_lo = k + $k_lo_off + ks_lo))
     end
 
     fi = mod(i_pos, 1)
