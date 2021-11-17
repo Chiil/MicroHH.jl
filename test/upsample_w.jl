@@ -8,85 +8,67 @@ using Printf
 
 
 ## Define the upsample functions.
+function make_inner_loop!(ex_list, ii, jj, kk, ifac, jfac, kfac, ioff, joff, koff, is_top)
+    push!(ex_list, :(i_hi = $ifac*i+$ii+is_hi), :(j_hi = $jfac*j+$jj+js_hi))
+    if is_top
+        push!(ex_list, :(k_hi = ke_hi))
+    else
+        push!(ex_list, :(k_hi = $kfac*k+$kk+ks_hi))
+    end
+
+    i_pos = -1/2 + ioff + (1/2 - ioff + ii)/ifac
+    j_pos = -1/2 + joff + (1/2 - joff + jj)/jfac
+    k_pos = -1/2 + koff + (1/2 - koff + kk)/kfac
+
+    i_lo_off = floor(Int, i_pos) + is_lo
+    j_lo_off = floor(Int, j_pos) + js_lo
+    k_lo_off = floor(Int, k_pos) + ks_lo
+
+    if is_top
+        push!(ex_list, :(i_lo = i + $i_lo_off), :(j_lo = j + $j_lo_off), :(k_lo = ke_lo))
+    else
+        push!(ex_list, :(i_lo = i + $i_lo_off), :(j_lo = j + $j_lo_off), :(k_lo = k + $k_lo_off))
+    end
+
+    fi = mod(i_pos, 1)
+    fj = mod(j_pos, 1)
+    fk = mod(k_pos, 1)
+
+    coef = zeros(2, 2, 2)
+    coef[1, 1, 1] = (((1-fi)*fj+fi-1)*fk+(fi-1)*fj-fi+1)
+    coef[2, 1, 1] = ((fi*fj-fi)*fk-fi*fj+fi)
+    coef[1, 2, 1] = ((fi-1)*fj*fk+(1-fi)*fj)
+    coef[2, 2, 1] = (fi*fj-fi*fj*fk)
+    coef[1, 1, 2] = ((fi-1)*fj-fi+1)*fk
+    coef[2, 1, 2] = (fi-fi*fj)*fk
+    coef[1, 2, 2] = (1-fi)*fj*fk
+    coef[2, 2, 2] = fi*fj*fk
+
+    kc_end = is_top ? 1 : 2
+
+    rhs_list = []
+    for kc in 1:kc_end, jc in 1:2, ic in 1:2
+        if !(coef[ic, jc, kc] ≈ 0)
+            push!(rhs_list, :( $(coef[ic, jc, kc])*lo[i_lo+$(ic-1), j_lo+$(jc-1), k_lo+$(kc-1)] ))
+        end
+    end
+
+    rhs = Expr(:call, :+, rhs_list...)
+
+    push!(ex_list, :(hi[i_hi, j_hi, k_hi] = $rhs))
+end
+
 macro upsample_lin_fast(suffix, ifac, jfac, kfac, ioff, joff, koff)
     ex_inner = []
     for kk in 0:kfac-1, jj in 0:jfac-1, ii in 0:ifac-1
-        push!(ex_inner, :(i_hi = $ifac*i+$ii+is_hi), :(j_hi = $jfac*j+$jj+js_hi), :(k_hi = $kfac*k+$kk+ks_hi))
-
-        i_pos = -1/2 + ioff + (1/2 - ioff + ii)/ifac
-        j_pos = -1/2 + joff + (1/2 - joff + jj)/jfac
-        k_pos = -1/2 + koff + (1/2 - koff + kk)/kfac
-
-        i_lo_off = floor(Int, i_pos) + is_lo
-        j_lo_off = floor(Int, j_pos) + js_lo
-        k_lo_off = floor(Int, k_pos) + ks_lo
-        push!(ex_inner, :(i_lo = i + $i_lo_off), :(j_lo = j + $j_lo_off), :(k_lo = k + $k_lo_off))
-
-        fi = mod(i_pos, 1)
-        fj = mod(j_pos, 1)
-        fk = mod(k_pos, 1)
-
-        coef = zeros(2, 2, 2)
-        coef[1, 1, 1] = (((1-fi)*fj+fi-1)*fk+(fi-1)*fj-fi+1)
-        coef[2, 1, 1] = ((fi*fj-fi)*fk-fi*fj+fi)
-        coef[1, 2, 1] = ((fi-1)*fj*fk+(1-fi)*fj)
-        coef[2, 2, 1] = (fi*fj-fi*fj*fk)
-        coef[1, 1, 2] = ((fi-1)*fj-fi+1)*fk
-        coef[2, 1, 2] = (fi-fi*fj)*fk
-        coef[1, 2, 2] = (1-fi)*fj*fk
-        coef[2, 2, 2] = fi*fj*fk
-
-        rhs_list = []
-        for kc in 1:2, jc in 1:2, ic in 1:2
-            if !(coef[ic, jc, kc] ≈ 0)
-                push!(rhs_list, :( $(coef[ic, jc, kc])*lo[i_lo+$(ic-1), j_lo+$(jc-1), k_lo+$(kc-1)] ))
-            end
-        end
-
-        rhs = Expr(:call, :+, rhs_list...)
-
-        push!(ex_inner, :(hi[i_hi, j_hi, k_hi] = $rhs))
+        make_inner_loop!(ex_inner, ii, jj, kk, ifac, jfac, kfac, ioff, joff, koff, false)
     end
     ex_inner_block = Expr(:block, ex_inner...)
 
     ex_top = []
     kk = 0
     for jj in 0:jfac-1, ii in 0:ifac-1
-        push!(ex_top, :(i_hi = $ifac*i+$ii+is_hi), :(j_hi = $jfac*j+$jj+js_hi), :(k_hi = ke_hi))
-
-        i_pos = -1/2 + ioff + (1/2 - ioff + ii)/ifac
-        j_pos = -1/2 + joff + (1/2 - joff + jj)/jfac
-        k_pos = -1/2 + koff + (1/2 - koff + kk)/kfac
-
-        i_lo_off = floor(Int, i_pos) + is_lo
-        j_lo_off = floor(Int, j_pos) + js_lo
-        k_lo_off = floor(Int, k_pos) + ks_lo
-        push!(ex_top, :(i_lo = i + $i_lo_off), :(j_lo = j + $j_lo_off), :(k_lo = ke_lo))
-
-        fi = mod(i_pos, 1)
-        fj = mod(j_pos, 1)
-        fk = mod(k_pos, 1)
-
-        coef = zeros(2, 2, 2)
-        coef[1, 1, 1] = (((1-fi)*fj+fi-1)*fk+(fi-1)*fj-fi+1)
-        coef[2, 1, 1] = ((fi*fj-fi)*fk-fi*fj+fi)
-        coef[1, 2, 1] = ((fi-1)*fj*fk+(1-fi)*fj)
-        coef[2, 2, 1] = (fi*fj-fi*fj*fk)
-        coef[1, 1, 2] = ((fi-1)*fj-fi+1)*fk
-        coef[2, 1, 2] = (fi-fi*fj)*fk
-        coef[1, 2, 2] = (1-fi)*fj*fk
-        coef[2, 2, 2] = fi*fj*fk
-
-        rhs_list = []
-        for kc in 1:1, jc in 1:2, ic in 1:2
-            if !(coef[ic, jc, kc] ≈ 0)
-                push!(rhs_list, :( $(coef[ic, jc, kc])*lo[i_lo+$(ic-1), j_lo+$(jc-1), k_lo+$(kc-1)] ))
-            end
-        end
-
-        rhs = Expr(:call, :+, rhs_list...)
-
-        push!(ex_top, :(hi[i_hi, j_hi, k_hi] = $rhs))
+        make_inner_loop!(ex_top, ii, jj, kk, ifac, jfac, kfac, ioff, joff, koff, true)
     end
     ex_top_block = Expr(:block, ex_top...)
 
