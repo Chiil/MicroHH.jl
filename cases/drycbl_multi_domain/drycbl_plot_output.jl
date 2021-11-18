@@ -6,34 +6,34 @@ using Interpolations
 
 
 ## Read the data.
-x_01 = h5read("drycbl.01.00003600.h5", "x")
-x_02 = h5read("drycbl.02.00003600.h5", "x")
-y_01 = h5read("drycbl.01.00003600.h5", "y")
-y_02 = h5read("drycbl.02.00003600.h5", "y")
-z_01 = h5read("drycbl.01.00003600.h5", "z")
-z_02 = h5read("drycbl.02.00003600.h5", "z")
-zh_01 = h5read("drycbl.01.00003600.h5", "zh")
-zh_02 = h5read("drycbl.02.00003600.h5", "zh")
+x_01 = h5read("drycbl.01.00007200.h5", "x")
+x_02 = h5read("drycbl.02.00007200.h5", "x")
+y_01 = h5read("drycbl.01.00007200.h5", "y")
+y_02 = h5read("drycbl.02.00007200.h5", "y")
+z_01 = h5read("drycbl.01.00007200.h5", "z")
+z_02 = h5read("drycbl.02.00007200.h5", "z")
+zh_01 = h5read("drycbl.01.00007200.h5", "zh")
+zh_02 = h5read("drycbl.02.00007200.h5", "zh")
 
-s_bot_01 = h5read("drycbl.01.00003600.h5", "s_bot", (:, :))
-s_bot_02 = h5read("drycbl.02.00003600.h5", "s_bot", (:, :))
+s_bot_01 = h5read("drycbl.01.00007200.h5", "s_bot", (:, :))
+s_bot_02 = h5read("drycbl.02.00007200.h5", "s_bot", (:, :))
 
 s_bot_01 .-= mean(s_bot_01)
 s_bot_02 .-= mean(s_bot_02)
 
-println(zh_01[17], " ", zh_02[49])
-w_xy_01 = h5read("drycbl.01.00003600.h5", "w", (:, :, 25)) # at 300 m
-w_xy_02 = h5read("drycbl.02.00003600.h5", "w", (:, :, 49))
+println(zh_01[17], " ", zh_02[33])
+w_xy_01 = h5read("drycbl.01.00007200.h5", "w", (:, :, 17)) # at 300 m
+w_xy_02 = h5read("drycbl.02.00007200.h5", "w", (:, :, 33))
 
-w_xz_01 = h5read("drycbl.01.00003600.h5", "w", (:, 1, :))
-w_xz_02 = h5read("drycbl.02.00003600.h5", "w", (:, 1, :))
+w_xz_01 = h5read("drycbl.01.00007200.h5", "w", (:, 1, :))
+w_xz_02 = h5read("drycbl.02.00007200.h5", "w", (:, 1, :))
 
 
 ## Read for plotting.
-xh_01 = h5read("drycbl.01.00003600.h5", "xh")
-xh_02 = h5read("drycbl.02.00003600.h5", "xh")
-yh_01 = h5read("drycbl.01.00003600.h5", "yh")
-yh_02 = h5read("drycbl.02.00003600.h5", "yh")
+xh_01 = h5read("drycbl.01.00007200.h5", "xh")
+xh_02 = h5read("drycbl.02.00007200.h5", "xh")
+yh_01 = h5read("drycbl.01.00007200.h5", "yh")
+yh_02 = h5read("drycbl.02.00007200.h5", "yh")
 push!(xh_01, 3200.)
 push!(xh_02, 3200.)
 push!(yh_01, 3200.)
@@ -55,7 +55,7 @@ ylabel("y (m)")
 tight_layout()
 display(gcf())
 
-println(var(s_bot_01), " ", var(s_bot_02))
+println("variance in s_bot: ", var(s_bot_01), " ", var(s_bot_02))
 
 
 ## Surface temperature figure tweaked
@@ -90,7 +90,7 @@ ylabel("y (m)")
 tight_layout()
 display(gcf())
 
-println(var(w_xy_01), " ", var(w_xy_02))
+println("variance in w_xy: ", var(w_xy_01), " ", var(w_xy_02))
 
 
 ## Vertical velocity xy interpolated
@@ -111,6 +111,22 @@ ylabel("y (m)")
 
 tight_layout()
 display(gcf())
+
+
+## Scatter xy
+figure(figsize=(5.5, 4.5))
+hexbin(vec(w_xy_01), vec(w_xy_02_to_01), gridsize=40, bins="log", cmap=plt.cm.viridis)
+colorbar()
+plot([-2, 5], [-2, 5], "k:")
+xlim(-1.5, 3)
+ylim(-1.5, 3)
+xlabel("w_xy_01 (m s-1)")
+ylabel("w_xy_02 (m s-1)")
+
+tight_layout()
+display(gcf())
+
+println("correlation in w_xy: ", cor(vec(w_xy_01), vec(w_xy_02_to_01)))
 
 
 ## Vertical velocity xz
