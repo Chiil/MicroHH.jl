@@ -174,48 +174,46 @@ function calc_nudge_fields!(md::MultiDomain, f_d::Fields, f_s::Fields, g_d::Grid
         return
     end
 
-    # @sync begin
-    #     Threads.@spawn begin
-    #         interp = interpolate((g_s.xh, g_s.y, g_s.z), f_s.u, (Gridded(Linear()), Gridded(Linear()), Gridded(Linear())))
-    #         md.u_nudge[g_d.is:g_d.ie, g_d.js:g_d.je, g_d.ks:g_d.ke] .= interp(g_d.xh[g_d.is:g_d.ie], g_d.y[g_d.js:g_d.je], g_d.z[g_d.ks:g_d.ke])
-    #     end
+    if (g_d.itot, g_d.jtot, g_d.ktot) .÷ (g_s.itot, g_s.jtot, g_s.ktot) .== (2, 2, 2)
+        upsample_lin_222_u!(
+            md.u_nudge, f_s.u, g_s.itot, g_s.jtot, g_s.ktot,
+            g_d.is, g_d.js, g_d.ks, g_d.ke, g_s.is, g_s.js, g_s.ks, g_s.ke)
 
-    #     Threads.@spawn begin
-    #         interp = interpolate((g_s.x, g_s.yh, g_s.z), f_s.v, (Gridded(Linear()), Gridded(Linear()), Gridded(Linear())))
-    #         md.v_nudge[g_d.is:g_d.ie, g_d.js:g_d.je, g_d.ks:g_d.ke] .= interp(g_d.x[g_d.is:g_d.ie], g_d.yh[g_d.js:g_d.je], g_d.z[g_d.ks:g_d.ke])
-    #     end
+        upsample_lin_222_v!(
+            md.v_nudge, f_s.v, g_s.itot, g_s.jtot, g_s.ktot,
+            g_d.is, g_d.js, g_d.ks, g_d.ke, g_s.is, g_s.js, g_s.ks, g_s.ke)
 
-    #     Threads.@spawn begin
-    #         interp = interpolate((g_s.x, g_s.y, g_s.zh), f_s.w, (Gridded(Linear()), Gridded(Linear()), Gridded(Linear())))
-    #         md.w_nudge[g_d.is:g_d.ie, g_d.js:g_d.je, g_d.ks:g_d.keh] .= interp(g_d.x[g_d.is:g_d.ie], g_d.y[g_d.js:g_d.je], g_d.zh[g_d.ks:g_d.keh])
-    #     end
+        upsample_lin_222_w!(
+            md.w_nudge, f_s.w, g_s.itot, g_s.jtot, g_s.ktot,
+            g_d.is, g_d.js, g_d.ks, g_d.keh, g_s.is, g_s.js, g_s.ks, g_s.keh)
 
-    #     Threads.@spawn begin
-    #         interp = interpolate((g_s.x, g_s.y, g_s.z), f_s.s, (Gridded(Linear()), Gridded(Linear()), Gridded(Linear())))
-    #         md.s_nudge[g_d.is:g_d.ie, g_d.js:g_d.je, g_d.ks:g_d.ke] .= interp(g_d.x[g_d.is:g_d.ie], g_d.y[g_d.js:g_d.je], g_d.z[g_d.ks:g_d.ke])
-    #     end
-    # end
+        upsample_lin_222_s!(
+            md.s_nudge, f_s.s, g_s.itot, g_s.jtot, g_s.ktot,
+            g_d.is, g_d.js, g_d.ks, g_d.ke, g_s.is, g_s.js, g_s.ks, g_s.ke)
+    else
+        println("WARNING: resorting to slow interpolations in nudging.")
+        @sync begin
+            Threads.@spawn begin
+                interp = interpolate((g_s.xh, g_s.y, g_s.z), f_s.u, (Gridded(Linear()), Gridded(Linear()), Gridded(Linear())))
+                md.u_nudge[g_d.is:g_d.ie, g_d.js:g_d.je, g_d.ks:g_d.ke] .= interp(g_d.xh[g_d.is:g_d.ie], g_d.y[g_d.js:g_d.je], g_d.z[g_d.ks:g_d.ke])
+            end
 
-    # u_nudge = zeros(size(md.u_nudge))
-    # v_nudge = zeros(size(md.v_nudge))
-    # w_nudge = zeros(size(md.w_nudge))
-    # s_nudge = zeros(size(md.s_nudge))
+            Threads.@spawn begin
+                interp = interpolate((g_s.x, g_s.yh, g_s.z), f_s.v, (Gridded(Linear()), Gridded(Linear()), Gridded(Linear())))
+                md.v_nudge[g_d.is:g_d.ie, g_d.js:g_d.je, g_d.ks:g_d.ke] .= interp(g_d.x[g_d.is:g_d.ie], g_d.yh[g_d.js:g_d.je], g_d.z[g_d.ks:g_d.ke])
+            end
 
-    upsample_lin_222_u!(
-        md.u_nudge, f_s.u, g_s.itot, g_s.jtot, g_s.ktot,
-        g_d.is, g_d.js, g_d.ks, g_d.ke, g_s.is, g_s.js, g_s.ks, g_s.ke)
+            Threads.@spawn begin
+                interp = interpolate((g_s.x, g_s.y, g_s.zh), f_s.w, (Gridded(Linear()), Gridded(Linear()), Gridded(Linear())))
+                md.w_nudge[g_d.is:g_d.ie, g_d.js:g_d.je, g_d.ks:g_d.keh] .= interp(g_d.x[g_d.is:g_d.ie], g_d.y[g_d.js:g_d.je], g_d.zh[g_d.ks:g_d.keh])
+            end
 
-    upsample_lin_222_v!(
-        md.v_nudge, f_s.v, g_s.itot, g_s.jtot, g_s.ktot,
-        g_d.is, g_d.js, g_d.ks, g_d.ke, g_s.is, g_s.js, g_s.ks, g_s.ke)
-
-    upsample_lin_222_w!(
-        md.w_nudge, f_s.w, g_s.itot, g_s.jtot, g_s.ktot,
-        g_d.is, g_d.js, g_d.ks, g_d.keh, g_s.is, g_s.js, g_s.ks, g_s.keh)
-
-    upsample_lin_222_s!(
-        md.s_nudge, f_s.s, g_s.itot, g_s.jtot, g_s.ktot,
-        g_d.is, g_d.js, g_d.ks, g_d.ke, g_s.is, g_s.js, g_s.ks, g_s.ke)
+            Threads.@spawn begin
+                interp = interpolate((g_s.x, g_s.y, g_s.z), f_s.s, (Gridded(Linear()), Gridded(Linear()), Gridded(Linear())))
+                md.s_nudge[g_d.is:g_d.ie, g_d.js:g_d.je, g_d.ks:g_d.ke] .= interp(g_d.x[g_d.is:g_d.ie], g_d.y[g_d.js:g_d.je], g_d.z[g_d.ks:g_d.ke])
+            end
+        end
+    end
 end
 
 
