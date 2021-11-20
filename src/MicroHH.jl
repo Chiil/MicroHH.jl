@@ -12,10 +12,6 @@ using Printf
 using HDF5
 
 
-## Prevent slow single precision performance due to subnormals.
-set_zero_subnormals(true)
-
-
 ## Include the necessary files.
 include("StencilBuilder.jl")
 include("Grid.jl")
@@ -185,6 +181,9 @@ end
 
 
 function step_model!(m::Model)
+    # Prevent slow single precision performance due to subnormals.
+    set_zero_subnormals(true)
+
     itime_next = m.timeloop[1].itime + m.timeloop[1].idt
 
     for i in 1:m.n_domains
