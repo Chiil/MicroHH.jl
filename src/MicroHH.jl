@@ -63,6 +63,9 @@ end
 
 
 function prepare_model!(m::Model)
+    # Prevent slow single precision performance due to subnormals.
+    set_zero_subnormals(true)
+
     m.last_measured_time[] = time_ns()
 
     for i in 1:m.n_domains

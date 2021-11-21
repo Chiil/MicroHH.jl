@@ -6,7 +6,10 @@ using LoopVectorization
 
 
 ## Loading settings.
-include("drycbl_settings_post.jl")
+include("drycbl_settings.jl")
+for d in settings
+    d["timeloop"]["start_time"] = 3600.
+end
 
 
 ## Initialize the model.
