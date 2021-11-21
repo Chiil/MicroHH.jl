@@ -226,10 +226,11 @@ function check_model(m::Model)
 
     # Second, compute the divergence and CFL for each domain.
     for i in 1:m.n_domains
-        status_string = @sprintf("  (%02i) Div = %6.3E, CFL = %6.3f",
+        status_string = @sprintf("  (%02i) Div = %6.3E, CFL = %6.3f, subnormals = %i",
             i,
             calc_divergence(m.fields[i], m.grid[i]),
-            calc_cfl(m.fields[i], m.grid[i], m.timeloop[i]))
+            calc_cfl(m.fields[i], m.grid[i], m.timeloop[i]),
+            sum(issubnormal.(m.fields[i].u)) + sum(issubnormal.(m.fields[i].v)) + sum(issubnormal.(m.fields[i].w)))
         println(status_string)
     end
 end
