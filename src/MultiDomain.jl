@@ -167,6 +167,10 @@ end
 @upsample_lin_fast("222_v", 2, 2, 2,   0, 0.5,   0, false)
 @upsample_lin_fast("222_w", 2, 2, 2,   0, 0  , 0.5, true )
 @upsample_lin_fast("222_s", 2, 2, 2,   0, 0  ,   0, false)
+@upsample_lin_fast("333_u", 3, 3, 3, 0.5, 0  ,   0, false)
+@upsample_lin_fast("333_v", 3, 3, 3,   0, 0.5,   0, false)
+@upsample_lin_fast("333_w", 3, 3, 3,   0, 0  , 0.5, true )
+@upsample_lin_fast("333_s", 3, 3, 3,   0, 0  ,   0, false)
 
 
 function calc_nudge_fields!(md::MultiDomain, f_d::Fields, f_s::Fields, g_d::Grid, g_s::Grid)
@@ -174,7 +178,8 @@ function calc_nudge_fields!(md::MultiDomain, f_d::Fields, f_s::Fields, g_d::Grid
         return
     end
 
-    if (g_d.itot, g_d.jtot, g_d.ktot) .÷ (g_s.itot, g_s.jtot, g_s.ktot) == (2, 2, 2)
+    upsample_ratio = (g_d.itot, g_d.jtot, g_d.ktot) .÷ (g_s.itot, g_s.jtot, g_s.ktot)
+    if upsample_ratio == (2, 2, 2)
         upsample_lin_222_u!(
             md.u_nudge, f_s.u, g_s.itot, g_s.jtot, g_s.ktot,
             g_d.is, g_d.js, g_d.ks, g_d.ke, g_s.is, g_s.js, g_s.ks, g_s.ke)
@@ -190,6 +195,24 @@ function calc_nudge_fields!(md::MultiDomain, f_d::Fields, f_s::Fields, g_d::Grid
         upsample_lin_222_s!(
             md.s_nudge, f_s.s, g_s.itot, g_s.jtot, g_s.ktot,
             g_d.is, g_d.js, g_d.ks, g_d.ke, g_s.is, g_s.js, g_s.ks, g_s.ke)
+
+    elseif upsample_ratio == (3, 3, 3)
+        upsample_lin_333_u!(
+            md.u_nudge, f_s.u, g_s.itot, g_s.jtot, g_s.ktot,
+            g_d.is, g_d.js, g_d.ks, g_d.ke, g_s.is, g_s.js, g_s.ks, g_s.ke)
+
+        upsample_lin_333_v!(
+            md.v_nudge, f_s.v, g_s.itot, g_s.jtot, g_s.ktot,
+            g_d.is, g_d.js, g_d.ks, g_d.ke, g_s.is, g_s.js, g_s.ks, g_s.ke)
+
+        upsample_lin_333_w!(
+            md.w_nudge, f_s.w, g_s.itot, g_s.jtot, g_s.ktot,
+            g_d.is, g_d.js, g_d.ks, g_d.keh, g_s.is, g_s.js, g_s.ks, g_s.keh)
+
+        upsample_lin_333_s!(
+            md.s_nudge, f_s.s, g_s.itot, g_s.jtot, g_s.ktot,
+            g_d.is, g_d.js, g_d.ks, g_d.ke, g_s.is, g_s.js, g_s.ks, g_s.ke)
+
     else
         println("WARNING: resorting to slow interpolations in nudging.")
         @sync begin
