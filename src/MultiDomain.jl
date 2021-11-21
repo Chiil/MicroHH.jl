@@ -174,7 +174,7 @@ function calc_nudge_fields!(md::MultiDomain, f_d::Fields, f_s::Fields, g_d::Grid
         return
     end
 
-    if (g_d.itot, g_d.jtot, g_d.ktot) .÷ (g_s.itot, g_s.jtot, g_s.ktot) .== (2, 2, 2)
+    if (g_d.itot, g_d.jtot, g_d.ktot) .÷ (g_s.itot, g_s.jtot, g_s.ktot) == (2, 2, 2)
         upsample_lin_222_u!(
             md.u_nudge, f_s.u, g_s.itot, g_s.jtot, g_s.ktot,
             g_d.is, g_d.js, g_d.ks, g_d.ke, g_s.is, g_s.js, g_s.ks, g_s.ke)

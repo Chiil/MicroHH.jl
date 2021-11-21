@@ -1,8 +1,14 @@
+## Grid generation function.
 function make_grid(zsize, ktot)
     dz = zsize / ktot
     z = range(0.5*dz, step=dz, length=ktot) |> collect
     return z
 end
+
+
+## Default float type.
+float_type = Float32
+
 
 ## Settings domain 1.
 settings_grid = Dict{String, Any}(
@@ -26,7 +32,7 @@ settings_boundary = Dict(
 
 settings_timeloop = Dict(
     "start_time" => 0.,
-    "end_time" => 7200.,
+    "end_time" => 3600.,
     "save_time" => 1800.,
     "check_time" => 50.,
     "dt" => 5.)
