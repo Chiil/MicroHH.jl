@@ -16,7 +16,7 @@ load_model!(m)
 in_progress = prepare_model!(m)
 
 
-## Compute the scalar dissipation
+## Compute the scalar dissipation.
 function calc_scalar_dissipation!(
     slngrad, s,
     dxi, dyi, dzi, dzhi,
@@ -34,6 +34,8 @@ calc_scalar_dissipation!(
     g2.dxi, g2.dyi, g2.dzi, g2.dzhi,
     g2.is, g2.ie, g2.js, g2.je, g2.ks, g2.ke)
 
+
+## Plot the data.
 x = @view g2.x[g2.is:g2.ie]
 y = @view g2.y[g2.js:g2.je]
 z = @view g2.z[g2.ks:g2.ke]
