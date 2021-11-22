@@ -9,17 +9,18 @@ include("drycbl_settings.jl")
 
 ## Initialize the model.
 n_domains = 2
-m = Model("drycbl", n_domains, settings, Float64)
+m = Model("drycbl", n_domains, settings, float_type)
 
 
 ## Load the restart data.
 load_model!(m)
 
 
-## Run the model.
-prepare_model!(m)
+## Prepare the time loop.
+in_progress = prepare_model!(m)
 
-in_progress = true
+
+## Start the time loop.
 while in_progress
     global in_progress = step_model!(m)
     # @profile global in_progress = step_model!(m)

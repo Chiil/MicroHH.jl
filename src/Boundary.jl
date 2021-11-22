@@ -7,6 +7,7 @@ struct Boundary
     s_top_type::Boundary_type
 end
 
+
 function string_to_type(s::String)
     if s == "Dirichlet"
         return Dirichlet::Boundary_type
@@ -14,6 +15,7 @@ function string_to_type(s::String)
         return Neumann::Boundary_type
     end
 end
+
 
 function Boundary(d::Dict)
     mom_bot_type = string_to_type(d["mom_bot_type"])
@@ -27,6 +29,7 @@ function Boundary(d::Dict)
         s_bot_type,
         s_top_type)
 end
+
 
 function boundary_cyclic_kernel!(
     a, is, ie, js, je, igc, jgc)
@@ -51,6 +54,27 @@ function boundary_cyclic_kernel!(
     end
 end
 
+
+function boundary_cyclic_kernel_2d!(
+    a, is, ie, js, je, igc, jgc)
+    # East-west BCs
+    @tturbo for j in 1:size(a, 2)
+        for i in 1:igc
+            a[i, j] = a[ie-i+1, j]
+            a[ie+i, j] = a[is+i-1, j]
+        end
+    end
+
+    # North-south BCs
+    @tturbo for j in 1:jgc
+        for i in 1:size(a, 1)
+            a[i, j] = a[i, je-j+1]
+            a[i, je+j] = a[i, js+j-1]
+        end
+    end
+end
+
+
 function set_ghost_cells_bot_kernel!(
     a, a_bot, a_gradbot, dzh, ks, bot_type::Boundary_type)
 
@@ -62,6 +86,7 @@ function set_ghost_cells_bot_kernel!(
                 a_gradbot[i, j] = (a[i, j, ks] - a[i, j, ks-1]) * dzhi
             end
         end
+
     elseif bot_type == Neumann::Boundary_type
         @tturbo for j in 1:size(a, 2)
             for i in 1:size(a, 1)
@@ -72,17 +97,19 @@ function set_ghost_cells_bot_kernel!(
     end
 end
 
+
 function set_ghost_cells_top_kernel!(
     a, a_top, a_gradtop, dzh, ke, bot_type::Boundary_type)
 
     if bot_type == Dirichlet::Boundary_type
-        dzhi = 1 / dzh[ks]
+        dzhi = 1 / dzh[ke+1]
         @tturbo for j in 1:size(a, 2)
             for i in 1:size(a, 1)
                 a[i, j, ke+1] = 2a_top[i, j] - a[i, j, ke]
                 a_gradtop[i, j] = (a[i, j, ke+1] - a[i, j, ke]) * dzhi
             end
         end
+
     elseif bot_type == Neumann::Boundary_type
         @tturbo for j in 1:size(a, 2)
             for i in 1:size(a, 1)
@@ -92,6 +119,7 @@ function set_ghost_cells_top_kernel!(
         end
     end
 end
+
 
 function set_boundary!(fields::Fields, grid::Grid, boundary::Boundary)
     # Cyclic BC.
@@ -103,6 +131,34 @@ function set_boundary!(fields::Fields, grid::Grid, boundary::Boundary)
         fields.w, grid.is, grid.ie, grid.js, grid.je, grid.igc, grid.jgc)
     boundary_cyclic_kernel!(
         fields.s, grid.is, grid.ie, grid.js, grid.je, grid.igc, grid.jgc)
+
+    # Cyclic BCs of boundary fields.
+    boundary_cyclic_kernel_2d!(
+        fields.u_bot, grid.is, grid.ie, grid.js, grid.je, grid.igc, grid.jgc)
+    boundary_cyclic_kernel_2d!(
+        fields.u_gradbot, grid.is, grid.ie, grid.js, grid.je, grid.igc, grid.jgc)
+    boundary_cyclic_kernel_2d!(
+        fields.u_top, grid.is, grid.ie, grid.js, grid.je, grid.igc, grid.jgc)
+    boundary_cyclic_kernel_2d!(
+        fields.u_gradtop, grid.is, grid.ie, grid.js, grid.je, grid.igc, grid.jgc)
+
+    boundary_cyclic_kernel_2d!(
+        fields.v_bot, grid.is, grid.ie, grid.js, grid.je, grid.igc, grid.jgc)
+    boundary_cyclic_kernel_2d!(
+        fields.v_gradbot, grid.is, grid.ie, grid.js, grid.je, grid.igc, grid.jgc)
+    boundary_cyclic_kernel_2d!(
+        fields.v_top, grid.is, grid.ie, grid.js, grid.je, grid.igc, grid.jgc)
+    boundary_cyclic_kernel_2d!(
+        fields.v_gradtop, grid.is, grid.ie, grid.js, grid.je, grid.igc, grid.jgc)
+
+    boundary_cyclic_kernel_2d!(
+        fields.s_bot, grid.is, grid.ie, grid.js, grid.je, grid.igc, grid.jgc)
+    boundary_cyclic_kernel_2d!(
+        fields.s_gradbot, grid.is, grid.ie, grid.js, grid.je, grid.igc, grid.jgc)
+    boundary_cyclic_kernel_2d!(
+        fields.s_top, grid.is, grid.ie, grid.js, grid.je, grid.igc, grid.jgc)
+    boundary_cyclic_kernel_2d!(
+        fields.s_gradtop, grid.is, grid.ie, grid.js, grid.je, grid.igc, grid.jgc)
     
     # Bottom BC.
     set_ghost_cells_bot_kernel!(

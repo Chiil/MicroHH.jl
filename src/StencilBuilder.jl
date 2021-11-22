@@ -64,18 +64,18 @@ function process_expr(ex, arrays, i, j, k)
         if isinteger(k)
             k_int = convert(Int, abs(k))
             if k > 0
-                ex = :( $ex * dzi[k + $k_int] )
+                ex = :( $ex * dzi[k+$k_int] )
             elseif k < 0
-                ex = :( $ex * dzi[k - $k_int] )
+                ex = :( $ex * dzi[k-$k_int] )
             else
                 ex = :( $ex * dzi[k] )
             end
         else
             k_int = convert(Int, abs(k + 1/2))
             if k > -1/2
-                ex = :( $ex * dzhi[k + $k_int] )
+                ex = :( $ex * dzhi[k+$k_int] )
             elseif k < -1/2
-                ex = :( $ex * dzhi[k - $k_int] )
+                ex = :( $ex * dzhi[k-$k_int] )
             else
                 ex = :( $ex * dzhi[k] )
             end
@@ -101,7 +101,7 @@ function process_expr(ex, arrays, i, j, k)
                 args[n  ] = :( $cg1 * $(args[n  ])  )
                 args[n+1] = :( $cg2 * $(args[n+1])  )
                 insert!(args, n, Symbol("+"))
-                n += 5
+                n += 3
             elseif args[n] == Symbol("grady_")
                 if isa(args[n+1], Expr)
                     args[n] = copy(args[n+1])
@@ -115,7 +115,7 @@ function process_expr(ex, arrays, i, j, k)
                 args[n  ] = :( $cg1 * $(args[n  ])  )
                 args[n+1] = :( $cg2 * $(args[n+1])  )
                 insert!(args, n, Symbol("+"))
-                n += 5
+                n += 3
             elseif args[n] == Symbol("gradz_")
                 if isa(args[n+1], Expr)
                     args[n] = copy(args[n+1])
@@ -129,7 +129,7 @@ function process_expr(ex, arrays, i, j, k)
                 args[n  ] = :( $cg1 * $(args[n  ])  )
                 args[n+1] = :( $cg2 * $(args[n+1])  )
                 insert!(args, n, Symbol("+"))
-                n += 5
+                n += 3
             elseif args[n] == Symbol("interpx")
                 if isa(args[n+1], Expr)
                     args[n] = copy(args[n+1])
@@ -143,7 +143,7 @@ function process_expr(ex, arrays, i, j, k)
                 args[n  ] = :( $ci1 * $(args[n  ])  )
                 args[n+1] = :( $ci2 * $(args[n+1])  )
                 insert!(args, n, Symbol("+"))
-                n += 5
+                n += 3
             elseif args[n] == Symbol("interpy")
                 if isa(args[n+1], Expr)
                     args[n] = copy(args[n+1])
@@ -157,7 +157,7 @@ function process_expr(ex, arrays, i, j, k)
                 args[n  ] = :( $ci1 * $(args[n  ])  )
                 args[n+1] = :( $ci2 * $(args[n+1])  )
                 insert!(args, n, Symbol("+"))
-                n += 5
+                n += 3
             elseif args[n] == Symbol("interpz")
                 if isa(args[n+1], Expr)
                     args[n] = copy(args[n+1])
@@ -171,7 +171,7 @@ function process_expr(ex, arrays, i, j, k)
                 args[n  ] = :( $ci1 * $(args[n  ])  )
                 args[n+1] = :( $ci2 * $(args[n+1])  )
                 insert!(args, n, Symbol("+"))
-                n += 5
+                n += 3
             else
                 args[n] = make_index(args[n], arrays, i, j, k)
                 n += 1

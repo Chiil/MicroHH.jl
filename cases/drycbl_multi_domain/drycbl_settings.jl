@@ -1,14 +1,20 @@
+## Grid generation function.
 function make_grid(zsize, ktot)
     dz = zsize / ktot
     z = range(0.5*dz, step=dz, length=ktot) |> collect
     return z
 end
 
+
+## Default float type.
+float_type = Float32
+
+
 ## Settings domain 1.
 settings_grid = Dict{String, Any}(
-    "itot" => 48,
-    "jtot" => 48,
-    "ktot" => 48,
+    "itot" => 128,
+    "jtot" => 128,
+    "ktot" => 128,
 
     "xsize" => 3200.,
     "ysize" => 3200.,
@@ -26,26 +32,33 @@ settings_boundary = Dict(
 
 settings_timeloop = Dict(
     "start_time" => 0.,
-    "end_time" => 7200.,
-    "save_time" => 100.,
-    "check_time" => 100.,
+    "end_time" => 3600.,
+    "save_time" => 1800.,
+    "check_time" => 50.,
     "dt" => 5.)
 
+settings_multidomain = Dict{String, Any}(
+    "enable_nudge" => false)
+
 settings_d01 = Dict(
-    "grid"     => settings_grid,
-    "fields"   => settings_fields,
+    "grid" => settings_grid,
+    "fields" => settings_fields,
     "boundary" => settings_boundary,
-    "timeloop" => settings_timeloop)
+    "timeloop" => settings_timeloop,
+    "multidomain" => settings_multidomain)
 
 settings_d01["grid"]["z"] = make_grid(settings_d01["grid"]["zsize"], settings_d01["grid"]["ktot"])
 
 
 # Settings domain 2.
 settings_d02 = deepcopy(settings_d01)
-settings_d02["grid"]["itot"] = 96
-settings_d02["grid"]["jtot"] = 96
-settings_d02["grid"]["ktot"] = 96
-settings_d02["timeloop"]["dt"] = 2.5
+settings_d02["grid"]["itot"] = 256
+settings_d02["grid"]["jtot"] = 256
+settings_d02["grid"]["ktot"] = 256
+settings_d02["fields"]["visc"] /= 2^(4/3)
+settings_d02["timeloop"]["dt"] /= 2.
+settings_d02["multidomain"]["enable_nudge"] = true
+settings_d02["multidomain"]["nudge_time"] = 600
 
 settings_d02["grid"]["z"] = make_grid(settings_d02["grid"]["zsize"], settings_d02["grid"]["ktot"])
 

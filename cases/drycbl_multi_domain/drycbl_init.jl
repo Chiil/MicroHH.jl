@@ -10,7 +10,7 @@ include("drycbl_settings.jl")
 
 ## Initialize the model.
 n_domains = 2
-m = Model("drycbl", n_domains, settings, Float64)
+m = Model("drycbl", n_domains, settings, float_type)
 
 
 ## Create the initials fields.
@@ -22,6 +22,7 @@ for i in 1:n_domains
     rand2d .-= mean(rand2d)
     s[:, :, 1] .+= rand2d[:, :]
     f.s_gradbot[:, :] .= - 0.1 / settings[i]["fields"]["visc"]
+    f.s_gradtop[:, :] .= 0.003
     @tullio s[i, j, k] += 0.003 * z[k]
 end
 
