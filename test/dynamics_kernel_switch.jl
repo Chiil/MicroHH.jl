@@ -12,25 +12,17 @@ float_type = Float32
 macro make_kernel(do_advec::Bool, do_diff::Bool, do_buoy::Bool)
     ex_rhs_l = []
     if do_advec
-        push!(ex_rhs_l, :(- gradx(interpz(u) * interpx(w))))
+        push!(ex_rhs_l, :( -gradx(interpz(u) * interpx(w)) ))
+        push!(ex_rhs_l, :( -grady(interpz(v) * interpy(w)) ))
+        push!(ex_rhs_l, :( -gradz(interpz(w) * interpz(w)) ))
     end
     if do_diff
-        push!(ex_rhs_l, :(visc * (gradx(gradx(w)))))
-    end
-    if do_advec
-        push!(ex_rhs_l, :(- grady(interpz(v) * interpy(w))))
-    end
-    if do_diff
-        push!(ex_rhs_l, :(visc * (grady(grady(w)))))
-    end
-    if do_advec
-        push!(ex_rhs_l, :(- gradz(interpz(w) * interpz(w))))
-    end
-    if do_diff
-        push!(ex_rhs_l, :(visc * (gradz(gradz(w)))))
+        push!(ex_rhs_l, :( visc * (gradx(gradx(w))) ))
+        push!(ex_rhs_l, :( visc * (grady(grady(w))) ))
+        push!(ex_rhs_l, :( visc * (gradz(gradz(w))) ))
     end
     if do_buoy
-        push!(ex_rhs_l, :(alpha*interpz(s)))
+        push!(ex_rhs_l, :( alpha*interpz(s) ))
     end
 
     if length(ex_rhs_l) > 0
@@ -38,12 +30,10 @@ macro make_kernel(do_advec::Bool, do_diff::Bool, do_buoy::Bool)
 
         ex = quote
             function dynamics_w_kernel!(
-                wt, u, v, w, s,
-                visc,
-                dxi, dyi, dzi, dzhi,
-                is, ie, js, je, ks, ke)
-
-                alpha = 9.81/300;
+                    wt, u, v, w, s,
+                    visc, alpha,
+                    dxi, dyi, dzi, dzhi,
+                    is, ie, js, je, ks, ke)
 
                 @fast3d begin
                     @fd (wt, u, v, w, s) wt += $ex_rhs
@@ -53,10 +43,10 @@ macro make_kernel(do_advec::Bool, do_diff::Bool, do_buoy::Bool)
     else
         ex = quote
             function dynamics_w_kernel!(
-                wt, u, v, w, s,
-                visc,
-                dxi, dyi, dzi, dzhi,
-                is, ie, js, je, ks, ke)
+                    wt, u, v, w, s,
+                    visc, alpha,
+                    dxi, dyi, dzi, dzhi,
+                    is, ie, js, je, ks, ke)
             end
         end
     end
@@ -69,8 +59,7 @@ end
 itot = 384; jtot = 384; ktot = 384;
 igc = 1; jgc = 1; kgc = 1;
 
-do_advec = false; do_diff = true; do_buoy = true
-
+do_advec = true; do_diff = true; do_buoy = true
 
 icells = itot + 2igc; jcells = jtot + 2jgc; kcells = ktot + 2kgc
 is = igc+1; ie = igc+itot; js = jgc+1; je = jgc+jtot; ks = kgc+1; ke = kgc+ktot
@@ -84,7 +73,8 @@ dxi = rand(float_type)
 dyi = rand(float_type)
 dzi = rand(float_type, kcells)
 dzhi = rand(float_type, kcells)
-visc = convert(float_type, 1)
+visc = convert(float_type, 1.)
+alpha = convert(float_type, 9.81/300)
 
 
 ## Run CPU kernel
@@ -92,7 +82,7 @@ visc = convert(float_type, 1)
 
 @btime dynamics_w_kernel!(
     $wt, $u, $v, $w, $s,
-    $visc,
+    $visc, $alpha,
     $dxi, $dyi, $dzi, $dzhi,
     $is, $ie, $js, $je, $ks, $ke)
 
