@@ -1,6 +1,8 @@
 using .StencilBuilder
 
+
 const ifactor = 1_000_000
+
 
 mutable struct Timeloop
     # Float numbers.
@@ -21,6 +23,7 @@ mutable struct Timeloop
 
     rkstep::Int64
 end
+
 
 function Timeloop(d::Dict)
     start_time = d["start_time"]
@@ -45,6 +48,7 @@ function Timeloop(d::Dict)
         rkstep)
 end
 
+
 function integrate_time_kernel!(
     a, at,
     rkstep, dt,
@@ -63,6 +67,7 @@ function integrate_time_kernel!(
         @fd (a, at) at *= c_a_step
     end
 end
+
 
 function integrate_time!(
     f::Fields, g::Grid, t::Timeloop)
@@ -91,6 +96,7 @@ function integrate_time!(
         g.is, g.ie, g.js, g.je, g.ks, g.ke)
 end
 
+
 function step_time!(t::Timeloop)
     t.rkstep += 1
 
@@ -101,7 +107,22 @@ function step_time!(t::Timeloop)
     end
 end
 
+
 function get_sub_dt(t::Timeloop)
     c_b = [1//3, 15//16, 8//15];
     return c_b[t.rkstep]*t.dt;
+end
+
+function is_in_progress(t::Timeloop)
+    return t.itime < t.iend_time
+end
+
+
+function is_save_time(t::Timeloop)
+    return t.itime % t.isave_time == 0 && t.rkstep == 1 && t.itime != t.istart_time
+end
+
+
+function is_check_time(t::Timeloop)
+    return t.itime % t.icheck_time == 0
 end

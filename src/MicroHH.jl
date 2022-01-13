@@ -74,7 +74,7 @@ function prepare_model!(m::Model)
 
     check_model(m)
 
-    return m.timeloop[1].itime < m.timeloop[1].iend_time
+    return is_in_progress(m.timeloop[1])
 end
 
 
@@ -199,8 +199,7 @@ function step_model!(m::Model)
             integrate_time!(m.fields[i], m.grid[i], m.timeloop[i])
             step_time!(m.timeloop[i])
 
-            if (m.timeloop[i].itime % m.timeloop[i].isave_time == 0
-                && m.timeloop[i].rkstep == 1 && m.timeloop[i].itime != m.timeloop[i].istart_time)
+            if is_save_time(m.timeloop[i])
                 save_domain(m, i)
             end
 
@@ -208,11 +207,11 @@ function step_model!(m::Model)
         end
     end
 
-    if m.timeloop[1].itime % m.timeloop[1].icheck_time == 0
+    if is_check_time(m.timeloop[1])
         check_model(m)
     end
 
-    return m.timeloop[1].itime < m.timeloop[1].iend_time
+    return is_in_progress(m.timeloop[1])
 end
 
 
