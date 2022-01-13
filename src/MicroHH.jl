@@ -1,12 +1,11 @@
 module MicroHH
 
-## Exports
-# Export the types.
+## Export types and functions.
 export Model
-
-# Export the functions.
 export prepare_model!, step_model!, save_model, load_model!
 
+
+## Load packages.
 using LoopVectorization
 using Printf
 using HDF5
@@ -98,11 +97,11 @@ function save_domain(m::Model, i)
         write(fid, "zh", g.zh[g.ks:g.keh])
 
         # Make the grid variables dimensions.
-        HDF5.h5ds_set_scale(fid["x"], "x")
+        HDF5.h5ds_set_scale(fid["x" ], "x" )
         HDF5.h5ds_set_scale(fid["xh"], "xh")
-        HDF5.h5ds_set_scale(fid["y"], "y")
+        HDF5.h5ds_set_scale(fid["y" ], "y" )
         HDF5.h5ds_set_scale(fid["yh"], "yh")
-        HDF5.h5ds_set_scale(fid["z"], "z")
+        HDF5.h5ds_set_scale(fid["z" ], "z" )
         HDF5.h5ds_set_scale(fid["zh"], "zh")
 
         # Save the fields.
@@ -111,8 +110,8 @@ function save_domain(m::Model, i)
         write(fid, "w", f.w[g.is:g.ie, g.js:g.je, g.ks:g.keh])
         write(fid, "s", f.s[g.is:g.ie, g.js:g.je, g.ks:g.ke ])
         write(fid, "s_bot", f.s_bot[g.is:g.ie, g.js:g.je])
-        write(fid, "s_gradbot", f.s_gradbot[g.is:g.ie, g.js:g.je])
         write(fid, "s_top", f.s_top[g.is:g.ie, g.js:g.je])
+        write(fid, "s_gradbot", f.s_gradbot[g.is:g.ie, g.js:g.je])
         write(fid, "s_gradtop", f.s_gradtop[g.is:g.ie, g.js:g.je])
 
         # Attach the dimensions. Note the c-indexing.
@@ -135,11 +134,11 @@ function save_domain(m::Model, i)
         HDF5.h5ds_attach_scale(fid["s_bot"], fid["x"], 1)
         HDF5.h5ds_attach_scale(fid["s_bot"], fid["y"], 0)
 
-        HDF5.h5ds_attach_scale(fid["s_gradbot"], fid["x"], 1)
-        HDF5.h5ds_attach_scale(fid["s_gradbot"], fid["y"], 0)
-
         HDF5.h5ds_attach_scale(fid["s_top"], fid["x"], 1)
         HDF5.h5ds_attach_scale(fid["s_top"], fid["y"], 0)
+
+        HDF5.h5ds_attach_scale(fid["s_gradbot"], fid["x"], 1)
+        HDF5.h5ds_attach_scale(fid["s_gradbot"], fid["y"], 0)
 
         HDF5.h5ds_attach_scale(fid["s_gradtop"], fid["x"], 1)
         HDF5.h5ds_attach_scale(fid["s_gradtop"], fid["y"], 0)
@@ -167,8 +166,8 @@ function load_domain!(m::Model, i)
         f.w[g.is:g.ie, g.js:g.je, g.ks:g.keh] = read(fid, "w")
         f.s[g.is:g.ie, g.js:g.je, g.ks:g.ke ] = read(fid, "s")
         f.s_bot[g.is:g.ie, g.js:g.je] = read(fid, "s_bot")
-        f.s_gradbot[g.is:g.ie, g.js:g.je] = read(fid, "s_gradbot")
         f.s_top[g.is:g.ie, g.js:g.je] = read(fid, "s_top")
+        f.s_gradbot[g.is:g.ie, g.js:g.je] = read(fid, "s_gradbot")
         f.s_gradtop[g.is:g.ie, g.js:g.je] = read(fid, "s_gradtop")
     end
 
