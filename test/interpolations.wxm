@@ -1,0 +1,29 @@
+/* [wxMaxima batch file version 1] [ DO NOT EDIT BY HAND! ]*/
+/* [ Created with wxMaxima version 21.05.2 ] */
+/* [wxMaxima: input   start ] */
+cihjk : (1-x)*cijk + (x)*cipjk;
+cihjpk : (1-x)*cijpk + (x)*cipjpk;
+cihjkp : (1-x)*cijkp + (x)*cipjkp;
+cihjpkp : (1-x)*cijpkp + (x)*cipjpkp;
+
+cihjhk : (1-y)*cihjk + (y)*cihjpk;
+cihjhkp : (1-y)*cihjkp + (y)*cihjpkp;
+
+cihjhkh : (1-z)*cihjhk + (z)*cihjhkp;
+/* [wxMaxima: input   end   ] */
+
+
+/* [wxMaxima: input   start ] */
+ratsimp(cihjhkh, cijk, cipjk, cijpk, cipjpk, cijkp, cipjkp, cijpkp, cipjpkp);
+expand(%);
+/* [wxMaxima: input   end   ] */
+
+
+/* [wxMaxima: input   start ] */
+x : 0; y : 0; z : 0;
+/* [wxMaxima: input   end   ] */
+
+
+
+/* Old versions of Maxima abort on loading files that end in a comment. */
+"Created with wxMaxima 21.05.2"$
