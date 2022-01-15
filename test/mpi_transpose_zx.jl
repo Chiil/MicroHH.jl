@@ -23,25 +23,17 @@ function transpose_zx(data_new, data)
     sendbuf = Array{Int}(undef, imax, jmax, kmax, npx)
     recvbuf = Array{Int}(undef, imax, jmax, kmax, npx)
     
-    # Load the buffer
+    # Load the buffer.
     for i in 1:npx
         ks = (i-1)*kmax + 1
         ke = i*kmax
         sendbuf[:, :, :, i] .= data[:, :, ks:ke]
     end
     
-    # Transpose zx
-    # reqs = Vector{MPI.Request}(undef, 2*npx)
-    # for i in 1:npx
-    #     tag = 1
-    #     r = @view recvbuf[:, :, :, i]; s = @view sendbuf[:, :, :, i]
-    #     reqs[2*(i-1)+1] = MPI.Irecv!(r, i-1, tag, commx)
-    #     reqs[2*(i-1)+2] = MPI.Isend( s, i-1, tag, commx)
-    # end
-    # MPI.Waitall!(reqs)
+    # Communicate data.
     MPI.Alltoall!(MPI.UBuffer(sendbuf, imax*jmax*kmax), MPI.UBuffer(recvbuf, imax*jmax*kmax), commx)
     
-    # Unload the buffer
+    # Unload the buffer.
     for i in 1:npx
         is = (i-1)*imax + 1
         ie = i*imax
