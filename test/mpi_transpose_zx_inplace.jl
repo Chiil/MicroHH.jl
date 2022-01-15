@@ -1,13 +1,13 @@
 ## User input.
-npx = 4; npy = 2
-itot = 256; jtot = 192; ktot = 128
+npx = 32; npy = 64
+itot = 2048; jtot = 2048; ktot = 1024
 
 imax = itot ÷ npx; jmax = jtot ÷ npy; kmax = ktot ÷ npx
 
 
 ## Init MPI and create grid.
 using MPI
-using BenchmarkTools
+using LoopVectorization
 
 MPI.Init()
 
@@ -24,7 +24,7 @@ function transpose_zx(data, buffer)
     for i in 1:npx
         ks = (i-1)*kmax + 1
         ke = i*kmax
-        buffer[:, :, :, i] .= data[:, :, ks:ke]
+        @turbo buffer[:, :, :, i] .= data[:, :, ks:ke]
     end
     
     # Communicate data.
@@ -37,7 +37,7 @@ function transpose_zx(data, buffer)
     for i in 1:npx
         is = (i-1)*imax + 1
         ie = i*imax
-        data_xz[is:ie, :, :] .= buffer[:, :, :, i]
+        @turbo data_xz[is:ie, :, :] .= buffer[:, :, :, i]
     end
 
     data_xz
@@ -45,7 +45,7 @@ end
 
 data_xz = transpose_zx(data, buffer)
 
-for n in 1:10
+for n in 1:20
     dt = @elapsed transpose_zx(data, buffer)
     if mpiid == 0 println("Elapsed: $dt (s)") end
 end
