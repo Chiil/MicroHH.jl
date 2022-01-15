@@ -1,12 +1,13 @@
 ## User input.
-npx = 2; npy = 4
-itot = 256; jtot = 128; ktot = 64
+npx = 32; npy = 64
+itot = 2048; jtot = 2048; ktot = 1024
 
 imax = itot ÷ npx; jmax = jtot ÷ npy
 
 
 ## Init MPI and create grid.
 using MPI
+using LoopVectorization
 
 MPI.Init()
 
@@ -33,8 +34,8 @@ function boundary_cyclic(data)
     reqs[4] = MPI.Isend( send_west, nwest, 2, commxy);
     MPI.Waitall!(reqs)
 
-    data[1, :, :] .= recv_west[:, :]
-    data[end, :, :] .= recv_east[:, :]
+    @turbo data[1, :, :] .= recv_west[:, :]
+    @turbo data[end, :, :] .= recv_east[:, :]
 
     # Transfer the north-south data.
     send_north = data[:, end-1, :]
@@ -48,15 +49,15 @@ function boundary_cyclic(data)
     reqs[4] = MPI.Isend( send_north, nnorth, 2, commxy);
     MPI.Waitall!(reqs)
 
-    data[:, 1, :] .= recv_south[:, :]
-    data[:, end, :] .= recv_north[:, :]
+    @turbo data[:, 1, :] .= recv_south[:, :]
+    @turbo data[:, end, :] .= recv_north[:, :]
 end
 
 
 ## Run benchmark.
 boundary_cyclic(data)
 
-for n in 1:10
+for n in 1:20
     dt = @elapsed boundary_cyclic(data)
     if mpiid == 0 println("Elapsed: $dt (s)") end
 end
