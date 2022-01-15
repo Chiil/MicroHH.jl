@@ -26,13 +26,13 @@ function transpose_zx(data, buffer)
         ke = i*kmax
         buffer[:, :, :, i] .= data[:, :, ks:ke]
     end
-    
+
     # Communicate data.
     MPI.Alltoall!(MPI.UBuffer(buffer, imax*jmax*kmax), commx)
 
     # Reshape the data array.
     data_xz = reshape(data, (itot, jmax, kmax))
-    
+
     # Unload the buffer.
     for i in 1:npx
         is = (i-1)*imax + 1

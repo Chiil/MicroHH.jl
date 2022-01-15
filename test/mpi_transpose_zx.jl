@@ -22,17 +22,17 @@ data_new = Array{Int}(undef, itot, jmax, kmax)
 function transpose_zx(data_new, data)
     sendbuf = Array{Int}(undef, imax, jmax, kmax, npx)
     recvbuf = Array{Int}(undef, imax, jmax, kmax, npx)
-    
+
     # Load the buffer.
     for i in 1:npx
         ks = (i-1)*kmax + 1
         ke = i*kmax
         sendbuf[:, :, :, i] .= data[:, :, ks:ke]
     end
-    
+
     # Communicate data.
     MPI.Alltoall!(MPI.UBuffer(sendbuf, imax*jmax*kmax), MPI.UBuffer(recvbuf, imax*jmax*kmax), commx)
-    
+
     # Unload the buffer.
     for i in 1:npx
         is = (i-1)*imax + 1
