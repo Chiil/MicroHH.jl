@@ -1,8 +1,8 @@
 ## User input.
-# npx = 2; npy = 4
-# itot = 8; jtot = 8; ktot = 8
-npx = 32; npy = 64
-itot = 2048; jtot = 2048; ktot = 1024
+const npx = 2; const npy = 4
+const itot = 256; const jtot = 256; const ktot = 256
+# const npx = 32; const npy = 64
+# const itot = 2048; const jtot = 2048; const ktot = 1024
 
 
 ## Init MPI and create grid.
