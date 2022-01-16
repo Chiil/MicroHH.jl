@@ -1,6 +1,8 @@
 ## User input.
-npx = 2; npy = 4
-itot = 8; jtot = 8; ktot = 8
+# npx = 2; npy = 4
+# itot = 8; jtot = 8; ktot = 8
+npx = 32; npy = 64
+itot = 2048; jtot = 2048; ktot = 1024
 
 
 ## Init MPI and create grid.
@@ -32,7 +34,7 @@ function transpose_zx(data_new, data)
     # Load the buffer.
     for i in 1:npx
         ks = (i-1)*kblock + 1; ke = i*kblock
-        @turbo sendbuf[:, :, :, i] .= data[:, :, ks:ke]
+        @tturbo sendbuf[:, :, :, i] .= data[:, :, ks:ke]
     end
 
     # Communicate data.
@@ -41,7 +43,7 @@ function transpose_zx(data_new, data)
     # Unload the buffer.
     for i in 1:npx
         is = (i-1)*imax + 1; ie = i*imax
-        @turbo data_new[is:ie, :, :] .= recvbuf[:, :, :, i]
+        @tturbo data_new[is:ie, :, :] .= recvbuf[:, :, :, i]
     end
 end
 
@@ -53,7 +55,7 @@ function transpose_xy(data_new, data)
     # Load the buffer.
     for i in 1:npy
         is = (i-1)*iblock + 1; ie = i*iblock
-        sendbuf[:, :, :, i] .= data[is:ie, :, :]
+        @tturbo sendbuf[:, :, :, i] .= data[is:ie, :, :]
     end
 
     # Communicate data.
@@ -62,7 +64,7 @@ function transpose_xy(data_new, data)
     # Unload the buffer.
     for i in 1:npy
         js = (i-1)*jmax + 1; je = i*jmax
-        data_new[:, js:je, :] .= recvbuf[:, :, :, i]
+        @tturbo data_new[:, js:je, :] .= recvbuf[:, :, :, i]
     end
 end
 
@@ -74,7 +76,7 @@ function transpose_yzt(data_new, data)
     # Load the buffer.
     for i in 1:npx
         js = (i-1)*jblock + 1; je = i*jblock
-        sendbuf[:, :, :, i] .= data[:, js:je, :]
+        @tturbo sendbuf[:, :, :, i] .= data[:, js:je, :]
     end
 
     # Communicate data.
@@ -83,7 +85,7 @@ function transpose_yzt(data_new, data)
     # Unload the buffer.
     for i in 1:npx
         ks = (i-1)*kblock + 1; ke = i*kblock
-        data_new[:, :, ks:ke] .= recvbuf[:, :, :, i]
+        @tturbo data_new[:, :, ks:ke] .= recvbuf[:, :, :, i]
     end
 end
 
@@ -95,7 +97,7 @@ function transpose_zty(data_new, data)
     # Load the buffer.
     for i in 1:npx
         ks = (i-1)*kblock + 1; ke = i*kblock
-        sendbuf[:, :, :, i] .= data[:, :, ks:ke]
+        @tturbo sendbuf[:, :, :, i] .= data[:, :, ks:ke]
     end
 
     # Communicate data.
@@ -104,7 +106,7 @@ function transpose_zty(data_new, data)
     # Unload the buffer.
     for i in 1:npx
         js = (i-1)*jblock + 1; je = i*jblock
-        data_new[:, js:je, :] = recvbuf[:, :, :, i]
+        @tturbo data_new[:, js:je, :] = recvbuf[:, :, :, i]
     end
 end
 
@@ -116,7 +118,7 @@ function transpose_yx(data_new, data)
     # Load the buffer.
     for i in 1:npy
         js = (i-1)*jmax + 1; je = i*jmax
-        sendbuf[:, :, :, i] .= data[:, js:je, :]
+        @tturbo sendbuf[:, :, :, i] .= data[:, js:je, :]
     end
 
     # Communicate data.
@@ -125,7 +127,7 @@ function transpose_yx(data_new, data)
     # Unload the buffer.
     for i in 1:npy
         is = (i-1)*iblock + 1; ie = i*iblock
-        data_new[is:ie, :, :] .= recvbuf[:, :, :, i]
+        @tturbo data_new[is:ie, :, :] .= recvbuf[:, :, :, i]
     end
 end
 
@@ -137,7 +139,7 @@ function transpose_xz(data_new, data)
     # Load the buffer.
     for i in 1:npx
         is = (i-1)*imax + 1; ie = i*imax
-        sendbuf[:, :, :, i] .= data[is:ie, :, :]
+        @tturbo sendbuf[:, :, :, i] .= data[is:ie, :, :]
     end
 
     # Communicate data.
@@ -146,32 +148,40 @@ function transpose_xz(data_new, data)
     # Unload the buffer.
     for i in 1:npx
         ks = (i-1)*kblock + 1; ke = i*kblock
-        data_new[:, :, ks:ke] .= recvbuf[:, :, :, i]
+        @tturbo data_new[:, :, ks:ke] .= recvbuf[:, :, :, i]
     end
 end
 
 
 ## Test the transposes.
-if mpiid == 0 print("npx = $npx, npy = $npy\n") end
+if mpiid == 0 print("Testing transposes with npx = $npx, npy = $npy\n") end
 MPI.Barrier(commxy)
 
-print("(s , k) $mpiid: $(data_k[1, 1, :])\n")
-transpose_zx(data_i, data_k)
-print("(zx, i) $mpiid: $(data_i[:, 1, 1])\n")
-transpose_xy(data_j, data_i)
-print("(xy, j) $mpiid: $(data_j[1, :, 1])\n")
-transpose_yzt(data_kt, data_j)
-print("(yz, k) $mpiid: $(data_kt[1, 1, :])\n")
-transpose_zty(data_j, data_kt)
-print("(zy, j) $mpiid: $(data_j[1, :, 1])\n")
-transpose_yx(data_i, data_j)
-print("(xy, i) $mpiid: $(data_i[:, 1, 1])\n")
-transpose_xz(data_k, data_i)
-print("(xz, k) $mpiid: $(data_k[1, 1, :])\n")
+# print("(s , k) $mpiid: $(data_k[1, 1, :])\n")
+# transpose_zx(data_i, data_k)
+# print("(zx, i) $mpiid: $(data_i[:, 1, 1])\n")
+# transpose_xy(data_j, data_i)
+# print("(xy, j) $mpiid: $(data_j[1, :, 1])\n")
+# transpose_yzt(data_kt, data_j)
+# print("(yz, k) $mpiid: $(data_kt[1, 1, :])\n")
+# transpose_zty(data_j, data_kt)
+# print("(zy, j) $mpiid: $(data_j[1, :, 1])\n")
+# transpose_yx(data_i, data_j)
+# print("(xy, i) $mpiid: $(data_i[:, 1, 1])\n")
+# transpose_xz(data_k, data_i)
+# print("(xz, k) $mpiid: $(data_k[1, 1, :])\n")
 
 
 ## Run a timed benchmark
+transpose_zx(data_i, data_k)
+transpose_xy(data_j, data_i)
+transpose_yzt(data_kt, data_j)
+transpose_zty(data_j, data_kt)
+transpose_yx(data_i, data_j)
+transpose_xz(data_k, data_i)
+
 for n in 1:20
+    MPI.Barrier(commxy)
     dt = @elapsed begin
         transpose_zx(data_i, data_k)
         transpose_xy(data_j, data_i)
@@ -182,6 +192,9 @@ for n in 1:20
     end
     if mpiid == 0 println("Elapsed: $dt (s)") end
 end
+
+MPI.Barrier(commxy)
+if mpiid == 0 print("Test completed.\n") end
 
 
 ## Close the MPI.
