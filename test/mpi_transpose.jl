@@ -171,10 +171,17 @@ print("(xz, k) $mpiid: $(data_k[1, 1, :])\n")
 
 
 ## Run a timed benchmark
-# for n in 1:20
-#     dt = @elapsed transpose_zx(data_new, data)
-#     if mpiid == 0 println("Elapsed: $dt (s)") end
-# end
+for n in 1:20
+    dt = @elapsed begin
+        transpose_zx(data_i, data_k)
+        transpose_xy(data_j, data_i)
+        transpose_yzt(data_kt, data_j)
+        transpose_zty(data_j, data_kt)
+        transpose_yx(data_i, data_j)
+        transpose_xz(data_k, data_i)
+    end
+    if mpiid == 0 println("Elapsed: $dt (s)") end
+end
 
 
 ## Close the MPI.
