@@ -25,8 +25,7 @@ function transpose_zx(data_new, data)
 
     # Load the buffer.
     for i in 1:npx
-        ks = (i-1)*kmax + 1
-        ke = i*kmax
+        ks = (i-1)*kmax + 1; ke = i*kmax
         @turbo sendbuf[:, :, :, i] .= data[:, :, ks:ke]
     end
 
@@ -35,8 +34,7 @@ function transpose_zx(data_new, data)
 
     # Unload the buffer.
     for i in 1:npx
-        is = (i-1)*imax + 1
-        ie = i*imax
+        is = (i-1)*imax + 1; ie = i*imax
         @turbo data_new[is:ie, :, :] .= recvbuf[:, :, :, i]
     end
 end
