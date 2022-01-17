@@ -1,7 +1,7 @@
 module MicroHH
 
 const do_mpi = true
-const npx = 2; const npy = 2
+const npx = 4; const npy = 8
 
 ## Export types and functions.
 export Model
@@ -98,7 +98,7 @@ function save_domain(m::Model, i)
     # Update the boundary.
     set_boundary!(f, g, b, p)
 
-    filename = @sprintf("%s.%02i.%02i.%08i.h5", m.name, m.parallel.id, i, round(t.time))
+    filename = @sprintf("%s.%04i.%02i.%08i.h5", m.name, m.parallel.id, i, round(t.time))
     h5open(filename, "w") do fid
         # Save the grid.
         write(fid, "x" , g.x[g.is:g.ie])
@@ -172,7 +172,7 @@ function load_domain!(m::Model, i)
     b = m.boundary[i]
     p = m.parallel
 
-    filename = @sprintf("%s.%02i.%02i.%08i.h5", m.name, m.parallel.id, i, round(t.time))
+    filename = @sprintf("%s.%04i.%02i.%08i.h5", m.name, m.parallel.id, i, round(t.time))
     h5open(filename, "r") do fid
         f.u[g.is:g.ie, g.js:g.je, g.ks:g.ke ] = read(fid, "u")
         f.v[g.is:g.ie, g.js:g.je, g.ks:g.ke ] = read(fid, "v")
