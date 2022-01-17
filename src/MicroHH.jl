@@ -1,6 +1,7 @@
 module MicroHH
 
-const npx = 2; const npy = 2;
+const do_mpi = true
+const npx = 2; const npy = 2
 
 ## Export types and functions.
 export Model
@@ -8,7 +9,7 @@ export prepare_model!, step_model!, save_model, load_model!
 
 
 ## Load packages.
-if npx > 1 || npy > 1
+if do_mpi
     using MPI
 end
 
@@ -26,6 +27,7 @@ include("Boundary.jl")
 include("Timeloop.jl")
 include("Dynamics.jl")
 include("Pressure.jl")
+include("Transposes.jl")
 include("Diagnostics.jl")
 include("MultiDomain.jl")
 
@@ -63,7 +65,7 @@ end
 
 
 function calc_rhs!(m::Model, i)
-    set_boundary!(m.fields[i], m.grid[i], m.boundary[i])
+    set_boundary!(m.fields[i], m.grid[i], m.boundary[i], m.parallel)
     calc_dynamics_tend!(m.fields[i], m.grid[i])
     calc_nudge_tend!(m.fields[i], m.grid[i], m.multidomain[i])
     calc_pressure_tend!(m.fields[i], m.grid[i], m.timeloop[i], m.pressure[i])
@@ -91,9 +93,10 @@ function save_domain(m::Model, i)
     g = m.grid[i]
     t = m.timeloop[i]
     b = m.boundary[i]
+    p = m.parallel
 
     # Update the boundary.
-    set_boundary!(f, g, b)
+    set_boundary!(f, g, b, p)
 
     filename = @sprintf("%s.%02i.%02i.%08i.h5", m.name, m.parallel.id, i, round(t.time))
     h5open(filename, "w") do fid
@@ -167,6 +170,7 @@ function load_domain!(m::Model, i)
     g = m.grid[i]
     t = m.timeloop[i]
     b = m.boundary[i]
+    p = m.parallel
 
     filename = @sprintf("%s.%02i.%02i.%08i.h5", m.name, m.parallel.id, i, round(t.time))
     h5open(filename, "r") do fid
@@ -180,7 +184,7 @@ function load_domain!(m::Model, i)
         f.s_gradtop[g.is:g.ie, g.js:g.je] = read(fid, "s_gradtop")
     end
 
-    set_boundary!(f, g, b)
+    set_boundary!(f, g, b, p)
 end
 
 

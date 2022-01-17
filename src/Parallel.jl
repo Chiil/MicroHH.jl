@@ -6,8 +6,14 @@ struct ParallelDistributed <: Parallel
     npy::Int64
 
     id::Int64
-    idx::Int64
-    idy::Int64
+
+    id_x::Int64
+    id_y::Int64
+
+    id_west::Int64
+    id_east::Int64
+    id_south::Int64
+    id_north::Int64
 
     commxy
     commx
@@ -20,8 +26,14 @@ struct ParallelSerial <: Parallel
     npy::Int64
 
     id::Int64
-    idx::Int64
-    idy::Int64
+
+    id_x::Int64
+    id_y::Int64
+
+    id_west::Int64
+    id_east::Int64
+    id_south::Int64
+    id_north::Int64
 
     commxy
     commx
@@ -30,7 +42,7 @@ end
 
 
 function Parallel(npx, npy)
-    if npx > 1 || npy > 1
+    if do_mpi
         MPI.Init()
         
         dims = [npy, npx]; periodic = [1, 1]; reorder = true
@@ -40,16 +52,28 @@ function Parallel(npx, npy)
         commy = MPI.Cart_sub(commxy, [true, false])
 
         id = MPI.Comm_rank(commxy)
-        idx = MPI.Comm_rank(commx)
-        idy = MPI.Comm_rank(commy)
+        id_x = MPI.Comm_rank(commx)
+        id_y = MPI.Comm_rank(commy)
 
-        return ParallelSerial(npx, npy, id, idx, idy, commxy, commx, commy)
+        id_west, id_east = MPI.Cart_shift(commxy, 1, 1)
+        id_south, id_north = MPI.Cart_shift(commxy, 0, 1)
+
+        return ParallelDistributed(
+            npx, npy,
+            id, id_x, id_y,
+            id_west, id_east, id_south, id_north,
+            commxy, commx, commy)
     else
-        id = 0; idx = 0; idy = 0
+        id = 0; id_x = 0; id_y = 0
+        id_w = 0; id_e = 0; id_s = 0; id_n = 0
         commxy = Nothing; commx = Nothing; commy = Nothing
-    end
 
-    return ParallelDistributed(npx, npy, id, idx, idy, commxy, commx, commy)
+        return ParallelSerial(
+            npx, npy,
+            id, id_x, id_y,
+            id_west, id_east, id_south, id_north,
+            commxy, commx, commy)
+    end
 end
 
 
