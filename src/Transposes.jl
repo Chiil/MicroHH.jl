@@ -1,5 +1,5 @@
 function transpose_zx(data_out, data, g::Grid, p::ParallelDistributed)
-    sendbuf = resize(similar(data), (g.imax, g.jmax, g.kblock, g.npx))
+    sendbuf = reshape(similar(data), (g.imax, g.jmax, g.kblock, p.npx))
     recvbuf = similar(sendbuf)
 
     # Load the buffer.
@@ -21,7 +21,7 @@ end
 
 
 function transpose_xy(data_out, data, g::Grid, p::ParallelDistributed)
-    sendbuf = resize(similar(data), (g.iblock, g.jmax, g.kblock, p.npy))
+    sendbuf = reshape(similar(data), (g.iblock, g.jmax, g.kblock, p.npy))
     recvbuf = similar(sendbuf)
 
     # Load the buffer.
@@ -43,7 +43,7 @@ end
 
 
 function transpose_yzt(data_out, data, g::Grid, p::ParallelDistributed)
-    sendbuf = resize(similar(data), (g.iblock, g.jblock, g.kblock, p.npx))
+    sendbuf = reshape(similar(data), (g.iblock, g.jblock, g.kblock, p.npx))
     recvbuf = similar(sendbuf)
 
     # Load the buffer.
@@ -65,7 +65,7 @@ end
 
 
 function transpose_zty(data_out, data, g::Grid, p::ParallelDistributed)
-    sendbuf = resize(similar(data), (g.iblock, g.jblock, g.kblock, g.npx))
+    sendbuf = reshape(similar(data), (g.iblock, g.jblock, g.kblock, p.npx))
     recvbuf = similar(sendbuf)
 
     # Load the buffer.
@@ -87,7 +87,7 @@ end
 
 
 function transpose_yx(data_out, data, g::Grid, p::ParallelDistributed)
-    sendbuf = resize(similar(data), (g.iblock, g.jmax, g.kblock, g.npy))
+    sendbuf = reshape(similar(data), (g.iblock, g.jmax, g.kblock, p.npy))
     recvbuf = similar(sendbuf)
 
     # Load the buffer.
@@ -109,7 +109,7 @@ end
 
 
 function transpose_xz(data_out, data, g::Grid, p::ParallelDistributed)
-    sendbuf = resize(similar(data), (g.imax, g.jmax, g.kblock, p.npx))
+    sendbuf = reshape(similar(data), (g.imax, g.jmax, g.kblock, p.npx))
     recvbuf = similar(sendbuf)
 
     # Load the buffer.
