@@ -1,7 +1,7 @@
 module MicroHH
 
 const do_mpi = true
-const npx = 2; const npy = 1
+const npx = 2; const npy = 2
 
 ## Export types and functions.
 export Model
