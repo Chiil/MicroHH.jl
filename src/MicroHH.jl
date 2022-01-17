@@ -1,7 +1,7 @@
 module MicroHH
 
 const do_mpi = true
-const npx = 2; const npy = 2
+const npx = 1; const npy = 1
 
 ## Export types and functions.
 export Model
@@ -68,7 +68,7 @@ function calc_rhs!(m::Model, i)
     set_boundary!(m.fields[i], m.grid[i], m.boundary[i], m.parallel)
     calc_dynamics_tend!(m.fields[i], m.grid[i])
     calc_nudge_tend!(m.fields[i], m.grid[i], m.multidomain[i])
-    calc_pressure_tend!(m.fields[i], m.grid[i], m.timeloop[i], m.pressure[i])
+    calc_pressure_tend!(m.fields[i], m.grid[i], m.timeloop[i], m.pressure[i], m.parallel)
 end
 
 
