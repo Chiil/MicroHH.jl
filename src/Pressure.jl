@@ -3,8 +3,10 @@ using Printf
 using HDF5
 
 struct Pressure{TF <: Union{Float32, Float64}}
-    fft_forward
-    fft_backward
+    fft_forward_i
+    fft_backward_i
+    fft_forward_j
+    fft_backward_j
     bmati::Vector{TF}
     bmatj::Vector{TF}
     a::Vector{TF}
@@ -20,9 +22,13 @@ function Pressure(g::Grid, TF)
     FFTW.set_num_threads(nthreads)
 
     # We set the type of rand here explictly to trigger the right precision in FFTW
-    tmp = rand(TF, g.itot, g.jtot, g.kblock)
-    fft_plan_f = FFTW.plan_r2r(tmp, FFTW.R2HC, [1, 2], flags=FFTW.MEASURE)
-    fft_plan_b = FFTW.plan_r2r(tmp, FFTW.HC2R, [1, 2], flags=FFTW.MEASURE)
+    tmp = rand(TF, g.itot, g.jmax, g.kblock)
+    fft_plan_fi = FFTW.plan_r2r(tmp, FFTW.R2HC, 1, flags=FFTW.MEASURE)
+    fft_plan_bi = FFTW.plan_r2r(tmp, FFTW.HC2R, 1, flags=FFTW.MEASURE)
+
+    tmp = rand(TF, g.iblock, g.jtot, g.kblock)
+    fft_plan_fj = FFTW.plan_r2r(tmp, FFTW.R2HC, 2, flags=FFTW.MEASURE)
+    fft_plan_bj = FFTW.plan_r2r(tmp, FFTW.HC2R, 2, flags=FFTW.MEASURE)
 
     bmati = zeros(g.itot)
     bmatj = zeros(g.jtot)
@@ -58,7 +64,7 @@ function Pressure(g::Grid, TF)
     b = zeros(g.iblock, g.jblock, g.ktot)
     p_nogc = zeros(g.imax, g.jmax, g.ktot)
 
-    Pressure{TF}(fft_plan_f, fft_plan_b, bmati, bmatj, a, c, work3d, work2d, b, p_nogc)
+    Pressure{TF}(fft_plan_fi, fft_plan_bi, fft_plan_fj, fft_plan_bj, bmati, bmatj, a, c, work3d, work2d, b, p_nogc)
 end
 
 function input_kernel!(
@@ -187,7 +193,8 @@ function calc_pressure_tend!(f::Fields, g::Grid, t::Timeloop, p::Pressure, pp::P
     p_nogc_x = reshape(p.p_nogc, (g.itot, g.jmax, g.kblock))
     transpose_zx(p_nogc_x, p.p_nogc, g, pp)
 
-    p_fft = p.fft_forward * p_nogc_x
+    p_fft_tmp = p.fft_forward_i * p_nogc_x
+    p_fft = p.fft_forward_j * p_fft_tmp
 
     p_fft_z = reshape(p_fft, (g.iblock, g.jblock, g.ktot))
     transpose_yzt(p_fft_z, p_fft, g, pp)
@@ -205,7 +212,8 @@ function calc_pressure_tend!(f::Fields, g::Grid, t::Timeloop, p::Pressure, pp::P
 
     transpose_zty(p_fft, p_fft_z, g, pp)
 
-    p_nogc_x[:, :, :] = (p.fft_backward * p_fft) ./ (g.itot * g.jtot)
+    p_fft_tmp = (p.fft_backward_j * p_fft) ./ g.jtot
+    p_nogc_x[:, :, :] = (p.fft_backward_i * p_fft_tmp) ./ g.itot
 
     transpose_xz(p.p_nogc, p_nogc_x, g, pp)
 
