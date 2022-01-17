@@ -1,17 +1,24 @@
 module MicroHH
 
+const npx = 2; const npy = 2;
+
 ## Export types and functions.
 export Model
 export prepare_model!, step_model!, save_model, load_model!
 
 
 ## Load packages.
+if npx > 1 || npy > 1
+    using MPI
+end
+
 using LoopVectorization
 using Printf
 using HDF5
 
 
 ## Include the necessary files.
+include("Parallel.jl")
 include("StencilBuilder.jl")
 include("Grid.jl")
 include("Fields.jl")
@@ -28,6 +35,7 @@ struct Model{TF <: Union{Float32, Float64}}
     name::String
     n_domains::Int
     last_measured_time::Ref{UInt64}
+    parallel::Parallel
 
     grid::Vector{Grid}
     fields::Vector{Fields}
@@ -39,7 +47,8 @@ end
 
 
 function Model(name, n_domains, settings, TF)
-    m = Model{TF}(name, n_domains, 0, [], [], [], [], [], [])
+    parallel = Parallel(npx, npy)
+    m = Model{TF}(name, n_domains, 0, parallel, [], [], [], [], [], [])
     for i in 1:n_domains
         push!(m.grid, Grid(settings[i]["grid"], TF))
         push!(m.fields, Fields(m.grid[i], settings[i]["fields"], TF))
@@ -86,7 +95,7 @@ function save_domain(m::Model, i)
     # Update the boundary.
     set_boundary!(f, g, b)
 
-    filename = @sprintf("%s.%02i.%08i.h5", m.name, i, round(t.time))
+    filename = @sprintf("%s.%02i.%02i.%08i.h5", m.name, m.parallel.id, i, round(t.time))
     h5open(filename, "w") do fid
         # Save the grid.
         write(fid, "x" , g.x[g.is:g.ie])
@@ -159,7 +168,7 @@ function load_domain!(m::Model, i)
     t = m.timeloop[i]
     b = m.boundary[i]
 
-    filename = @sprintf("%s.%02i.%08i.h5", m.name, i, round(t.time))
+    filename = @sprintf("%s.%02i.%02i.%08i.h5", m.name, m.parallel.id, i, round(t.time))
     h5open(filename, "r") do fid
         f.u[g.is:g.ie, g.js:g.je, g.ks:g.ke ] = read(fid, "u")
         f.v[g.is:g.ie, g.js:g.je, g.ks:g.ke ] = read(fid, "v")

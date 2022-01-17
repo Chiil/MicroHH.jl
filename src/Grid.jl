@@ -14,6 +14,13 @@ struct Grid{TF <: Union{Float32, Float64}}
     kgc::Int64
 
     # Calculated.
+    imax::Int64
+    jmax::Int64
+
+    iblock::Int64
+    jblock::Int64
+    kblock::Int64
+
     icells::Int64
     jcells::Int64
     kcells::Int64
@@ -61,16 +68,23 @@ function Grid(d::Dict, TF)
     jgc = 1
     kgc = 1
 
-    icells = itot + 2*igc
-    jcells = jtot + 2*jgc
+    imax = itot ÷ npx
+    jmax = jtot ÷ npy
+
+    iblock = itot ÷ npy
+    jblock = jtot ÷ npx
+    kblock = ktot ÷ npx
+
+    icells = imax + 2*igc
+    jcells = jmax + 2*jgc
     kcells = ktot + 2*kgc
 
     is = igc + 1
     js = jgc + 1
     ks = kgc + 1
 
-    ie = igc + itot
-    je = jgc + jtot
+    ie = igc + imax
+    je = jgc + jmax
     ke = kgc + ktot
     keh = ke + 1
 
@@ -116,6 +130,7 @@ function Grid(d::Dict, TF)
         itot, jtot, ktot, ktoth,
         xsize, ysize, zsize,
         igc, jgc, kgc,
+        imax, jmax, iblock, jblock, kblock,
         icells, jcells, kcells,
         is, js, ks, ie, je, ke, keh,
         x, xh, y, yh, z, zh,
