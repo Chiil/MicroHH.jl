@@ -52,7 +52,7 @@ struct Grid{TF <: Union{Float32, Float64}}
     dzhi::Vector{TF}
 end
 
-function Grid(d::Dict, TF)
+function Grid(d::Dict, TF, p::Parallel)
     itot = d["itot"]
     jtot = d["jtot"]
     ktot = d["ktot"]
@@ -94,10 +94,10 @@ function Grid(d::Dict, TF)
     dxi = 1. / dx
     dyi = 1. / dy
 
-    x = collect(range(0.5-igc, length=icells)) .* dx
-    y = collect(range(0.5-jgc, length=jcells)) .* dy
-    xh = collect(range(-igc, length=icells)) .* dx
-    yh = collect(range(-jgc, length=jcells)) .* dy
+    x = (collect(range(0.5-igc, length=icells)) .+ p.id_x*imax) .* dx
+    y = (collect(range(0.5-jgc, length=jcells)) .+ p.id_y*jmax) .* dy
+    xh = (collect(range(-igc, length=icells)) .+ p.id_x*imax) .* dx
+    yh = (collect(range(-jgc, length=jcells)) .+ p.id_y*jmax) .* dy
 
     z = zeros(kcells)
     z[ks:ke] = z_nogc[:]

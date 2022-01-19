@@ -31,6 +31,6 @@ is = id_x*imax + 1; ie = (id_x+1)*imax
 js = id_y*jmax + 1; je = (id_y+1)*jmax
 print("$id, $id_x, $id_y, $is, $ie, $js, $je\n")
 data_all[is:ie, js:je, :] = a[:, :, :]
-
 close(fid)
+
 MPI.Finalize()
