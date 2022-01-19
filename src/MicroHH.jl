@@ -199,19 +199,26 @@ function save_domain(m::Model, i, p::ParallelDistributed)
     end
     MPI.Barrier(p.commxy)
 
-    """
+    z_id = create_dataset(fid, "z", datatype(eltype(g.z)), dataspace((g.ktot,)))
     if p.id == 0
-        write(fid, "z" , g.z[g.ks:g.ke])
-        write(fid, "zh", g.zh[g.ks:g.keh])
-
-        # Make the grid variables dimensions.
-        HDF5.h5ds_set_scale(fid["x" ], "x" )
-        HDF5.h5ds_set_scale(fid["xh"], "xh")
-        HDF5.h5ds_set_scale(fid["y" ], "y" )
-        HDF5.h5ds_set_scale(fid["yh"], "yh")
-        HDF5.h5ds_set_scale(fid["z" ], "z" )
-        HDF5.h5ds_set_scale(fid["zh"], "zh")
+        z_id[:] = g.z[g.ks:g.ke]
     end
+    MPI.Barrier(p.commxy)
+
+    zh_id = create_dataset(fid, "zh", datatype(eltype(g.zh)), dataspace((g.ktoth,)))
+    if p.id == 0
+        zh_id[:] = g.zh[g.ks:g.keh]
+    end
+    MPI.Barrier(p.commxy)
+
+    # Make the grid variables dimensions.
+    HDF5.h5ds_set_scale(fid["x" ], "x" )
+    HDF5.h5ds_set_scale(fid["xh"], "xh")
+    HDF5.h5ds_set_scale(fid["y" ], "y" )
+    HDF5.h5ds_set_scale(fid["yh"], "yh")
+    HDF5.h5ds_set_scale(fid["z" ], "z" )
+    HDF5.h5ds_set_scale(fid["zh"], "zh")
+
     MPI.Barrier(p.commxy)
 
     u_id = create_dataset(fid, "u", datatype(eltype(f.u)), dataspace((g.itot, g.jtot, g.ktot )), dxpl_mpio=HDF5.H5FD_MPIO_COLLECTIVE)
@@ -246,37 +253,34 @@ function save_domain(m::Model, i, p::ParallelDistributed)
     s_gradtop_id[is:ie, js:je] = f.s_gradtop[g.is:g.ie, g.js:g.je]
     MPI.Barrier(p.commxy)
 
-    if p.id == 0
-        # Attach the dimensions. Note the c-indexing.
-        HDF5.h5ds_attach_scale(fid["u"], fid["xh"], 2)
-        HDF5.h5ds_attach_scale(fid["u"], fid["y"], 1)
-        HDF5.h5ds_attach_scale(fid["u"], fid["z"], 0)
+    # Attach the dimensions. Note the c-indexing.
+    HDF5.h5ds_attach_scale(fid["u"], fid["xh"], 2)
+    HDF5.h5ds_attach_scale(fid["u"], fid["y"], 1)
+    HDF5.h5ds_attach_scale(fid["u"], fid["z"], 0)
 
-        HDF5.h5ds_attach_scale(fid["v"], fid["x"], 2)
-        HDF5.h5ds_attach_scale(fid["v"], fid["yh"], 1)
-        HDF5.h5ds_attach_scale(fid["v"], fid["z"], 0)
+    HDF5.h5ds_attach_scale(fid["v"], fid["x"], 2)
+    HDF5.h5ds_attach_scale(fid["v"], fid["yh"], 1)
+    HDF5.h5ds_attach_scale(fid["v"], fid["z"], 0)
 
-        HDF5.h5ds_attach_scale(fid["w"], fid["x"], 2)
-        HDF5.h5ds_attach_scale(fid["w"], fid["y"], 1)
-        HDF5.h5ds_attach_scale(fid["w"], fid["zh"], 0)
+    HDF5.h5ds_attach_scale(fid["w"], fid["x"], 2)
+    HDF5.h5ds_attach_scale(fid["w"], fid["y"], 1)
+    HDF5.h5ds_attach_scale(fid["w"], fid["zh"], 0)
 
-        HDF5.h5ds_attach_scale(fid["s"], fid["x"], 2)
-        HDF5.h5ds_attach_scale(fid["s"], fid["y"], 1)
-        HDF5.h5ds_attach_scale(fid["s"], fid["z"], 0)
+    HDF5.h5ds_attach_scale(fid["s"], fid["x"], 2)
+    HDF5.h5ds_attach_scale(fid["s"], fid["y"], 1)
+    HDF5.h5ds_attach_scale(fid["s"], fid["z"], 0)
 
-        HDF5.h5ds_attach_scale(fid["s_bot"], fid["x"], 1)
-        HDF5.h5ds_attach_scale(fid["s_bot"], fid["y"], 0)
+    HDF5.h5ds_attach_scale(fid["s_bot"], fid["x"], 1)
+    HDF5.h5ds_attach_scale(fid["s_bot"], fid["y"], 0)
 
-        HDF5.h5ds_attach_scale(fid["s_top"], fid["x"], 1)
-        HDF5.h5ds_attach_scale(fid["s_top"], fid["y"], 0)
+    HDF5.h5ds_attach_scale(fid["s_top"], fid["x"], 1)
+    HDF5.h5ds_attach_scale(fid["s_top"], fid["y"], 0)
 
-        HDF5.h5ds_attach_scale(fid["s_gradbot"], fid["x"], 1)
-        HDF5.h5ds_attach_scale(fid["s_gradbot"], fid["y"], 0)
+    HDF5.h5ds_attach_scale(fid["s_gradbot"], fid["x"], 1)
+    HDF5.h5ds_attach_scale(fid["s_gradbot"], fid["y"], 0)
 
-        HDF5.h5ds_attach_scale(fid["s_gradtop"], fid["x"], 1)
-        HDF5.h5ds_attach_scale(fid["s_gradtop"], fid["y"], 0)
-    end
-    """
+    HDF5.h5ds_attach_scale(fid["s_gradtop"], fid["x"], 1)
+    HDF5.h5ds_attach_scale(fid["s_gradtop"], fid["y"], 0)
 
     close(fid)
 end
