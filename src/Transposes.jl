@@ -1,3 +1,65 @@
+## Transpose functions for serial code.
+function transpose_zx(data_out, data, g::Grid, p::ParallelSerial)
+    ## Check whether data and data_out point to the same memory
+    if data_out === data
+        return
+    else
+        @tturbo data_out[:, :, :] = data[:, :, :]
+    end
+end
+
+
+function transpose_xy(data_out, data, g::Grid, p::ParallelSerial)
+    ## Check whether data and data_out point to the same memory
+    if data_out === data
+        return
+    else
+        @tturbo data_out[:, :, :] = data[:, :, :]
+    end
+end
+
+
+function transpose_yzt(data_out, data, g::Grid, p::ParallelSerial)
+    ## Check whether data and data_out point to the same memory
+    if data_out === data
+        return
+    else
+        @tturbo data_out[:, :, :] = data[:, :, :]
+    end
+end
+
+
+function transpose_zty(data_out, data, g::Grid, p::ParallelSerial)
+    ## Check whether data and data_out point to the same memory
+    if data_out === data
+        return
+    else
+        @tturbo data_out[:, :, :] = data[:, :, :]
+    end
+end
+
+
+function transpose_yx(data_out, data, g::Grid, p::ParallelSerial)
+    ## Check whether data and data_out point to the same memory
+    if data_out === data
+        return
+    else
+        @tturbo data_out[:, :, :] = data[:, :, :]
+    end
+end
+
+
+function transpose_xz(data_out, data, g::Grid, p::ParallelSerial)
+    ## Check whether data and data_out point to the same memory
+    if data_out === data
+        return
+    else
+        @tturbo data_out[:, :, :] = data[:, :, :]
+    end
+end
+
+
+## Transpose functions for parallel code.
 function transpose_zx(data_out, data, g::Grid, p::ParallelDistributed)
     sendbuf = reshape(similar(data), (g.imax, g.jmax, g.kblock, p.npx))
     recvbuf = similar(sendbuf)
