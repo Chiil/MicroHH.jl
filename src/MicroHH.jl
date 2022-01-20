@@ -1,7 +1,7 @@
 module MicroHH
 
-const do_mpi = false
-const npx = 1; const npy = 1
+const do_mpi = true
+const npx = 2; const npy = 2
 
 ## Export types and functions.
 export Model
@@ -409,7 +409,9 @@ function check_model(m::Model)
     status_string = @sprintf("(%11.2f) Time = %8.3f",
         m.timeloop[1].time,
         (m.last_measured_time[] - old_time) * 1e-9)
-    println(status_string)
+    if m.parallel.id == 0
+        print("$status_string\n")
+    end
 
     # Second, compute the divergence and CFL for each domain.
     for i in 1:m.n_domains
@@ -418,7 +420,9 @@ function check_model(m::Model)
             calc_divergence(m.fields[i], m.grid[i]),
             calc_cfl(m.fields[i], m.grid[i], m.timeloop[i]),
             sum(issubnormal.(m.fields[i].u)) + sum(issubnormal.(m.fields[i].v)) + sum(issubnormal.(m.fields[i].w)))
-        println(status_string)
+        if m.parallel.id == 0
+            print("$status_string\n")
+        end
     end
 end
 
