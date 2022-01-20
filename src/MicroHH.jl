@@ -1,7 +1,7 @@
 module MicroHH
 
-const do_mpi = true
-const npx = 2; const npy = 2
+const do_mpi = false
+const npx = 1; const npy = 1
 
 ## Export types and functions.
 export Model
@@ -293,14 +293,14 @@ function save_model(m::Model)
 end
 
 
-function load_domain!(m::Model, i)
+function load_domain!(m::Model, i, p::ParallelSerial)
     f = m.fields[i]
     g = m.grid[i]
     t = m.timeloop[i]
     b = m.boundary[i]
     p = m.parallel
 
-    filename = @sprintf("%s.%04i.%02i.%08i.h5", m.name, m.parallel.id, i, round(t.time))
+    filename = @sprintf("%s.%02i.%08i.h5", m.name, i, round(t.time))
     h5open(filename, "r") do fid
         f.u[g.is:g.ie, g.js:g.je, g.ks:g.ke ] = read(fid, "u")
         f.v[g.is:g.ie, g.js:g.je, g.ks:g.ke ] = read(fid, "v")
@@ -316,9 +316,54 @@ function load_domain!(m::Model, i)
 end
 
 
+function load_domain!(m::Model, i, p::ParallelDistributed)
+    f = m.fields[i]
+    g = m.grid[i]
+    t = m.timeloop[i]
+    b = m.boundary[i]
+    p = m.parallel
+
+    # Set the range of i and j of the total grid that is stored on this task.
+    is = p.id_x*g.imax + 1; ie = (p.id_x+1)*g.imax
+    js = p.id_y*g.jmax + 1; je = (p.id_y+1)*g.jmax
+
+    filename = @sprintf("%s.%02i.%08i.h5", m.name, i, round(t.time))
+    fid = h5open(filename, "r", p.commxy)
+
+    u_id = read(fid, "u", dxpl_mpio=HDF5.H5FD_MPIO_COLLECTIVE)
+    f.u[g.is:g.ie, g.js:g.je, g.ks:g.ke ] = u_id[is:ie, js:je, :]
+
+    v_id = read(fid, "v", dxpl_mpio=HDF5.H5FD_MPIO_COLLECTIVE)
+    f.v[g.is:g.ie, g.js:g.je, g.ks:g.ke ] = v_id[is:ie, js:je, :]
+
+    w_id = read(fid, "w", dxpl_mpio=HDF5.H5FD_MPIO_COLLECTIVE)
+    f.w[g.is:g.ie, g.js:g.je, g.ks:g.keh] = w_id[is:ie, js:je, :]
+
+    s_id = read(fid, "s", dxpl_mpio=HDF5.H5FD_MPIO_COLLECTIVE)
+    f.s[g.is:g.ie, g.js:g.je, g.ks:g.ke ] = s_id[is:ie, js:je, :]
+
+    s_bot_id = read(fid, "s_bot", dxpl_mpio=HDF5.H5FD_MPIO_COLLECTIVE)
+    f.s_bot[g.is:g.ie, g.js:g.je] = s_bot_id[is:ie, js:je]
+
+    s_top_id = read(fid, "s_top", dxpl_mpio=HDF5.H5FD_MPIO_COLLECTIVE)
+    f.s_top[g.is:g.ie, g.js:g.je] = s_top_id[is:ie, js:je]
+
+    s_gradbot_id = read(fid, "s_gradbot", dxpl_mpio=HDF5.H5FD_MPIO_COLLECTIVE)
+    f.s_gradbot[g.is:g.ie, g.js:g.je] = s_gradbot_id[is:ie, js:je]
+
+    s_gradtop_id = read(fid, "s_gradtop", dxpl_mpio=HDF5.H5FD_MPIO_COLLECTIVE)
+    f.s_gradtop[g.is:g.ie, g.js:g.je] = s_gradtop_id[is:ie, js:je]
+
+    MPI.Barrier(p.commxy)
+    close(fid)
+
+    set_boundary!(f, g, b, p)
+end
+
+
 function load_model!(m::Model)
     for i in 1:m.n_domains
-        load_domain!(m, i)
+        load_domain!(m, i, m.parallel)
     end
 end
 
