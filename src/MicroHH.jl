@@ -88,7 +88,7 @@ function prepare_model!(m::Model)
 end
 
 
-function save_domain(m::Model, p::ParallelSerial)
+function save_domain(m::Model, i, p::ParallelSerial)
     f = m.fields[i]
     g = m.grid[i]
     t = m.timeloop[i]

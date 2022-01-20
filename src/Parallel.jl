@@ -65,7 +65,7 @@ function Parallel(npx, npy)
             commxy, commx, commy)
     else
         id = 0; id_x = 0; id_y = 0
-        id_w = 0; id_e = 0; id_s = 0; id_n = 0
+        id_west = 0; id_east = 0; id_south = 0; id_north = 0
         commxy = Nothing; commx = Nothing; commy = Nothing
 
         return ParallelSerial(
