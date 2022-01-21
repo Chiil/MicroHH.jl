@@ -1,6 +1,6 @@
 ## User input.
 npx = 2; npy = 2
-itot = 256; jtot = 256; ktot = 256
+itot = 512; jtot = 512; ktot = 512
 
 imax = itot ÷ npx; jmax = jtot ÷ npy
 
@@ -63,13 +63,19 @@ end
 # end
 
 
-@time write_3d_hdf(a)
-@time write_3d_hdf(a)
-@time write_3d_hdf(a)
-MPI.Barrier(commxy)
-@time write_3d_mpi(a)
-@time write_3d_mpi(a)
-@time write_3d_mpi(a)
+for i in 1:10
+    @time write_3d_hdf(a)
+end
+
+print("HDF done on id = $id\n")
+
+
+for i in 1:10
+    @time write_3d_mpi(a)
+end
+
+# @time write_3d_mpi(a)
+# @time write_3d_mpi(a)
 # @time write_2d(a)
 # @time write_2d(a)
 # @time write_2d(a)
