@@ -1,13 +1,14 @@
 ## User input.
-const npx = 2; const npy = 2
+npx = 2; npy = 2
 itot = 512; jtot = 512; ktot = 512
 
-# const npx = 32; const npy = 64
-# const itot = 2048; const jtot = 2048; const ktot = 1024
+# npx = 32; npy = 64
+# itot = 2048; jtot = 2048; ktot = 1024
 
 
 ## Init MPI and create grid.
 using MPI
+using CUDA
 using LoopVectorization
 
 imax = itot ÷ npx; jmax = jtot ÷ npy
@@ -21,42 +22,50 @@ mpiid = MPI.Comm_rank(commxy)
 commx = MPI.Cart_sub(commxy, [false, true])
 commy = MPI.Cart_sub(commxy, [true, false])
 
-data_k = ones(Int, imax, jmax, ktot) * mpiid
-data_i = Array{Int}(undef, itot, jmax, kblock)
-data_j = Array{Int}(undef, iblock, jtot, kblock)
-data_kt = Array{Int}(undef, iblock, jblock, ktot)
+# Set device number to mpiid
+device!(mpiid)
+print("The CUDA device is: $(device())\n")
+
+data_k_cpu = ones(Int, imax, jmax, ktot) * mpiid
+
+data_k = CuArray(data_k_cpu)
+data_i = reshape(data_k, (itot, jmax, kblock))
+data_j = reshape(data_k, (iblock, jtot, kblock))
+data_kt = reshape(data_k, (iblock, jblock, ktot))
 
 
 ## Create transpose functions.
 function transpose_zx(data_new, data)
-    sendbuf = Array{Int}(undef, imax, jmax, kblock, npx)
-    recvbuf = Array{Int}(undef, imax, jmax, kblock, npx)
+    sendbuf = CuArray{Int}(undef, imax, jmax, kblock, npx)
+    recvbuf = CuArray{Int}(undef, imax, jmax, kblock, npx)
 
     # Load the buffer.
     for i in 1:npx
         ks = (i-1)*kblock + 1; ke = i*kblock
-        @tturbo sendbuf[:, :, :, i] .= data[:, :, ks:ke]
+        @inbounds @fastmath sendbuf[:, :, :, i] .= data[:, :, ks:ke]
     end
 
     # Communicate data.
-    MPI.Alltoall!(MPI.UBuffer(sendbuf, imax*jmax*kblock), MPI.UBuffer(recvbuf, imax*jmax*kblock), commx)
+    mpi_sendbuf = MPI.UBuffer(sendbuf, imax*jmax*kblock)
+    mpi_recvbuf = MPI.UBuffer(recvbuf, imax*jmax*kblock)
+    MPI.Alltoall!(mpi_sendbuf, mpi_recvbuf, commx)
 
     # Unload the buffer.
     for i in 1:npx
         is = (i-1)*imax + 1; ie = i*imax
-        @tturbo data_new[is:ie, :, :] .= recvbuf[:, :, :, i]
+        @inbounds @fastmath data_new[is:ie, :, :] .= recvbuf[:, :, :, i]
     end
 end
 
 
 function transpose_xy(data_new, data)
-    sendbuf = Array{Int}(undef, iblock, jmax, kblock, npy)
-    recvbuf = Array{Int}(undef, iblock, jmax, kblock, npy)
+    sendbuf = CuArray{Int}(undef, iblock, jmax, kblock, npy)
+    recvbuf = CuArray{Int}(undef, iblock, jmax, kblock, npy)
 
     # Load the buffer.
     for i in 1:npy
         is = (i-1)*iblock + 1; ie = i*iblock
-        @tturbo sendbuf[:, :, :, i] .= data[is:ie, :, :]
+        @inbounds @fastmath sendbuf[:, :, :, i] .= data[is:ie, :, :]
     end
 
     # Communicate data.
@@ -65,19 +74,19 @@ function transpose_xy(data_new, data)
     # Unload the buffer.
     for i in 1:npy
         js = (i-1)*jmax + 1; je = i*jmax
-        @tturbo data_new[:, js:je, :] .= recvbuf[:, :, :, i]
+        @inbounds @fastmath data_new[:, js:je, :] .= recvbuf[:, :, :, i]
     end
 end
 
 
 function transpose_yzt(data_new, data)
-    sendbuf = Array{Int}(undef, iblock, jblock, kblock, npx)
-    recvbuf = Array{Int}(undef, iblock, jblock, kblock, npx)
+    sendbuf = CuArray{Int}(undef, iblock, jblock, kblock, npx)
+    recvbuf = CuArray{Int}(undef, iblock, jblock, kblock, npx)
 
     # Load the buffer.
     for i in 1:npx
         js = (i-1)*jblock + 1; je = i*jblock
-        @tturbo sendbuf[:, :, :, i] .= data[:, js:je, :]
+        @inbounds @fastmath sendbuf[:, :, :, i] .= data[:, js:je, :]
     end
 
     # Communicate data.
@@ -86,19 +95,19 @@ function transpose_yzt(data_new, data)
     # Unload the buffer.
     for i in 1:npx
         ks = (i-1)*kblock + 1; ke = i*kblock
-        @tturbo data_new[:, :, ks:ke] .= recvbuf[:, :, :, i]
+        @inbounds @fastmath data_new[:, :, ks:ke] .= recvbuf[:, :, :, i]
     end
 end
 
 
 function transpose_zty(data_new, data)
-    sendbuf = Array{Int}(undef, iblock, jblock, kblock, npx)
-    recvbuf = Array{Int}(undef, iblock, jblock, kblock, npx)
+    sendbuf = CuArray{Int}(undef, iblock, jblock, kblock, npx)
+    recvbuf = CuArray{Int}(undef, iblock, jblock, kblock, npx)
 
     # Load the buffer.
     for i in 1:npx
         ks = (i-1)*kblock + 1; ke = i*kblock
-        @tturbo sendbuf[:, :, :, i] .= data[:, :, ks:ke]
+        @inbounds @fastmath sendbuf[:, :, :, i] .= data[:, :, ks:ke]
     end
 
     # Communicate data.
@@ -107,19 +116,19 @@ function transpose_zty(data_new, data)
     # Unload the buffer.
     for i in 1:npx
         js = (i-1)*jblock + 1; je = i*jblock
-        @tturbo data_new[:, js:je, :] = recvbuf[:, :, :, i]
+        @inbounds @fastmath data_new[:, js:je, :] = recvbuf[:, :, :, i]
     end
 end
 
 
 function transpose_yx(data_new, data)
-    sendbuf = Array{Int}(undef, iblock, jmax, kblock, npy)
-    recvbuf = Array{Int}(undef, iblock, jmax, kblock, npy)
+    sendbuf = CuArray{Int}(undef, iblock, jmax, kblock, npy)
+    recvbuf = CuArray{Int}(undef, iblock, jmax, kblock, npy)
 
     # Load the buffer.
     for i in 1:npy
         js = (i-1)*jmax + 1; je = i*jmax
-        @tturbo sendbuf[:, :, :, i] .= data[:, js:je, :]
+        @inbounds @fastmath sendbuf[:, :, :, i] .= data[:, js:je, :]
     end
 
     # Communicate data.
@@ -128,19 +137,19 @@ function transpose_yx(data_new, data)
     # Unload the buffer.
     for i in 1:npy
         is = (i-1)*iblock + 1; ie = i*iblock
-        @tturbo data_new[is:ie, :, :] .= recvbuf[:, :, :, i]
+        @inbounds @fastmath data_new[is:ie, :, :] .= recvbuf[:, :, :, i]
     end
 end
 
 
 function transpose_xz(data_new, data)
-    sendbuf = Array{Int}(undef, imax, jmax, kblock, npx)
-    recvbuf = Array{Int}(undef, imax, jmax, kblock, npx)
+    sendbuf = CuArray{Int}(undef, imax, jmax, kblock, npx)
+    recvbuf = CuArray{Int}(undef, imax, jmax, kblock, npx)
 
     # Load the buffer.
     for i in 1:npx
         is = (i-1)*imax + 1; ie = i*imax
-        @tturbo sendbuf[:, :, :, i] .= data[is:ie, :, :]
+        @inbounds @fastmath sendbuf[:, :, :, i] .= data[is:ie, :, :]
     end
 
     # Communicate data.
@@ -149,7 +158,7 @@ function transpose_xz(data_new, data)
     # Unload the buffer.
     for i in 1:npx
         ks = (i-1)*kblock + 1; ke = i*kblock
-        @tturbo data_new[:, :, ks:ke] .= recvbuf[:, :, :, i]
+        @inbounds @fastmath data_new[:, :, ks:ke] .= recvbuf[:, :, :, i]
     end
 end
 
