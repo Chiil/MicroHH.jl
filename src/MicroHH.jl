@@ -1,7 +1,10 @@
 module MicroHH
 
-const do_mpi = true
-const npx = 2; const npy = 2
+const do_mpi = parse(Bool, ENV["JULIA_MICROHH_MPI"])
+const npx = do_mpi ? parse(Int, ENV["JULIA_MICROHH_NPX"]) : 1
+const npy = do_mpi ? parse(Int, ENV["JULIA_MICROHH_NPY"]) : 1
+print("Running with do_mpi = $do_mpi, on npx = $npx, npy = $npy tasks.\n")
+
 
 ## Export types and functions.
 export Model
@@ -12,7 +15,6 @@ export prepare_model!, step_model!, save_model, load_model!
 if do_mpi
     using MPI
 end
-
 using LoopVectorization
 using Printf
 using HDF5
