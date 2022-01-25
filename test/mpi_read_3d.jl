@@ -32,13 +32,16 @@ function read_3d_hdf(a)
     js = id_y*jmax + 1; je = (id_y+1)*jmax
 
     fid = h5open("test_mpi.h5", commxy, info)
-    # aid = read(fid, "a", dxpl_mpio=HDF5.H5FD_MPIO_COLLECTIVE)
-    aid = fid["a"]
+
+    dapl = create_property(HDF5.H5P_DATASET_ACCESS)
+    dxpl = create_property(HDF5.H5P_DATASET_XFER)
+    dxpl[:dxpl_mpio] = HDF5.H5FD_MPIO_COLLECTIVE
+    aid = open_dataset(fid, "a", dapl, dxpl)
 
     memtype = HDF5.datatype(a)
     memspace = HDF5.dataspace(a)
-
     asubid = HDF5.hyperslab(aid, is:ie, js:je, 1:ktot)
+
     HDF5.h5d_read(aid, memtype.id, memspace.id, asubid, aid.xfer, a)
 
     close(aid)
