@@ -70,9 +70,9 @@ end
 print("HDF done on id = $id\n")
 
 
-for i in 1:10
-    @time write_3d_mpi(a)
-end
+# for i in 1:10
+#     @time write_3d_mpi(a)
+# end
 
 # @time write_3d_mpi(a)
 # @time write_3d_mpi(a)
