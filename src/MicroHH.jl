@@ -182,38 +182,31 @@ function save_domain(m::Model, i, p::ParallelDistributed)
     if p.id_y == 0
         x_id[is:ie] = g.x[g.is:g.ie]
     end
-    MPI.Barrier(p.commx)
 
     xh_id = create_dataset(fid, "xh", datatype(eltype(g.xh)), dataspace((g.itot,)))
     if p.id_y == 0
         xh_id[is:ie] = g.xh[g.is:g.ie]
     end
-    MPI.Barrier(p.commxy)
-
 
     y_id = create_dataset(fid, "y", datatype(eltype(g.y)), dataspace((g.jtot,)))
     if p.id_x == 0
         y_id[js:je] = g.y[g.js:g.je]
     end
-    MPI.Barrier(p.commxy)
 
     yh_id = create_dataset(fid, "yh", datatype(eltype(g.yh)), dataspace((g.jtot,)))
     if p.id_x == 0
         yh_id[js:je] = g.yh[g.js:g.je]
     end
-    MPI.Barrier(p.commxy)
 
     z_id = create_dataset(fid, "z", datatype(eltype(g.z)), dataspace((g.ktot,)))
     if p.id == 0
         z_id[:] = g.z[g.ks:g.ke]
     end
-    MPI.Barrier(p.commxy)
 
     zh_id = create_dataset(fid, "zh", datatype(eltype(g.zh)), dataspace((g.ktoth,)))
     if p.id == 0
         zh_id[:] = g.zh[g.ks:g.keh]
     end
-    MPI.Barrier(p.commxy)
 
     # Make the grid variables dimensions.
     HDF5.h5ds_set_scale(fid["x" ], "x" )
@@ -225,37 +218,45 @@ function save_domain(m::Model, i, p::ParallelDistributed)
 
     MPI.Barrier(p.commxy)
 
-    u_id = create_dataset(fid, "u", datatype(eltype(f.u)), dataspace((g.itot, g.jtot, g.ktot )), dxpl_mpio=HDF5.H5FD_MPIO_COLLECTIVE)
-    u_id[is:ie, js:je, :] = f.u[g.is:g.ie, g.js:g.je, g.ks:g.ke ]
-    MPI.Barrier(p.commxy)
+    items_to_save = [
+        ("u", f.u, g.ktot ),
+        ("v", f.v, g.ktot ),
+        ("w", f.w, g.ktoth),
+        ("s", f.s, g.ktot )]
 
-    v_id = create_dataset(fid, "v", datatype(eltype(f.v)), dataspace((g.itot, g.jtot, g.ktot )), dxpl_mpio=HDF5.H5FD_MPIO_COLLECTIVE)
-    v_id[is:ie, js:je, :] = f.v[g.is:g.ie, g.js:g.je, g.ks:g.ke ]
-    MPI.Barrier(p.commxy)
+    map(items_to_save) do item
+        name, a, ktot = item
 
-    w_id = create_dataset(fid, "w", datatype(eltype(f.w)), dataspace((g.itot, g.jtot, g.ktoth)), dxpl_mpio=HDF5.H5FD_MPIO_COLLECTIVE)
-    w_id[is:ie, js:je, :] = f.w[g.is:g.ie, g.js:g.je, g.ks:g.keh]
-    MPI.Barrier(p.commxy)
+        a_nogc = a[g.is:g.ie, g.js:g.je, g.ks:g.ks+ktot-1]
+        aid = create_dataset(fid, name, datatype(a_nogc), dataspace((g.itot, g.jtot, ktot)), dxpl_mpio=HDF5.H5FD_MPIO_COLLECTIVE)
 
-    s_id = create_dataset(fid, "s", datatype(eltype(f.s)), dataspace((g.itot, g.jtot, g.ktot )), dxpl_mpio=HDF5.H5FD_MPIO_COLLECTIVE)
-    s_id[is:ie, js:je, :] = f.s[g.is:g.ie, g.js:g.je, g.ks:g.ke ]
-    MPI.Barrier(p.commxy)
+        memtype = HDF5.datatype(a_nogc)
+        memspace = HDF5.dataspace(a_nogc)
+        asubid = HDF5.hyperslab(aid, is:ie, js:je, 1:ktot)
+        HDF5.h5d_write(aid, memtype.id, memspace.id, asubid, aid.xfer, a_nogc)
 
-    s_bot_id = create_dataset(fid, "s_bot", datatype(eltype(f.s_bot)), dataspace((g.itot, g.jtot)), dxpl_mpio=HDF5.H5FD_MPIO_COLLECTIVE)
-    s_bot_id[is:ie, js:je] = f.s_bot[g.is:g.ie, g.js:g.je]
-    MPI.Barrier(p.commxy)
+        close(aid)
+    end
 
-    s_top_id = create_dataset(fid, "s_top", datatype(eltype(f.s_top)), dataspace((g.itot, g.jtot)), dxpl_mpio=HDF5.H5FD_MPIO_COLLECTIVE)
-    s_top_id[is:ie, js:je] = f.s_top[g.is:g.ie, g.js:g.je]
-    MPI.Barrier(p.commxy)
+    items_to_save = [
+        ("s_bot", f.s_bot),
+        ("s_top", f.s_top),
+        ("s_gradbot", f.s_gradbot),
+        ("s_gradtop", f.s_gradtop)]
 
-    s_gradbot_id = create_dataset(fid, "s_gradbot", datatype(eltype(f.s_gradbot)), dataspace((g.itot, g.jtot)), dxpl_mpio=HDF5.H5FD_MPIO_COLLECTIVE)
-    s_gradbot_id[is:ie, js:je] = f.s_gradbot[g.is:g.ie, g.js:g.je]
-    MPI.Barrier(p.commxy)
+    map(items_to_save) do item
+        name, a = item
 
-    s_gradtop_id = create_dataset(fid, "s_gradtop", datatype(eltype(f.s_gradtop)), dataspace((g.itot, g.jtot)), dxpl_mpio=HDF5.H5FD_MPIO_COLLECTIVE)
-    s_gradtop_id[is:ie, js:je] = f.s_gradtop[g.is:g.ie, g.js:g.je]
-    MPI.Barrier(p.commxy)
+        a_nogc = a[g.is:g.ie, g.js:g.je]
+        aid = create_dataset(fid, name, datatype(a_nogc), dataspace((g.itot, g.jtot)), dxpl_mpio=HDF5.H5FD_MPIO_COLLECTIVE)
+
+        memtype = HDF5.datatype(a_nogc)
+        memspace = HDF5.dataspace(a_nogc)
+        asubid = HDF5.hyperslab(aid, is:ie, js:je)
+        HDF5.h5d_write(aid, memtype.id, memspace.id, asubid, aid.xfer, a_nogc)
+
+        close(aid)
+    end
 
     # Attach the dimensions. Note the c-indexing.
     HDF5.h5ds_attach_scale(fid["u"], fid["xh"], 2)
