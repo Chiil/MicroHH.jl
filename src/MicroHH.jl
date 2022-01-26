@@ -1,8 +1,10 @@
 module MicroHH
 
-const do_mpi = parse(Bool, ENV["JULIA_MICROHH_MPI"])
-const npx = do_mpi ? parse(Int, ENV["JULIA_MICROHH_NPX"]) : 1
-const npy = do_mpi ? parse(Int, ENV["JULIA_MICROHH_NPY"]) : 1
+# const do_mpi = parse(Bool, ENV["JULIA_MICROHH_MPI"])
+# const npx = do_mpi ? parse(Int, ENV["JULIA_MICROHH_NPX"]) : 1
+# const npy = do_mpi ? parse(Int, ENV["JULIA_MICROHH_NPY"]) : 1
+#
+const do_mpi = true; const npx = 2; const npy = 2;
 print("Running with do_mpi = $do_mpi, on npx = $npx, npy = $npy tasks.\n")
 
 
@@ -332,31 +334,44 @@ function load_domain!(m::Model, i, p::ParallelDistributed)
     filename = @sprintf("%s.%02i.%08i.h5", m.name, i, round(t.time))
     fid = h5open(filename, "r", p.commxy)
 
-    u_id = read(fid, "u", dxpl_mpio=HDF5.H5FD_MPIO_COLLECTIVE)
+    dapl = create_property(HDF5.H5P_DATASET_ACCESS)
+    dxpl = create_property(HDF5.H5P_DATASET_XFER)
+    dxpl[:dxpl_mpio] = HDF5.H5FD_MPIO_COLLECTIVE
+
+    u_id = open_dataset(fid, "u", dapl, dxpl)
     f.u[g.is:g.ie, g.js:g.je, g.ks:g.ke ] = u_id[is:ie, js:je, :]
+    close(u_id)
 
-    v_id = read(fid, "v", dxpl_mpio=HDF5.H5FD_MPIO_COLLECTIVE)
+    v_id = open_dataset(fid, "v", dapl, dxpl)
     f.v[g.is:g.ie, g.js:g.je, g.ks:g.ke ] = v_id[is:ie, js:je, :]
+    close(v_id)
 
-    w_id = read(fid, "w", dxpl_mpio=HDF5.H5FD_MPIO_COLLECTIVE)
+    w_id = open_dataset(fid, "w", dapl, dxpl)
     f.w[g.is:g.ie, g.js:g.je, g.ks:g.keh] = w_id[is:ie, js:je, :]
+    close(w_id)
 
-    s_id = read(fid, "s", dxpl_mpio=HDF5.H5FD_MPIO_COLLECTIVE)
+    s_id = open_dataset(fid, "s", dapl, dxpl)
     f.s[g.is:g.ie, g.js:g.je, g.ks:g.ke ] = s_id[is:ie, js:je, :]
+    close(s_id)
 
-    s_bot_id = read(fid, "s_bot", dxpl_mpio=HDF5.H5FD_MPIO_COLLECTIVE)
+    s_bot_id = open_dataset(fid, "s_bot", dapl, dxpl)
     f.s_bot[g.is:g.ie, g.js:g.je] = s_bot_id[is:ie, js:je]
+    close(s_bot_id)
 
-    s_top_id = read(fid, "s_top", dxpl_mpio=HDF5.H5FD_MPIO_COLLECTIVE)
+    s_top_id = open_dataset(fid, "s_top", dapl, dxpl)
     f.s_top[g.is:g.ie, g.js:g.je] = s_top_id[is:ie, js:je]
+    close(s_top_id)
 
-    s_gradbot_id = read(fid, "s_gradbot", dxpl_mpio=HDF5.H5FD_MPIO_COLLECTIVE)
+    s_gradbot_id = open_dataset(fid, "s_gradbot", dapl, dxpl)
     f.s_gradbot[g.is:g.ie, g.js:g.je] = s_gradbot_id[is:ie, js:je]
+    close(s_gradbot_id)
 
-    s_gradtop_id = read(fid, "s_gradtop", dxpl_mpio=HDF5.H5FD_MPIO_COLLECTIVE)
+    s_gradtop_id = open_dataset(fid, "s_gradtop", dapl, dxpl)
     f.s_gradtop[g.is:g.ie, g.js:g.je] = s_gradtop_id[is:ie, js:je]
+    close(s_gradtop_id)
 
-    MPI.Barrier(p.commxy)
+    close(dapl)
+    close(dxpl)
     close(fid)
 
     set_boundary!(f, g, b, p)
