@@ -4,6 +4,7 @@ module MicroHH
 # const npx = do_mpi ? parse(Int, ENV["JULIA_MICROHH_NPX"]) : 1
 # const npy = do_mpi ? parse(Int, ENV["JULIA_MICROHH_NPY"]) : 1
 #
+# const do_mpi = true; const npx = 2; const npy = 2;
 const do_mpi = true; const npx = 2; const npy = 2;
 print("Running with do_mpi = $do_mpi, on npx = $npx, npy = $npy tasks.\n")
 
@@ -259,33 +260,30 @@ function save_domain(m::Model, i, p::ParallelDistributed)
     end
 
     # Attach the dimensions. Note the c-indexing.
-    HDF5.h5ds_attach_scale(fid["u"], fid["xh"], 2)
-    HDF5.h5ds_attach_scale(fid["u"], fid["y"], 1)
-    HDF5.h5ds_attach_scale(fid["u"], fid["z"], 0)
+    vars_3d = [
+        ("u", "xh", "y" , "z" ),
+        ("v", "x" , "yh", "z" ),
+        ("w", "x" , "y" , "zh"),
+        ("s", "x" , "y" , "z" )]
 
-    HDF5.h5ds_attach_scale(fid["v"], fid["x"], 2)
-    HDF5.h5ds_attach_scale(fid["v"], fid["yh"], 1)
-    HDF5.h5ds_attach_scale(fid["v"], fid["z"], 0)
+    map(vars_3d) do var
+        name::String, x::String, y::String, z::String = var
+        HDF5.h5ds_attach_scale(fid[name], fid[x], 2)
+        HDF5.h5ds_attach_scale(fid[name], fid[y], 1)
+        HDF5.h5ds_attach_scale(fid[name], fid[z], 0)
+    end
 
-    HDF5.h5ds_attach_scale(fid["w"], fid["x"], 2)
-    HDF5.h5ds_attach_scale(fid["w"], fid["y"], 1)
-    HDF5.h5ds_attach_scale(fid["w"], fid["zh"], 0)
+    vars_2d = [
+        ("s_bot", "x", "y"),
+        ("s_top", "x", "y"),
+        ("s_gradbot", "x", "y"),
+        ("s_gradtop", "x", "y")]
 
-    HDF5.h5ds_attach_scale(fid["s"], fid["x"], 2)
-    HDF5.h5ds_attach_scale(fid["s"], fid["y"], 1)
-    HDF5.h5ds_attach_scale(fid["s"], fid["z"], 0)
-
-    HDF5.h5ds_attach_scale(fid["s_bot"], fid["x"], 1)
-    HDF5.h5ds_attach_scale(fid["s_bot"], fid["y"], 0)
-
-    HDF5.h5ds_attach_scale(fid["s_top"], fid["x"], 1)
-    HDF5.h5ds_attach_scale(fid["s_top"], fid["y"], 0)
-
-    HDF5.h5ds_attach_scale(fid["s_gradbot"], fid["x"], 1)
-    HDF5.h5ds_attach_scale(fid["s_gradbot"], fid["y"], 0)
-
-    HDF5.h5ds_attach_scale(fid["s_gradtop"], fid["x"], 1)
-    HDF5.h5ds_attach_scale(fid["s_gradtop"], fid["y"], 0)
+    map(vars_2d) do var
+        name::String, x::String, y::String = var
+        HDF5.h5ds_attach_scale(fid[name], fid[x], 1)
+        HDF5.h5ds_attach_scale(fid[name], fid[y], 0)
+    end
 
     close(fid)
 end
