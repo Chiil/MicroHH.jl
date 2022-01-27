@@ -15,6 +15,8 @@ struct Pressure{TF <: Union{Float32, Float64}}
     work2d::Array{TF, 2}
     b::Array{TF, 3}
     p_nogc::Array{TF, 3}
+    fft_tmp::Array{TF, 3}
+    fft::Array{TF, 3}
 end
 
 function Pressure(g::Grid, TF)
@@ -63,8 +65,10 @@ function Pressure(g::Grid, TF)
     work2d = zeros(g.iblock, g.jblock)
     b = zeros(g.iblock, g.jblock, g.ktot)
     p_nogc = zeros(g.imax, g.jmax, g.ktot)
+    fft_tmp = zeros(g.itot, g.jmax, g.kblock)
+    fft = zeros(g.iblock, g.jtot, g.kblock)
 
-    Pressure{TF}(fft_plan_fi, fft_plan_bi, fft_plan_fj, fft_plan_bj, bmati, bmatj, a, c, work3d, work2d, b, p_nogc)
+    Pressure{TF}(fft_plan_fi, fft_plan_bi, fft_plan_fj, fft_plan_bj, bmati, bmatj, a, c, work3d, work2d, b, p_nogc, fft_tmp, fft)
 end
 
 function input_kernel!(
@@ -193,15 +197,15 @@ function calc_pressure_tend!(f::Fields, g::Grid, t::Timeloop, p::Pressure, pp::P
     p_nogc_x = reshape(p.p_nogc, (g.itot, g.jmax, g.kblock))
     transpose_zx(p_nogc_x, p.p_nogc, g, pp)
 
-    p_fft_tmp = p.fft_forward_i * p_nogc_x
+    p.fft_tmp .= p.fft_forward_i * p_nogc_x
 
-    p_fft_tmp2 = reshape(p_fft_tmp, (g.iblock, g.jtot, g.kblock))
-    transpose_xy(p_fft_tmp2, p_fft_tmp, g, pp)
+    p_fft_tmp2 = reshape(p.fft_tmp, (g.iblock, g.jtot, g.kblock))
+    transpose_xy(p_fft_tmp2, p.fft_tmp, g, pp)
 
-    p_fft = p.fft_forward_j * p_fft_tmp2
+    p.fft .= p.fft_forward_j * p_fft_tmp2
 
-    p_fft_z = reshape(p_fft, (g.iblock, g.jblock, g.ktot))
-    transpose_yzt(p_fft_z, p_fft, g, pp)
+    p_fft_z = reshape(p.fft, (g.iblock, g.jblock, g.ktot))
+    transpose_yzt(p_fft_z, p.fft, g, pp)
 
     solve_pre_kernel!(
         p_fft_z, p.b,
@@ -214,14 +218,14 @@ function calc_pressure_tend!(f::Fields, g::Grid, t::Timeloop, p::Pressure, pp::P
         p.a, p.b, p.c,
         g.iblock, g.jblock, g.ktot)
 
-    transpose_zty(p_fft, p_fft_z, g, pp)
+    transpose_zty(p.fft, p_fft_z, g, pp)
 
-    p_fft_tmp2 = (p.fft_backward_j * p_fft) ./ g.jtot
+    p_fft_tmp2 .= (p.fft_backward_j * p.fft) ./ g.jtot
 
     p_fft_tmp = reshape(p_fft_tmp2, (g.itot, g.jmax, g.kblock))
     transpose_yx(p_fft_tmp, p_fft_tmp2, g, pp)
 
-    p_nogc_x[:, :, :] = (p.fft_backward_i * p_fft_tmp) ./ g.itot
+    p_nogc_x .= (p.fft_backward_i * p_fft_tmp) ./ g.itot
 
     transpose_xz(p.p_nogc, p_nogc_x, g, pp)
 
