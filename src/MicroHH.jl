@@ -4,9 +4,9 @@ module MicroHH
 # const npx = do_mpi ? parse(Int, ENV["JULIA_MICROHH_NPX"]) : 1
 # const npy = do_mpi ? parse(Int, ENV["JULIA_MICROHH_NPY"]) : 1
 #
-# const do_mpi = true; const npx = 2; const npy = 2;
 const do_mpi = true; const npx = 2; const npy = 2;
-print("Running with do_mpi = $do_mpi, on npx = $npx, npy = $npy tasks.\n")
+# const do_mpi = true; const npx = 16; const npy = 32;
+# print("Running with do_mpi = $do_mpi, on npx = $npx, npy = $npy tasks.\n")
 
 
 ## Export types and functions.
@@ -88,6 +88,10 @@ function prepare_model!(m::Model)
     end
 
     check_model(m)
+
+    if m.parallel.id == 0
+        print("Starting simulation with do_mpi = $do_mpi, on npx = $npx, npy = $npy tasks.\n")
+    end
 
     return is_in_progress(m.timeloop[1])
 end
@@ -183,31 +187,37 @@ function save_domain(m::Model, i, p::ParallelDistributed)
     if p.id_y == 0
         x_id[is:ie] = g.x[g.is:g.ie]
     end
+    close(x_id)
 
     xh_id = create_dataset(fid, "xh", datatype(eltype(g.xh)), dataspace((g.itot,)))
     if p.id_y == 0
         xh_id[is:ie] = g.xh[g.is:g.ie]
     end
+    close(xh_id)
 
     y_id = create_dataset(fid, "y", datatype(eltype(g.y)), dataspace((g.jtot,)))
     if p.id_x == 0
         y_id[js:je] = g.y[g.js:g.je]
     end
+    close(y_id)
 
     yh_id = create_dataset(fid, "yh", datatype(eltype(g.yh)), dataspace((g.jtot,)))
     if p.id_x == 0
         yh_id[js:je] = g.yh[g.js:g.je]
     end
+    close(yh_id)
 
     z_id = create_dataset(fid, "z", datatype(eltype(g.z)), dataspace((g.ktot,)))
     if p.id == 0
         z_id[:] = g.z[g.ks:g.ke]
     end
+    close(z_id)
 
     zh_id = create_dataset(fid, "zh", datatype(eltype(g.zh)), dataspace((g.ktoth,)))
     if p.id == 0
         zh_id[:] = g.zh[g.ks:g.keh]
     end
+    close(zh_id)
 
     # Make the grid variables dimensions.
     HDF5.h5ds_set_scale(fid["x" ], "x" )
@@ -231,10 +241,11 @@ function save_domain(m::Model, i, p::ParallelDistributed)
         a_nogc = a[g.is:g.ie, g.js:g.je, g.ks:g.ks+ktot-1]
         aid = create_dataset(fid, name, datatype(a_nogc), dataspace((g.itot, g.jtot, ktot)), dxpl_mpio=HDF5.H5FD_MPIO_COLLECTIVE)
 
-        memtype = HDF5.datatype(a_nogc)
-        memspace = HDF5.dataspace(a_nogc)
-        asubid = HDF5.hyperslab(aid, is:ie, js:je, 1:ktot)
-        HDF5.h5d_write(aid, memtype.id, memspace.id, asubid, aid.xfer, a_nogc)
+        # memtype = HDF5.datatype(a_nogc)
+        # memspace = HDF5.dataspace(a_nogc)
+        # asubid = HDF5.hyperslab(aid, is:ie, js:je, 1:ktot)
+        # HDF5.h5d_write(aid, memtype.id, memspace.id, asubid, aid.xfer, a_nogc)
+        aid[is:ie, js:je, :] .= a_nogc[:, :, :]
 
         close(aid)
     end
@@ -251,10 +262,11 @@ function save_domain(m::Model, i, p::ParallelDistributed)
         a_nogc = a[g.is:g.ie, g.js:g.je]
         aid = create_dataset(fid, name, datatype(a_nogc), dataspace((g.itot, g.jtot)), dxpl_mpio=HDF5.H5FD_MPIO_COLLECTIVE)
 
-        memtype = HDF5.datatype(a_nogc)
-        memspace = HDF5.dataspace(a_nogc)
-        asubid = HDF5.hyperslab(aid, is:ie, js:je)
-        HDF5.h5d_write(aid, memtype.id, memspace.id, asubid, aid.xfer, a_nogc)
+        # memtype = HDF5.datatype(a_nogc)
+        # memspace = HDF5.dataspace(a_nogc)
+        # asubid = HDF5.hyperslab(aid, is:ie, js:je)
+        # HDF5.h5d_write(aid, memtype.id, memspace.id, asubid, aid.xfer, a_nogc)
+        aid[is:ie, js:je] .= a_nogc[:, :]
 
         close(aid)
     end
