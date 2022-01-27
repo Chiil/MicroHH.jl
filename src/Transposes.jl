@@ -4,7 +4,7 @@ function transpose_zx(data_out, data, g::Grid, p::ParallelSerial)
     if data_out === data
         return
     else
-        @tturbo data_out[:, :, :] = data[:, :, :]
+        @tturbo data_out[:, :, :] .= data
     end
 end
 
@@ -14,7 +14,7 @@ function transpose_xy(data_out, data, g::Grid, p::ParallelSerial)
     if data_out === data
         return
     else
-        @tturbo data_out[:, :, :] = data[:, :, :]
+        @tturbo data_out[:, :, :] .= data
     end
 end
 
@@ -24,7 +24,7 @@ function transpose_yzt(data_out, data, g::Grid, p::ParallelSerial)
     if data_out === data
         return
     else
-        @tturbo data_out[:, :, :] = data[:, :, :]
+        @tturbo data_out[:, :, :] .= data
     end
 end
 
@@ -34,7 +34,7 @@ function transpose_zty(data_out, data, g::Grid, p::ParallelSerial)
     if data_out === data
         return
     else
-        @tturbo data_out[:, :, :] = data[:, :, :]
+        @tturbo data_out[:, :, :] .= data
     end
 end
 
@@ -44,7 +44,7 @@ function transpose_yx(data_out, data, g::Grid, p::ParallelSerial)
     if data_out === data
         return
     else
-        @tturbo data_out[:, :, :] = data[:, :, :]
+        @tturbo data_out[:, :, :] .= data
     end
 end
 
@@ -54,7 +54,7 @@ function transpose_xz(data_out, data, g::Grid, p::ParallelSerial)
     if data_out === data
         return
     else
-        @tturbo data_out[:, :, :] = data[:, :, :]
+        @tturbo data_out[:, :, :] .= data
     end
 end
 
@@ -65,7 +65,7 @@ function transpose_zx(data_out, data, g::Grid, p::ParallelDistributed)
     if data_out === data
         return
     elseif size(data_out) == size(data)
-        @tturbo data_out[:, :, :] = data[:, :, :]
+        @tturbo data_out[:, :, :] .= data
     else
         sendbuf = reshape(similar(data), (g.imax, g.jmax, g.kblock, p.npx))
         recvbuf = similar(sendbuf)
@@ -73,7 +73,8 @@ function transpose_zx(data_out, data, g::Grid, p::ParallelDistributed)
         # Load the buffer.
         for i in 1:p.npx
             ks = (i-1)*g.kblock + 1; ke = i*g.kblock
-            @tturbo sendbuf[:, :, :, i] .= data[:, :, ks:ke]
+            data_view = @view data[:, :, ks:ke]
+            @tturbo sendbuf[:, :, :, i] .= data_view
         end
 
         # Communicate data.
@@ -83,7 +84,8 @@ function transpose_zx(data_out, data, g::Grid, p::ParallelDistributed)
         # Unload the buffer.
         for i in 1:p.npx
             is = (i-1)*g.imax + 1; ie = i*g.imax
-            @tturbo data_out[is:ie, :, :] .= recvbuf[:, :, :, i]
+            recvbuf_view = @view recvbuf[:, :, :, i]
+            @tturbo data_out[is:ie, :, :] .= recvbuf_view
         end
     end
 end
@@ -93,7 +95,7 @@ function transpose_xy(data_out, data, g::Grid, p::ParallelDistributed)
     if data_out === data
         return
     elseif size(data_out) == size(data)
-        @tturbo data_out[:, :, :] = data[:, :, :]
+        @tturbo data_out[:, :, :] .= data
     else
         sendbuf = reshape(similar(data), (g.iblock, g.jmax, g.kblock, p.npy))
         recvbuf = similar(sendbuf)
@@ -101,7 +103,8 @@ function transpose_xy(data_out, data, g::Grid, p::ParallelDistributed)
         # Load the buffer.
         for i in 1:p.npy
             is = (i-1)*g.iblock + 1; ie = i*g.iblock
-            @tturbo sendbuf[:, :, :, i] .= data[is:ie, :, :]
+            data_view = @view data[is:ie, :, :]
+            @tturbo sendbuf[:, :, :, i] .= data_view
         end
 
         # Communicate data.
@@ -111,7 +114,8 @@ function transpose_xy(data_out, data, g::Grid, p::ParallelDistributed)
         # Unload the buffer.
         for i in 1:p.npy
             js = (i-1)*g.jmax + 1; je = i*g.jmax
-            @tturbo data_out[:, js:je, :] .= recvbuf[:, :, :, i]
+            recvbuf_view = @view recvbuf[:, :, :, i]
+            @tturbo data_out[:, js:je, :] .= recvbuf_view
         end
     end
 end
@@ -121,7 +125,7 @@ function transpose_yzt(data_out, data, g::Grid, p::ParallelDistributed)
     if data_out === data
         return
     elseif size(data_out) == size(data)
-        @tturbo data_out[:, :, :] = data[:, :, :]
+        @tturbo data_out[:, :, :] .= data
     else
         sendbuf = reshape(similar(data), (g.iblock, g.jblock, g.kblock, p.npx))
         recvbuf = similar(sendbuf)
@@ -129,7 +133,8 @@ function transpose_yzt(data_out, data, g::Grid, p::ParallelDistributed)
         # Load the buffer.
         for i in 1:p.npx
             js = (i-1)*g.jblock + 1; je = i*g.jblock
-            @tturbo sendbuf[:, :, :, i] .= data[:, js:je, :]
+            data_view = @view data[:, js:je, :]
+            @tturbo sendbuf[:, :, :, i] .= data_view
         end
 
         # Communicate data.
@@ -139,7 +144,8 @@ function transpose_yzt(data_out, data, g::Grid, p::ParallelDistributed)
         # Unload the buffer.
         for i in 1:p.npx
             ks = (i-1)*g.kblock + 1; ke = i*g.kblock
-            @tturbo data_out[:, :, ks:ke] .= recvbuf[:, :, :, i]
+            recvbuf_view = @view recvbuf[:, :, :, i]
+            @tturbo data_out[:, :, ks:ke] .= recvbuf_view
         end
     end
 end
@@ -149,7 +155,7 @@ function transpose_zty(data_out, data, g::Grid, p::ParallelDistributed)
     if data_out === data
         return
     elseif size(data_out) == size(data)
-        @tturbo data_out[:, :, :] = data[:, :, :]
+        @tturbo data_out[:, :, :] .= data
     else
         sendbuf = reshape(similar(data), (g.iblock, g.jblock, g.kblock, p.npx))
         recvbuf = similar(sendbuf)
@@ -157,7 +163,8 @@ function transpose_zty(data_out, data, g::Grid, p::ParallelDistributed)
         # Load the buffer.
         for i in 1:p.npx
             ks = (i-1)*g.kblock + 1; ke = i*g.kblock
-            @tturbo sendbuf[:, :, :, i] .= data[:, :, ks:ke]
+            data_view = @view data[:, :, ks:ke]
+            @tturbo sendbuf[:, :, :, i] .= data_view
         end
 
         # Communicate data.
@@ -167,7 +174,8 @@ function transpose_zty(data_out, data, g::Grid, p::ParallelDistributed)
         # Unload the buffer.
         for i in 1:p.npx
             js = (i-1)*g.jblock + 1; je = i*g.jblock
-            @tturbo data_out[:, js:je, :] = recvbuf[:, :, :, i]
+            recvbuf_view = @view recvbuf[:, :, :, i]
+            @tturbo data_out[:, js:je, :] .= recvbuf_view
         end
     end
 end
@@ -177,7 +185,7 @@ function transpose_yx(data_out, data, g::Grid, p::ParallelDistributed)
     if data_out === data
         return
     elseif size(data_out) == size(data)
-        @tturbo data_out[:, :, :] = data[:, :, :]
+        @tturbo data_out[:, :, :] .= data
     else
         sendbuf = reshape(similar(data), (g.iblock, g.jmax, g.kblock, p.npy))
         recvbuf = similar(sendbuf)
@@ -185,7 +193,8 @@ function transpose_yx(data_out, data, g::Grid, p::ParallelDistributed)
         # Load the buffer.
         for i in 1:p.npy
             js = (i-1)*g.jmax + 1; je = i*g.jmax
-            @tturbo sendbuf[:, :, :, i] .= data[:, js:je, :]
+            data_view = @view data[:, js:je, :]
+            @tturbo sendbuf[:, :, :, i] .= data_view
         end
 
         # Communicate data.
@@ -195,7 +204,8 @@ function transpose_yx(data_out, data, g::Grid, p::ParallelDistributed)
         # Unload the buffer.
         for i in 1:p.npy
             is = (i-1)*g.iblock + 1; ie = i*g.iblock
-            @tturbo data_out[is:ie, :, :] .= recvbuf[:, :, :, i]
+            recvbuf_view = @view recvbuf[:, :, :, i]
+            @tturbo data_out[is:ie, :, :] .= recvbuf_view
         end
     end
 end
@@ -205,7 +215,7 @@ function transpose_xz(data_out, data, g::Grid, p::ParallelDistributed)
     if data_out === data
         return
     elseif size(data_out) == size(data)
-        @tturbo data_out[:, :, :] = data[:, :, :]
+        @tturbo data_out[:, :, :] .= data
     else
         sendbuf = reshape(similar(data), (g.imax, g.jmax, g.kblock, p.npx))
         recvbuf = similar(sendbuf)
@@ -213,7 +223,8 @@ function transpose_xz(data_out, data, g::Grid, p::ParallelDistributed)
         # Load the buffer.
         for i in 1:p.npx
             is = (i-1)*g.imax + 1; ie = i*g.imax
-            @tturbo sendbuf[:, :, :, i] .= data[is:ie, :, :]
+            data_view = @view data[is:ie, :, :]
+            @tturbo sendbuf[:, :, :, i] .= data_view
         end
 
         # Communicate data.
@@ -223,7 +234,8 @@ function transpose_xz(data_out, data, g::Grid, p::ParallelDistributed)
         # Unload the buffer.
         for i in 1:p.npx
             ks = (i-1)*g.kblock + 1; ke = i*g.kblock
-            @tturbo data_out[:, :, ks:ke] .= recvbuf[:, :, :, i]
+            recvbuf_view = @view recvbuf[:, :, :, i]
+            @tturbo data_out[:, :, ks:ke] .= recvbuf_view
         end
     end
 end
