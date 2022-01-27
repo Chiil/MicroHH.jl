@@ -245,7 +245,7 @@ function save_domain(m::Model, i, p::ParallelDistributed)
         # memspace = HDF5.dataspace(a_nogc)
         # asubid = HDF5.hyperslab(aid, is:ie, js:je, 1:ktot)
         # HDF5.h5d_write(aid, memtype.id, memspace.id, asubid, aid.xfer, a_nogc)
-        aid[is:ie, js:je, :] .= a_nogc[:, :, :]
+        aid[is:ie, js:je, :] = a_nogc[:, :, :]
 
         close(aid)
     end
@@ -266,7 +266,7 @@ function save_domain(m::Model, i, p::ParallelDistributed)
         # memspace = HDF5.dataspace(a_nogc)
         # asubid = HDF5.hyperslab(aid, is:ie, js:je)
         # HDF5.h5d_write(aid, memtype.id, memspace.id, asubid, aid.xfer, a_nogc)
-        aid[is:ie, js:je] .= a_nogc[:, :]
+        aid[is:ie, js:je] = a_nogc[:, :]
 
         close(aid)
     end
