@@ -127,7 +127,7 @@ macro upsample_lin_fast(suffix, ifac, jfac, kfac, ioff, joff, koff, add_top)
     ex_inner_block = quote
         Threads.@threads for k in 0:ktot-1
             for j in 0:jmax-1
-                @inbounds @simd for i in 0:imax-1
+                @inbounds @fastmath @simd for i in 0:imax-1
                     $(Expr(:block, ex_inner...))
                 end
             end
@@ -142,7 +142,7 @@ macro upsample_lin_fast(suffix, ifac, jfac, kfac, ioff, joff, koff, add_top)
         end
         ex_top_block = quote
             Threads.@threads for j in 0:jmax-1
-                @inbounds @simd for i in 0:imax-1
+                @inbounds @fastmath @simd for i in 0:imax-1
                     $(Expr(:block, ex_top...))
                 end
             end
