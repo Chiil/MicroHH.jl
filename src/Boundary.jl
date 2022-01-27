@@ -71,8 +71,8 @@ function boundary_cyclic_kernel!(
     reqs[4] = MPI.Isend( send_west, p.id_west, 2, p.commxy);
     MPI.Waitall!(reqs)
 
-    @tturbo a[   1:igc, :, :] .= recv_west[:, :, :]
-    @tturbo a[ie+1:end, :, :] .= recv_east[:, :, :]
+    @tturbo a[   1:igc, :, :] .= recv_west
+    @tturbo a[ie+1:end, :, :] .= recv_east
 
     # Transfer the north-south data.
     send_north = a[:, je-jgc+1:je, :]
@@ -86,8 +86,8 @@ function boundary_cyclic_kernel!(
     reqs[4] = MPI.Isend( send_north, p.id_north, 2, p.commxy);
     MPI.Waitall!(reqs)
 
-    @tturbo a[:,    1:jgc, :] .= recv_south[:, :, :]
-    @tturbo a[:, je+1:end, :] .= recv_north[:, :, :]
+    @tturbo a[:,    1:jgc, :] .= recv_south
+    @tturbo a[:, je+1:end, :] .= recv_north
 end
 
 
