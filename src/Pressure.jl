@@ -20,7 +20,7 @@ struct Pressure{TF <: Union{Float32, Float64}}
 end
 
 function Pressure(g::Grid, TF)
-    nthreads = (Threads.nthreads() == 1) ? 1 : 2*Threads.nthreads()
+    nthreads = Threads.nthreads()
     FFTW.set_num_threads(nthreads)
 
     # We set the type of rand here explictly to trigger the right precision in FFTW
