@@ -195,9 +195,9 @@ macro fd(arrays, ex)
 
     ex = process_expr(ex, arrays.args, i, j, k)
 
-    print("Generated stencil:\n")
-    print("$ex\n")
-    print("\n")
+    # print("Generated stencil:\n")
+    # print("$ex\n")
+    # print("\n")
 
     return esc(ex)
 end

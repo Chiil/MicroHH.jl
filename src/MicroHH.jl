@@ -1,11 +1,6 @@
 module MicroHH
 
-# const do_mpi = parse(Bool, ENV["JULIA_MICROHH_MPI"])
-# const npx = do_mpi ? parse(Int, ENV["JULIA_MICROHH_NPX"]) : 1
-# const npy = do_mpi ? parse(Int, ENV["JULIA_MICROHH_NPY"]) : 1
-#
-const do_mpi = true; const npx = 2; const npy = 2;
-# const do_mpi = true; const npx = 16; const npy = 32;
+const do_mpi = true; const npx = 2; const npy = 2
 # print("Running with do_mpi = $do_mpi, on npx = $npx, npy = $npy tasks.\n")
 
 
@@ -18,6 +13,7 @@ export prepare_model!, step_model!, save_model, load_model!
 if do_mpi
     using MPI
 end
+
 using LoopVectorization
 using Printf
 using HDF5
@@ -90,7 +86,7 @@ function prepare_model!(m::Model)
     check_model(m)
 
     if m.parallel.id == 0
-        print("Starting simulation with do_mpi = $do_mpi, on npx = $npx, npy = $npy tasks.\n")
+        print("Starting simulation with do_mpi = $do_mpi, on npx = $npx, npy = $npy tasks, nthreads = $(Threads.nthreads()).\n")
     end
 
     return is_in_progress(m.timeloop[1])
