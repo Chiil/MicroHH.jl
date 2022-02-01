@@ -3,8 +3,10 @@ using Printf
 using HDF5
 
 struct Pressure{TF <: Union{Float32, Float64}}
-    fft_forward
-    fft_backward
+    fft_forward_i
+    fft_backward_i
+    fft_forward_j
+    fft_backward_j
     bmati::Vector{TF}
     bmatj::Vector{TF}
     a::Vector{TF}
@@ -13,16 +15,22 @@ struct Pressure{TF <: Union{Float32, Float64}}
     work2d::Array{TF, 2}
     b::Array{TF, 3}
     p_nogc::Array{TF, 3}
+    fft_tmp::Array{TF, 3}
+    fft::Array{TF, 3}
 end
 
 function Pressure(g::Grid, TF)
-    nthreads = (Threads.nthreads() == 1) ? 1 : 2*Threads.nthreads()
+    nthreads = Threads.nthreads()
     FFTW.set_num_threads(nthreads)
 
     # We set the type of rand here explictly to trigger the right precision in FFTW
-    tmp = rand(TF, g.itot, g.jtot, g.ktot)
-    fft_plan_f = FFTW.plan_r2r(tmp, FFTW.R2HC, [1, 2], flags=FFTW.MEASURE)
-    fft_plan_b = FFTW.plan_r2r(tmp, FFTW.HC2R, [1, 2], flags=FFTW.MEASURE)
+    tmp = rand(TF, g.itot, g.jmax, g.kblock)
+    fft_plan_fi = FFTW.plan_r2r(tmp, FFTW.R2HC, 1, flags=FFTW.MEASURE)
+    fft_plan_bi = FFTW.plan_r2r(tmp, FFTW.HC2R, 1, flags=FFTW.MEASURE)
+
+    tmp = rand(TF, g.iblock, g.jtot, g.kblock)
+    fft_plan_fj = FFTW.plan_r2r(tmp, FFTW.R2HC, 2, flags=FFTW.MEASURE)
+    fft_plan_bj = FFTW.plan_r2r(tmp, FFTW.HC2R, 2, flags=FFTW.MEASURE)
 
     bmati = zeros(g.itot)
     bmatj = zeros(g.jtot)
@@ -53,12 +61,14 @@ function Pressure(g::Grid, TF)
         c[k] = g.dz[k+g.kgc] * g.dzhi[k+g.kgc+1];
     end
 
-    work3d = zeros(g.itot, g.jtot, g.ktot)
-    work2d = zeros(g.itot, g.jtot)
-    b = zeros(g.itot, g.jtot, g.ktot)
-    p_nogc = zeros(g.itot, g.jtot, g.ktot)
+    work3d = zeros(g.iblock, g.jblock, g.ktot)
+    work2d = zeros(g.iblock, g.jblock)
+    b = zeros(g.iblock, g.jblock, g.ktot)
+    p_nogc = zeros(g.imax, g.jmax, g.ktot)
+    fft_tmp = zeros(g.itot, g.jmax, g.kblock)
+    fft = zeros(g.iblock, g.jtot, g.kblock)
 
-    Pressure{TF}(fft_plan_f, fft_plan_b, bmati, bmatj, a, c, work3d, work2d, b, p_nogc)
+    Pressure{TF}(fft_plan_fi, fft_plan_bi, fft_plan_fj, fft_plan_bj, bmati, bmatj, a, c, work3d, work2d, b, p_nogc, fft_tmp, fft)
 end
 
 function input_kernel!(
@@ -76,44 +86,48 @@ end
 function solve_pre_kernel!(
     p, b,
     dz, bmati, bmatj, a, c,
-    itot, jtot, ktot, kgc)
+    iblock, jblock, ktot, kgc,
+    id_x, id_y)
 
     @tturbo unroll=8 for k in 1:ktot
-        for j in 1:jtot
-            for i in 1:itot
-                b[i, j, k] = dz[k+kgc]^2 * (bmati[i]+bmatj[j]) - (a[k]+c[k]);
+        for j in 1:jblock
+            for i in 1:iblock
+                i_abs = id_y*iblock + i; j_abs = id_x*jblock + j
+                b[i, j, k] = dz[k+kgc]^2 * (bmati[i_abs]+bmatj[j_abs]) - (a[k]+c[k]);
                 p[i, j, k] *= dz[k+kgc]^2
             end
         end
     end
 
     # Set the BCs of all wave numbers to Neumann = 0.
-    @tturbo for j in 1:jtot
-        for i in 1:itot
+    @tturbo for j in 1:jblock
+        for i in 1:iblock
             b[i, j, 1] += a[1]
             b[i, j, ktot] += c[ktot]
         end
     end
 
     # Set the wave number 0 to Dirichlet = 0.
-    b[1, 1, ktot] -= 2c[ktot]
+    if id_x == 0 && id_y == 0
+        b[1, 1, ktot] -= 2*c[ktot]
+    end
 end
 
 function solve_tdma_kernel!(
     p, work3d, work2d,
     a, b, c,
-    itot, jtot, ktot)
+    iblock, jblock, ktot)
 
-    @tturbo for j in 1:jtot
-        for i in 1:itot
+    @tturbo for j in 1:jblock
+        for i in 1:iblock
             work2d[i, j] = b[i, j, 1]
             p[i, j, 1] /= work2d[i, j]
         end
     end
 
     for k in 2:ktot
-        @tturbo for j in 1:jtot
-            for i in 1:itot
+        @tturbo for j in 1:jblock
+            for i in 1:iblock
                 work3d[i, j, k] = c[k-1] / work2d[i, j]
                 work2d[i, j] = b[i, j, k] - a[k]*work3d[i, j, k]
                 p[i, j, k] -= a[k] * p[i, j, k-1]
@@ -123,8 +137,8 @@ function solve_tdma_kernel!(
     end
 
     for k in ktot-1:-1:1
-        @tturbo for j in 1:jtot
-            for i in 1:itot
+        @tturbo for j in 1:jblock
+            for i in 1:iblock
                 p[i, j, k] -= work3d[i, j, k+1] * p[i, j, k+1]
             end
         end
@@ -154,12 +168,12 @@ function output_kernel!(
     end
 end
 
-function calc_pressure_tend!(f::Fields, g::Grid, t::Timeloop, p::Pressure)
+function calc_pressure_tend!(f::Fields, g::Grid, t::Timeloop, p::Pressure, pp::Parallel)
     # Set the cyclic boundaries for the tendencies.
     boundary_cyclic_kernel!(
-        f.u_tend, g.is, g.ie, g.js, g.je, g.igc, g.jgc)
+        f.u_tend, g.is, g.ie, g.js, g.je, g.igc, g.jgc, pp)
     boundary_cyclic_kernel!(
-        f.v_tend, g.is, g.ie, g.js, g.je, g.igc, g.jgc)
+        f.v_tend, g.is, g.ie, g.js, g.je, g.igc, g.jgc, pp)
 
     # Set the boundaries of wtend to zero.
     # CvH: Fix this later.
@@ -180,19 +194,40 @@ function calc_pressure_tend!(f::Fields, g::Grid, t::Timeloop, p::Pressure)
         g.dxi, g.dyi, g.dzi, dti_sub,
         g.is, g.ie, g.js, g.je, g.ks, g.ke)
 
-    p_fft = p.fft_forward * p.p_nogc
+    p_nogc_x = reshape(p.p_nogc, (g.itot, g.jmax, g.kblock))
+    transpose_zx(p_nogc_x, p.p_nogc, g, pp)
+
+    p.fft_tmp .= p.fft_forward_i * p_nogc_x
+
+    p_fft_tmp2 = reshape(p.fft_tmp, (g.iblock, g.jtot, g.kblock))
+    transpose_xy(p_fft_tmp2, p.fft_tmp, g, pp)
+
+    p.fft .= p.fft_forward_j * p_fft_tmp2
+
+    p_fft_z = reshape(p.fft, (g.iblock, g.jblock, g.ktot))
+    transpose_yzt(p_fft_z, p.fft, g, pp)
 
     solve_pre_kernel!(
-        p_fft, p.b,
+        p_fft_z, p.b,
         g.dz, p.bmati, p.bmatj, p.a, p.c,
-        g.itot, g.jtot, g.ktot, g.kgc)
+        g.iblock, g.jblock, g.ktot, g.kgc,
+        pp.id_x, pp.id_y)
 
     solve_tdma_kernel!(
-        p_fft, p.work3d, p.work2d,
+        p_fft_z, p.work3d, p.work2d,
         p.a, p.b, p.c,
-        g.itot, g.jtot, g.ktot)
+        g.iblock, g.jblock, g.ktot)
 
-    p.p_nogc[:, :, :] = (p.fft_backward * p_fft) ./ (g.itot * g.jtot)
+    transpose_zty(p.fft, p_fft_z, g, pp)
+
+    p_fft_tmp2 .= (p.fft_backward_j * p.fft) ./ g.jtot
+
+    p_fft_tmp = reshape(p_fft_tmp2, (g.itot, g.jmax, g.kblock))
+    transpose_yx(p_fft_tmp, p_fft_tmp2, g, pp)
+
+    p_nogc_x .= (p.fft_backward_i * p_fft_tmp) ./ g.itot
+
+    transpose_xz(p.p_nogc, p_nogc_x, g, pp)
 
     solve_post_kernel!(
         f.p, p.p_nogc,
@@ -208,7 +243,7 @@ function calc_pressure_tend!(f::Fields, g::Grid, t::Timeloop, p::Pressure)
     end
 
     boundary_cyclic_kernel!(
-        f.p, g.is, g.ie, g.js, g.je, g.igc, g.jgc)
+        f.p, g.is, g.ie, g.js, g.je, g.igc, g.jgc, pp)
 
     output_kernel!(
         f.u_tend, f.v_tend, f.w_tend,

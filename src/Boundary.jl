@@ -32,7 +32,7 @@ end
 
 
 function boundary_cyclic_kernel!(
-    a, is, ie, js, je, igc, jgc)
+    a, is, ie, js, je, igc, jgc, p::ParallelSerial)
     # East-west BCs
     @tturbo for k in 1:size(a, 3)
         for j in 1:size(a, 2)
@@ -55,23 +55,39 @@ function boundary_cyclic_kernel!(
 end
 
 
-function boundary_cyclic_kernel_2d!(
-    a, is, ie, js, je, igc, jgc)
-    # East-west BCs
-    @tturbo for j in 1:size(a, 2)
-        for i in 1:igc
-            a[i, j] = a[ie-i+1, j]
-            a[ie+i, j] = a[is+i-1, j]
-        end
-    end
+function boundary_cyclic_kernel!(
+    a, is, ie, js, je, igc, jgc, p::ParallelDistributed)
 
-    # North-south BCs
-    @tturbo for j in 1:jgc
-        for i in 1:size(a, 1)
-            a[i, j] = a[i, je-j+1]
-            a[i, je+j] = a[i, js+j-1]
-        end
-    end
+    # Transfer the east-west data.
+    send_east = a[ie-igc+1:ie, :, :]
+    send_west = a[is:is+igc-1, :, :]
+    recv_west = similar(send_east)
+    recv_east = similar(send_west)
+
+    reqs = Vector{MPI.Request}(undef, 4)
+    reqs[1] = MPI.Irecv!(recv_west, p.id_west, 1, p.commxy);
+    reqs[2] = MPI.Irecv!(recv_east, p.id_east, 2, p.commxy);
+    reqs[3] = MPI.Isend( send_east, p.id_east, 1, p.commxy);
+    reqs[4] = MPI.Isend( send_west, p.id_west, 2, p.commxy);
+    MPI.Waitall!(reqs)
+
+    @tturbo a[   1:igc, :, :] .= recv_west
+    @tturbo a[ie+1:end, :, :] .= recv_east
+
+    # Transfer the north-south data.
+    send_north = a[:, je-jgc+1:je, :]
+    send_south = a[:, js:js+jgc-1, :]
+    recv_south = similar(send_north)
+    recv_north = similar(send_south)
+
+    reqs[1] = MPI.Irecv!(recv_north, p.id_north, 1, p.commxy);
+    reqs[2] = MPI.Irecv!(recv_south, p.id_south, 2, p.commxy);
+    reqs[3] = MPI.Isend( send_south, p.id_south, 1, p.commxy);
+    reqs[4] = MPI.Isend( send_north, p.id_north, 2, p.commxy);
+    MPI.Waitall!(reqs)
+
+    @tturbo a[:,    1:jgc, :] .= recv_south
+    @tturbo a[:, je+1:end, :] .= recv_north
 end
 
 
@@ -121,44 +137,44 @@ function set_ghost_cells_top_kernel!(
 end
 
 
-function set_boundary!(fields::Fields, grid::Grid, boundary::Boundary)
+function set_boundary!(fields::Fields, grid::Grid, boundary::Boundary, p::Parallel)
     # Cyclic BC.
     boundary_cyclic_kernel!(
-        fields.u, grid.is, grid.ie, grid.js, grid.je, grid.igc, grid.jgc)
+        fields.u, grid.is, grid.ie, grid.js, grid.je, grid.igc, grid.jgc, p)
     boundary_cyclic_kernel!(
-        fields.v, grid.is, grid.ie, grid.js, grid.je, grid.igc, grid.jgc)
+        fields.v, grid.is, grid.ie, grid.js, grid.je, grid.igc, grid.jgc, p)
     boundary_cyclic_kernel!(
-        fields.w, grid.is, grid.ie, grid.js, grid.je, grid.igc, grid.jgc)
+        fields.w, grid.is, grid.ie, grid.js, grid.je, grid.igc, grid.jgc, p)
     boundary_cyclic_kernel!(
-        fields.s, grid.is, grid.ie, grid.js, grid.je, grid.igc, grid.jgc)
+        fields.s, grid.is, grid.ie, grid.js, grid.je, grid.igc, grid.jgc, p)
 
     # Cyclic BCs of boundary fields.
-    boundary_cyclic_kernel_2d!(
-        fields.u_bot, grid.is, grid.ie, grid.js, grid.je, grid.igc, grid.jgc)
-    boundary_cyclic_kernel_2d!(
-        fields.u_gradbot, grid.is, grid.ie, grid.js, grid.je, grid.igc, grid.jgc)
-    boundary_cyclic_kernel_2d!(
-        fields.u_top, grid.is, grid.ie, grid.js, grid.je, grid.igc, grid.jgc)
-    boundary_cyclic_kernel_2d!(
-        fields.u_gradtop, grid.is, grid.ie, grid.js, grid.je, grid.igc, grid.jgc)
+    boundary_cyclic_kernel!(
+        fields.u_bot, grid.is, grid.ie, grid.js, grid.je, grid.igc, grid.jgc, p)
+    boundary_cyclic_kernel!(
+        fields.u_gradbot, grid.is, grid.ie, grid.js, grid.je, grid.igc, grid.jgc, p)
+    boundary_cyclic_kernel!(
+        fields.u_top, grid.is, grid.ie, grid.js, grid.je, grid.igc, grid.jgc, p)
+    boundary_cyclic_kernel!(
+        fields.u_gradtop, grid.is, grid.ie, grid.js, grid.je, grid.igc, grid.jgc, p)
 
-    boundary_cyclic_kernel_2d!(
-        fields.v_bot, grid.is, grid.ie, grid.js, grid.je, grid.igc, grid.jgc)
-    boundary_cyclic_kernel_2d!(
-        fields.v_gradbot, grid.is, grid.ie, grid.js, grid.je, grid.igc, grid.jgc)
-    boundary_cyclic_kernel_2d!(
-        fields.v_top, grid.is, grid.ie, grid.js, grid.je, grid.igc, grid.jgc)
-    boundary_cyclic_kernel_2d!(
-        fields.v_gradtop, grid.is, grid.ie, grid.js, grid.je, grid.igc, grid.jgc)
+    boundary_cyclic_kernel!(
+        fields.v_bot, grid.is, grid.ie, grid.js, grid.je, grid.igc, grid.jgc, p)
+    boundary_cyclic_kernel!(
+        fields.v_gradbot, grid.is, grid.ie, grid.js, grid.je, grid.igc, grid.jgc, p)
+    boundary_cyclic_kernel!(
+        fields.v_top, grid.is, grid.ie, grid.js, grid.je, grid.igc, grid.jgc, p)
+    boundary_cyclic_kernel!(
+        fields.v_gradtop, grid.is, grid.ie, grid.js, grid.je, grid.igc, grid.jgc, p)
 
-    boundary_cyclic_kernel_2d!(
-        fields.s_bot, grid.is, grid.ie, grid.js, grid.je, grid.igc, grid.jgc)
-    boundary_cyclic_kernel_2d!(
-        fields.s_gradbot, grid.is, grid.ie, grid.js, grid.je, grid.igc, grid.jgc)
-    boundary_cyclic_kernel_2d!(
-        fields.s_top, grid.is, grid.ie, grid.js, grid.je, grid.igc, grid.jgc)
-    boundary_cyclic_kernel_2d!(
-        fields.s_gradtop, grid.is, grid.ie, grid.js, grid.je, grid.igc, grid.jgc)
+    boundary_cyclic_kernel!(
+        fields.s_bot, grid.is, grid.ie, grid.js, grid.je, grid.igc, grid.jgc, p)
+    boundary_cyclic_kernel!(
+        fields.s_gradbot, grid.is, grid.ie, grid.js, grid.je, grid.igc, grid.jgc, p)
+    boundary_cyclic_kernel!(
+        fields.s_top, grid.is, grid.ie, grid.js, grid.je, grid.igc, grid.jgc, p)
+    boundary_cyclic_kernel!(
+        fields.s_gradtop, grid.is, grid.ie, grid.js, grid.je, grid.igc, grid.jgc, p)
     
     # Bottom BC.
     set_ghost_cells_bot_kernel!(
