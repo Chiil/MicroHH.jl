@@ -1,7 +1,7 @@
 module MicroHH
 
-const do_mpi = true; const npx = 2; const npy = 2
-# print("Running with do_mpi = $do_mpi, on npx = $npx, npy = $npy tasks.\n")
+# const do_mpi = true; const npx = 2; const npy = 2
+const do_mpi = false; const npx = 1; const npy = 1
 
 
 ## Export types and functions.
@@ -233,16 +233,9 @@ function save_domain(m::Model, i, p::ParallelDistributed)
 
     map(items_to_save) do item
         name, a, ktot = item
-
         a_nogc = a[g.is:g.ie, g.js:g.je, g.ks:g.ks+ktot-1]
         aid = create_dataset(fid, name, datatype(a_nogc), dataspace((g.itot, g.jtot, ktot)), dxpl_mpio=HDF5.H5FD_MPIO_COLLECTIVE)
-
-        # memtype = HDF5.datatype(a_nogc)
-        # memspace = HDF5.dataspace(a_nogc)
-        # asubid = HDF5.hyperslab(aid, is:ie, js:je, 1:ktot)
-        # HDF5.h5d_write(aid, memtype.id, memspace.id, asubid, aid.xfer, a_nogc)
         aid[is:ie, js:je, :] = a_nogc[:, :, :]
-
         close(aid)
     end
 
@@ -254,16 +247,9 @@ function save_domain(m::Model, i, p::ParallelDistributed)
 
     map(items_to_save) do item
         name, a = item
-
         a_nogc = a[g.is:g.ie, g.js:g.je]
         aid = create_dataset(fid, name, datatype(a_nogc), dataspace((g.itot, g.jtot)), dxpl_mpio=HDF5.H5FD_MPIO_COLLECTIVE)
-
-        # memtype = HDF5.datatype(a_nogc)
-        # memspace = HDF5.dataspace(a_nogc)
-        # asubid = HDF5.hyperslab(aid, is:ie, js:je)
-        # HDF5.h5d_write(aid, memtype.id, memspace.id, asubid, aid.xfer, a_nogc)
         aid[is:ie, js:je] = a_nogc[:, :]
-
         close(aid)
     end
 
