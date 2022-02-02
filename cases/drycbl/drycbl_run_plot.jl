@@ -25,9 +25,9 @@ s_bot = @view f.s_bot[g.is:g.ie, g.js:g.je]
 s = @view f.s[g.is:g.ie, g.js:g.je, g.ks:g.ke]
 
 fig = Figure(resolution=(800, 500))
-node1 = Node(s_bot .- mean(s_bot))
+node1 = Observable(s_bot .- mean(s_bot))
 h1 = heatmap(fig[1, 1], x, y, node1, colorrange=(-0.4, 0.4))
-node2 = Node(s[:, 1, :] .- mean(s, dims=(1, 2))[:, 1, :])
+node2 = Observable(s[:, 1, :] .- mean(s, dims=(1, 2))[:, 1, :])
 h2 = heatmap(fig[1, 2], x, z, node2, colorrange=(-0.4, 0.4))
 fig
 
