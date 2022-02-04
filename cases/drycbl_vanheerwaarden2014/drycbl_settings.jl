@@ -72,7 +72,7 @@ settings_grid = Dict{String, Any}(
     "zsize" => zsize)
 
 settings_fields = Dict(
-    "visc" => 8e-5,
+    "visc" => 4e-5,
     "alpha" => 1)
 
 settings_boundary = Dict(
@@ -86,7 +86,7 @@ settings_timeloop = Dict(
     "end_time" => 10.,
     "save_time" => 1.,
     "check_time" => 0.01,
-    "dt" => 0.00125)
+    "dt" => 0.002)
 
 settings_multidomain = Dict(
     "enable_nudge" => false)
