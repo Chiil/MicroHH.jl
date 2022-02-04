@@ -26,6 +26,7 @@ f.s_gradbot[:, :] .= - 0.0032 / settings[1]["fields"]["visc"]
 f.s_gradtop[:, :] .= 3.
 @tullio s[i, j, k] += 3. * z[k]
 
+#b[k] = N2*z[k] + b0*erf(-0.5*z[k]/delta) + b0
 
 ## Save the restart files.
 save_model(m)

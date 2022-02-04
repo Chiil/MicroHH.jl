@@ -84,9 +84,9 @@ settings_boundary = Dict(
 settings_timeloop = Dict(
     "start_time" => 0.,
     "end_time" => 10.,
-    "save_time" => 10.,
-    "check_time" => 0.02,
-    "dt" => 0.004)
+    "save_time" => 1.,
+    "check_time" => 0.01,
+    "dt" => 0.00125)
 
 settings_multidomain = Dict(
     "enable_nudge" => false)
