@@ -115,9 +115,9 @@ end
 
 
 function set_ghost_cells_top_kernel!(
-    a, a_top, a_gradtop, dzh, ke, bot_type::Boundary_type)
+    a, a_top, a_gradtop, dzh, ke, top_type::Boundary_type)
 
-    if bot_type == Dirichlet::Boundary_type
+    if top_type == Dirichlet::Boundary_type
         dzhi = 1 / dzh[ke+1]
         @tturbo for j in 1:size(a, 2)
             for i in 1:size(a, 1)
@@ -126,7 +126,7 @@ function set_ghost_cells_top_kernel!(
             end
         end
 
-    elseif bot_type == Neumann::Boundary_type
+    elseif top_type == Neumann::Boundary_type
         @tturbo for j in 1:size(a, 2)
             for i in 1:size(a, 1)
                 a[i, j, ke+1] = a_gradtop[i, j]*dzh[ke+1] + a[i, j, ke]
