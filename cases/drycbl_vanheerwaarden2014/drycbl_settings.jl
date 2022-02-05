@@ -63,16 +63,16 @@ z, zsize = make_grid()
 float_type = Float32
 
 settings_grid = Dict{String, Any}(
-    "itot" => 1024,
+    "itot" => 2048,
     "jtot" => 1,
     "ktot" => 1024,
 
-    "xsize" => 1.,
+    "xsize" => 2.,
     "ysize" => 1/1024,
     "zsize" => zsize)
 
 settings_fields = Dict(
-    "visc" => 4e-5,
+    "visc" => 1e-5,
     "alpha" => 1)
 
 settings_boundary = Dict(
