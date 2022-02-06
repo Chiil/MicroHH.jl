@@ -12,7 +12,7 @@ settings[1]["timeloop"]["start_time"] = settings[1]["timeloop"]["end_time"]
 
 ## Initialize the model.
 n_domains = 1
-m = Model("drycbl", n_domains, settings, Float32)
+m = Model("drycbl", n_domains, settings, float_type)
 load_model!(m)
 
 
