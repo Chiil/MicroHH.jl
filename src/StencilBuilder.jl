@@ -1,6 +1,6 @@
 module StencilBuilder
 
-export @fast3d, @fd
+export @fast3d, @fd, @fd_tullio
 
 
 ## Stencil builder
@@ -17,7 +17,7 @@ function make_index(a, arrays, i, j, k)
             i_int = convert(Int, i)
             ex_i = :( i+$i_int )
         else
-            ex_i = :( i )
+            ex_i = :( i+0 )
         end
 
         if j < 0
@@ -27,7 +27,7 @@ function make_index(a, arrays, i, j, k)
             j_int = convert(Int, j)
             ex_j = :( j+$j_int )
         else
-            ex_j = :( j )
+            ex_j = :( j+0 )
         end
 
         if k < 0
@@ -37,7 +37,7 @@ function make_index(a, arrays, i, j, k)
             k_int = convert(Int, k)
             ex_k = :( k+$k_int )
         else
-            ex_k = :( k )
+            ex_k = :( k+0 )
         end
 
         return :( $a[ $ex_i, $ex_j, $ex_k] )
@@ -68,7 +68,7 @@ function process_expr(ex, arrays, i, j, k)
             elseif k < 0
                 ex = :( $ex * dzi[k-$k_int] )
             else
-                ex = :( $ex * dzi[k] )
+                ex = :( $ex * dzi[k+0] )
             end
         else
             k_int = convert(Int, abs(k + 1/2))
@@ -77,7 +77,7 @@ function process_expr(ex, arrays, i, j, k)
             elseif k < -1/2
                 ex = :( $ex * dzhi[k-$k_int] )
             else
-                ex = :( $ex * dzhi[k] )
+                ex = :( $ex * dzhi[k+0] )
             end
         end
     end
@@ -184,10 +184,20 @@ function process_expr(ex, arrays, i, j, k)
 end
 
 
-macro fd(arrays, ex)
+macro fd(arrays, ex) build_fd(arrays, :([0, 0, 0]), ex, false) end
+macro fd(arrays, ex_offset, ex) build_fd(arrays, ex_offset, ex, false) end
+macro fd_tullio(arrays, ex) build_fd(arrays, :([0, 0, 0]), ex, true) end
+macro fd_tullio(arrays, ex_offset, ex) build_fd(arrays, ex_offset, ex, true) end
+
+
+function build_fd(arrays, ex_offset, ex, use_tullio)
+    offset = eval(ex_offset)
+
     i = (ex.args[1] in [ Symbol("u"), Symbol("ut")]) ? -0.5 : 0
     j = (ex.args[1] in [ Symbol("v"), Symbol("vt")]) ? -0.5 : 0
     k = (ex.args[1] in [ Symbol("w"), Symbol("wt")]) ? -0.5 : 0
+
+    i += offset[1]; j += offset[2]; k += offset[3]
 
     if isa(arrays, Symbol)
         arrays = :( [ $arrays ] )
@@ -195,9 +205,13 @@ macro fd(arrays, ex)
 
     ex = process_expr(ex, arrays.args, i, j, k)
 
-    # print("Generated stencil:\n")
-    # print("$ex\n")
-    # print("\n")
+    if use_tullio
+        ex = :( @tullio $ex i in is:ie, j in js:je, k in ks:ke )
+    end
+
+    print("Generated stencil:\n")
+    print("$ex\n")
+    print("\n")
 
     return esc(ex)
 end
