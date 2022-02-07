@@ -10,37 +10,48 @@ function make_index(a, arrays, i, j, k)
         if arrays[a][2] == :ihlf j += 0.5 end
         if arrays[a][3] == :ihlf k += 0.5 end
 
-        if i < 0
-            i_int = convert(Int, abs(i))
-            ex_i = :( i-$i_int )
-        elseif i > 0
-            i_int = convert(Int, i)
-            ex_i = :( i+$i_int )
-        else
-            ex_i = :( i+0 )
+        ex_ijk = []
+
+        if arrays[a][1] != :none
+            if i < 0
+                i_int = convert(Int, abs(i))
+                ex_i = :( i-$i_int )
+            elseif i > 0
+                i_int = convert(Int, i)
+                ex_i = :( i+$i_int )
+            else
+                ex_i = :( i+0 )
+            end
+            push!(ex_ijk, ex_i)
         end
 
-        if j < 0
-            j_int = convert(Int, abs(j))
-            ex_j = :( j-$j_int )
-        elseif j > 0
-            j_int = convert(Int, j)
-            ex_j = :( j+$j_int )
-        else
-            ex_j = :( j+0 )
+        if arrays[a][2] != :none
+            if j < 0
+                j_int = convert(Int, abs(j))
+                ex_j = :( j-$j_int )
+            elseif j > 0
+                j_int = convert(Int, j)
+                ex_j = :( j+$j_int )
+            else
+                ex_j = :( j+0 )
+            end
+            push!(ex_ijk, ex_j)
         end
 
-        if k < 0
-            k_int = convert(Int, abs(k))
-            ex_k = :( k-$k_int )
-        elseif k > 0
-            k_int = convert(Int, k)
-            ex_k = :( k+$k_int )
-        else
-            ex_k = :( k+0 )
+        if arrays[a][3] != :none
+            if k < 0
+                k_int = convert(Int, abs(k))
+                ex_k = :( k-$k_int )
+            elseif k > 0
+                k_int = convert(Int, k)
+                ex_k = :( k+$k_int )
+            else
+                ex_k = :( k+0 )
+            end
+            push!(ex_ijk, ex_k)
         end
 
-        return :( $a[ $ex_i, $ex_j, $ex_k] )
+        return :( $a[ $(ex_ijk...) ] )
     else
         return :( $a )
     end

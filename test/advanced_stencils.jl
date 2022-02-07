@@ -22,5 +22,5 @@ wt = rand(itot+2igc, jtot+2jgc, ktot+2kgc)
 
 
 ## Settings.
-@fd_tullio (s[i, j, k], s_ref[k]) (0, 0, -1/2) tmp = alpha * interpz(s - s_ref)
-# @fd_tullio (wt[i, j, k], s[i, j, kh], s_ref[kh]) wt = alpha * interpz(s - s_ref)
+# @fd_tullio (s[i, j, k], s_ref[k]) (0, 0, -1/2) tmp = alpha * interpz(s - s_ref)
+@fd_tullio (wt[i, j, kh], s[i, j, k], s_ref[k]) wt = alpha * interpz(s - s_ref)
