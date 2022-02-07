@@ -5,10 +5,10 @@ export @fast3d, @fd, @fd_tullio
 
 ## Stencil builder
 function make_index(a, arrays, i, j, k)
-    if a in arrays
-        i += (a in [ Symbol("u"), Symbol("ut")]) ? 0.5 : 0
-        j += (a in [ Symbol("v"), Symbol("vt")]) ? 0.5 : 0
-        k += (a in [ Symbol("w"), Symbol("wt")]) ? 0.5 : 0
+    if haskey(arrays, a)
+        if arrays[a][1] == :ihlf i += 0.5 end
+        if arrays[a][2] == :ihlf j += 0.5 end
+        if arrays[a][3] == :ihlf k += 0.5 end
 
         if i < 0
             i_int = convert(Int, abs(i))
@@ -184,26 +184,69 @@ function process_expr(ex, arrays, i, j, k)
 end
 
 
+function parse_arrays(ex_arrays)
+    arrays = Dict{Symbol, Tuple{Symbol, Symbol, Symbol}}()
+
+    if !isa(ex_arrays, Expr) || !(ex_arrays.head in [:vect, :tuple])
+        println("Array list $ex_arrays is invalid")
+        return # CvH throw error
+    end
+
+    for array in ex_arrays.args
+        if !isa(array, Expr) || !(array.head == :ref)
+            println("Array: $array is invalid")
+            # CvH throw error
+            continue
+        end
+
+        array_name = array.args[1]
+        array_dims = [:none, :none, :none]
+        for arg in array.args[2:end]
+            if arg == :i
+                array_dims[1] = :ctr
+            elseif arg == :ih
+                array_dims[1] = :hlf
+            elseif arg == :j
+                array_dims[2] = :ctr
+            elseif arg == :jh
+                array_dims[2] = :hlf
+            elseif arg == :k
+                array_dims[3] = :ctr
+            elseif arg == :kh
+                array_dims[3] = :hlf
+            else
+                println("Array: $array is invalid")
+                # CvH throw error
+            end
+        end
+        arrays[array_name] = tuple(array_dims...)
+    end
+    return arrays
+end
+
+
 macro fd(arrays, ex) build_fd(arrays, :([0, 0, 0]), ex, false) end
 macro fd(arrays, ex_offset, ex) build_fd(arrays, ex_offset, ex, false) end
 macro fd_tullio(arrays, ex) build_fd(arrays, :([0, 0, 0]), ex, true) end
 macro fd_tullio(arrays, ex_offset, ex) build_fd(arrays, ex_offset, ex, true) end
 
 
-function build_fd(arrays, ex_offset, ex, use_tullio)
+function build_fd(ex_arrays, ex_offset, ex, use_tullio)
     offset = eval(ex_offset)
+    arrays = parse_arrays(ex_arrays)
 
-    i = (ex.args[1] in [ Symbol("u"), Symbol("ut")]) ? -0.5 : 0
-    j = (ex.args[1] in [ Symbol("v"), Symbol("vt")]) ? -0.5 : 0
-    k = (ex.args[1] in [ Symbol("w"), Symbol("wt")]) ? -0.5 : 0
+    i = 0.; j = 0.; k = 0.;
+    if haskey(arrays, ex.args[1])
+        if arrays[ex.args[1]][1] == :ihlf i -= 0.5 end
+        if arrays[ex.args[1]][2] == :ihlf j -= 0.5 end
+        if arrays[ex.args[1]][3] == :ihlf k -= 0.5 end
+    end
 
     i += offset[1]; j += offset[2]; k += offset[3]
 
-    if isa(arrays, Symbol)
-        arrays = :( [ $arrays ] )
-    end
-
-    ex = process_expr(ex, arrays.args, i, j, k)
+    println("CvH TEST: $(ex.args[1]): $i, $j, $k")
+        
+    ex = process_expr(ex, arrays, i, j, k)
 
     if use_tullio
         ex = :( @tullio $ex i in is:ie, j in js:je, k in ks:ke )
