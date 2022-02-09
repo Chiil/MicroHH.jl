@@ -4,18 +4,6 @@ module StencilBuilder
 export @fast3d, @fd, @fd_tullio
 
 
-arrays_default = Dict(
-    :u  => (:hlf, :ctr, :ctr),
-    :ut => (:hlf, :ctr, :ctr),
-    :v  => (:ctr, :hlf, :ctr),
-    :vt => (:ctr, :hlf, :ctr),
-    :w  => (:ctr, :ctr, :hlf),
-    :wt => (:ctr, :ctr, :hlf),
-    :s  => (:ctr, :ctr, :ctr),
-    :st => (:ctr, :ctr, :ctr),
-    :s_ref => (:none, :none, :ctr))
-
-
 function make_index(a, arrays, i, j, k)
     if haskey(arrays, a)
         if arrays[a][1] == :hlf i += 0.5 end
@@ -255,10 +243,13 @@ macro fd_tullio(ex_arrays, ex_offset, ex) build_fd(ex_arrays, ex_offset, ex, tru
 
 
 function build_fd(ex_arrays, ex_offset, ex, use_tullio)
+    # Strip the begin end block from the expression in case present.
+    if ex.head == :block
+        ex = ex.args[2]
+    end
+
     offset = eval(ex_offset)
     arrays = parse_arrays(ex_arrays)
-
-    arrays = merge(arrays, arrays_default)
 
     i = 0.; j = 0.; k = 0.
     if haskey(arrays, ex.args[1])

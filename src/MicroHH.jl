@@ -15,6 +15,7 @@ if do_mpi
 end
 
 using LoopVectorization
+using Tullio
 using Printf
 using HDF5
 

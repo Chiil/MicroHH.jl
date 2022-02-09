@@ -280,7 +280,7 @@ end
 
 function nudge_kernel!(a_tend, a, a_nudge, c_nudge, is, ie, js, je, ks, ke)
     @fast3d begin
-        @fd (a_tend, a, a_nudge) a_tend -= c_nudge * (a - a_nudge)
+        @fd (a_tend[i, j, k], a[i, j, k], a_nudge[i, j, k]) a_tend -= c_nudge * (a - a_nudge)
     end
 end
 

@@ -5,7 +5,9 @@ function divergence_kernel(
 
     divmax = 0
     @fast3d begin
-        div = @fd (u, v, w) gradx(u) + grady(v) + gradz(w)
+        @fd (u[ih, j, k], v[i, jh, k], w[i, j, kh]) begin
+            div = gradx(u) + grady(v) + gradz(w)
+        end
         divmax = max(divmax, abs(div))
     end
 
@@ -20,7 +22,9 @@ function cfl_kernel(
 
     cflmax = 0
     @fast3d begin
-        cfl = @fd (u, v, w) abs(interpx(u))*dxi + abs(interpy(v))*dyi + abs(interpz(w))*dzi[k]
+        @fd (u[ih, j, k], v[i, jh, k], w[i, j, kh], dzi[k]) begin
+            cfl = abs(interpx(u))*dxi + abs(interpy(v))*dyi + abs(interpz(w))*dzi
+        end
         cflmax = max(cflmax, cfl)
     end
 

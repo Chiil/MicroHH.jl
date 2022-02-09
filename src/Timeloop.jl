@@ -63,8 +63,8 @@ function integrate_time_kernel!(
     c_a_step = c_a[rkstep_next]
 
     @fast3d begin
-        @fd (a, at) a += c_b_step*at
-        @fd (a, at) at *= c_a_step
+        @fd (a[i, j, k], at[i, j, k]) a += c_b_step*at
+        @fd (a[i, j, k], at[i, j, k]) at *= c_a_step
     end
 end
 

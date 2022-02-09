@@ -29,11 +29,14 @@ struct Fields{TF <: Union{Float32, Float64}}
     w_gradtop::Array{TF, 2}
     s_gradtop::Array{TF, 2}
 
+    s_ref::Array{TF, 1}
+
     p::Array{TF, 3}
 
     visc::TF
     alpha::TF
 end
+
 
 function Fields(g::Grid, d::Dict, TF)
     visc = d["visc"]
@@ -69,6 +72,8 @@ function Fields(g::Grid, d::Dict, TF)
         zeros(g.icells, g.jcells), # v_gradtop
         zeros(g.icells, g.jcells), # w_gradtop
         zeros(g.icells, g.jcells), # s_gradtop
+
+        zeros(g.kcells), # s_ref
 
         zeros(g.icells, g.jcells, g.kcells), # p
 
