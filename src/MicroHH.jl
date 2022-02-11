@@ -130,6 +130,7 @@ function save_domain(m::Model, i, p::ParallelSerial)
         write(fid, "s_top", f.s_top[g.is:g.ie, g.js:g.je])
         write(fid, "s_gradbot", f.s_gradbot[g.is:g.ie, g.js:g.je])
         write(fid, "s_gradtop", f.s_gradtop[g.is:g.ie, g.js:g.je])
+        write(fid, "s_ref", f.s_ref[g.ks:g.ke])
 
         # Attach the dimensions. Note the c-indexing.
         HDF5.h5ds_attach_scale(fid["u"], fid["xh"], 2)
@@ -159,6 +160,8 @@ function save_domain(m::Model, i, p::ParallelSerial)
 
         HDF5.h5ds_attach_scale(fid["s_gradtop"], fid["x"], 1)
         HDF5.h5ds_attach_scale(fid["s_gradtop"], fid["y"], 0)
+
+        HDF5.h5ds_attach_scale(fid["s_ref"], fid["z"], 0)
     end
 end
 
@@ -254,6 +257,12 @@ function save_domain(m::Model, i, p::ParallelDistributed)
         close(aid)
     end
 
+    s_ref_id = create_dataset(fid, "s_ref", datatype(eltype(f.s_ref)), dataspace((g.ktot,)))
+    if p.id == 0
+        s_ref_id[:] = f.s_ref[g.ks:g.ke]
+    end
+    close(s_ref_id)
+
     # Attach the dimensions. Note the c-indexing.
     vars_3d = [
         ("u", "xh", "y" , "z" ),
@@ -280,6 +289,9 @@ function save_domain(m::Model, i, p::ParallelDistributed)
         HDF5.h5ds_attach_scale(fid[name], fid[y], 0)
     end
 
+    HDF5.h5ds_attach_scale(fid["s_ref"], fid["z"], 0)
+
+    # Close
     close(fid)
 end
 
@@ -308,9 +320,16 @@ function load_domain!(m::Model, i, p::ParallelSerial)
         f.s_top[g.is:g.ie, g.js:g.je] = read(fid, "s_top")
         f.s_gradbot[g.is:g.ie, g.js:g.je] = read(fid, "s_gradbot")
         f.s_gradtop[g.is:g.ie, g.js:g.je] = read(fid, "s_gradtop")
+        f.s_ref[g.ks:g.ke] = read(fid, "s_ref")
     end
 
+    # Set the boundary values and ghost cells.
     set_boundary!(f, g, b, p)
+
+    # Extrapolate the reference profile to the ghost cells.
+    extrap = LinearInterpolation(g.z[g.ks:g.ke], f.s_ref[g.ks:g.ke], extrapolation_bc=Line())
+    f.s_ref[1:g.kgc] = extrap(g.z[1:g.kgc])
+    f.s_ref[g.ke+1:end] = extrap(g.z[g.ke+1:end])
 end
 
 
@@ -364,11 +383,21 @@ function load_domain!(m::Model, i, p::ParallelDistributed)
     f.s_gradtop[g.is:g.ie, g.js:g.je] = s_gradtop_id[is:ie, js:je]
     close(s_gradtop_id)
 
+    s_ref_id = open_dataset(fid, "s", dapl, dxpl)
+    f.s_ref[g.ks:g.ke] = s_ref_id[:]
+    close(s_ref_id)
+
     close(dapl)
     close(dxpl)
     close(fid)
 
+    # Set the boundary values and ghost cells.
     set_boundary!(f, g, b, p)
+
+    # Extrapolate the reference profile to the ghost cells.
+    extrap = LinearInterpolation(g.z[gd.ks:gd.ke], f.s_ref[gd.ks:gd.ke], extrapolation_bc=Line())
+    f.s_ref[1:g.kgc] = extrap(g.z[1:g.kgc])
+    f.s_ref[g.ke+1:end] = extrap(g.z[g.ke+1:end])
 end
 
 
