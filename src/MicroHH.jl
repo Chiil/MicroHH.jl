@@ -383,7 +383,7 @@ function load_domain!(m::Model, i, p::ParallelDistributed)
     f.s_gradtop[g.is:g.ie, g.js:g.je] = s_gradtop_id[is:ie, js:je]
     close(s_gradtop_id)
 
-    s_ref_id = open_dataset(fid, "s", dapl, dxpl)
+    s_ref_id = open_dataset(fid, "s_ref", dapl, dxpl)
     f.s_ref[g.ks:g.ke] = s_ref_id[:]
     close(s_ref_id)
 
@@ -395,7 +395,7 @@ function load_domain!(m::Model, i, p::ParallelDistributed)
     set_boundary!(f, g, b, p)
 
     # Extrapolate the reference profile to the ghost cells.
-    extrap = LinearInterpolation(g.z[gd.ks:gd.ke], f.s_ref[gd.ks:gd.ke], extrapolation_bc=Line())
+    extrap = LinearInterpolation(g.z[g.ks:g.ke], f.s_ref[g.ks:g.ke], extrapolation_bc=Line())
     f.s_ref[1:g.kgc] = extrap(g.z[1:g.kgc])
     f.s_ref[g.ke+1:end] = extrap(g.z[g.ke+1:end])
 end
