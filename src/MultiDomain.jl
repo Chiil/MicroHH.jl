@@ -252,7 +252,7 @@ function calc_nudge_fields!(md::MultiDomain, f_d::Fields, f_s::Fields, g_d::Grid
             g_d.is, g_d.js, g_d.ks, g_d.ke, g_s.is, g_s.js, g_s.ks, g_s.ke)
 
     else
-        println("WARNING: resorting to slow interpolations in nudging.")
+        @warn "Resorting to slow interpolations in nudging."
         @sync begin
             Threads.@spawn begin
                 interp = interpolate((g_s.xh, g_s.y, g_s.z), f_s.u, (Gridded(Linear()), Gridded(Linear()), Gridded(Linear())))

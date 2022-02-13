@@ -199,13 +199,13 @@ function parse_arrays(ex_arrays)
     arrays = Dict{Symbol, Tuple{Symbol, Symbol, Symbol}}()
 
     if !isa(ex_arrays, Expr) || !(ex_arrays.head in [:vect, :tuple])
-        println("Array list $ex_arrays is invalid")
+        @error "Array list $ex_arrays is invalid"
         return # CvH throw error
     end
 
     for array in ex_arrays.args
         if !isa(array, Expr) || !(array.head == :ref)
-            println("Array: $array is invalid")
+            @error "Array: $array is invalid"
             # CvH throw error
             continue
         end
@@ -226,7 +226,7 @@ function parse_arrays(ex_arrays)
             elseif arg == :kh
                 array_dims[3] = :hlf
             else
-                println("Array: $array is invalid")
+                @error "Array: $array is invalid"
                 # CvH throw error
             end
         end
@@ -266,9 +266,9 @@ function build_fd(ex_arrays, ex_offset, ex, use_tullio)
         ex = :( @tullio $ex i in is:ie, j in js:je, k in ks:ke )
     end
 
-    print("Generated stencil:\n")
-    print("$ex\n")
-    print("\n")
+    @debug "Generated stencil:"
+    @debug "$ex"
+    @debug ""
 
     return esc(ex)
 end

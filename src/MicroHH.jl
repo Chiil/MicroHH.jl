@@ -1,8 +1,5 @@
 module MicroHH
 
-# const do_mpi = true; const npx = 2; const npy = 2
-const do_mpi = false; const npx = 1; const npy = 1
-
 
 ## Export types and functions.
 export Model
@@ -10,14 +7,14 @@ export prepare_model!, step_model!, save_model, load_model!
 
 
 ## Load packages.
-if do_mpi
-    using MPI
-end
+const do_mpi = Ref{Bool}(false)
+const npx = Ref{Int}(1); const npy = Ref{Int}(1)
 
 using LoopVectorization
 using Tullio
 using Printf
 using HDF5
+using ArgParse
 
 
 ## Include the necessary files.
@@ -51,7 +48,7 @@ end
 
 
 function Model(name, n_domains, settings, TF)
-    parallel = Parallel(npx, npy)
+    parallel = Parallel(npx[], npy[])
     m = Model{TF}(name, n_domains, 0, parallel, [], [], [], [], [], [])
     for i in 1:n_domains
         push!(m.grid, Grid(settings[i]["grid"], TF, m.parallel))
@@ -85,10 +82,6 @@ function prepare_model!(m::Model)
     end
 
     check_model(m)
-
-    if m.parallel.id == 0
-        print("Starting simulation with do_mpi = $do_mpi, on npx = $npx, npy = $npy tasks, nthreads = $(Threads.nthreads()).\n")
-    end
 
     return is_in_progress(m.timeloop[1])
 end
@@ -450,7 +443,7 @@ function check_model(m::Model)
         m.timeloop[1].time,
         (m.last_measured_time[] - old_time) * 1e-9)
     if m.parallel.id == 0
-        print("$status_string\n")
+        @info "$status_string"
     end
 
     # Second, compute the divergence and CFL for each domain.
@@ -460,10 +453,41 @@ function check_model(m::Model)
             calc_divergence(m.fields[i], m.grid[i]),
             calc_cfl(m.fields[i], m.grid[i], m.timeloop[i]),
             sum(issubnormal.(m.fields[i].u)) + sum(issubnormal.(m.fields[i].v)) + sum(issubnormal.(m.fields[i].w)))
+
         if m.parallel.id == 0
-            print("$status_string\n")
+            @info "$status_string"
         end
     end
 end
+
+
+function __init__()
+    s = ArgParseSettings()
+    @add_arg_table! s begin
+        "--use-mpi"
+            help = "Enable MPI"
+            action = :store_true
+        "--npx"
+            help = "MPI pencils in x-direction"
+            arg_type = Int
+            default = 1
+        "--npy"
+            help = "MPI pencils in y-direction"
+            arg_type = Int
+            default = 1
+    end
+
+    parsed_args = parse_args(s)
+
+    do_mpi[] = parsed_args["use-mpi"]
+    npx[] = parsed_args["npx"]
+    npy[] = parsed_args["npy"]
+
+    # Only load MPI if parallel run is required.
+    if do_mpi[]
+        @eval using MPI
+    end
+end
+
 
 end

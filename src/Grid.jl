@@ -68,12 +68,12 @@ function Grid(d::Dict, TF, p::Parallel)
     jgc = 1
     kgc = 1
 
-    imax = itot ÷ npx
-    jmax = jtot ÷ npy
+    imax = itot ÷ p.npx
+    jmax = jtot ÷ p.npy
 
-    iblock = itot ÷ npy
-    jblock = jtot ÷ npx
-    kblock = ktot ÷ npx
+    iblock = itot ÷ p.npy
+    jblock = jtot ÷ p.npx
+    kblock = ktot ÷ p.npx
 
     icells = imax + 2*igc
     jcells = jmax + 2*jgc
