@@ -43,6 +43,8 @@ end
 
 function Parallel(npx, npy)
     if do_mpi[]
+        MPI.Init()
+
         dims = [npy, npx]; periodic = [1, 1]; reorder = true
 
         commxy = MPI.Cart_create(MPI.COMM_WORLD, dims, periodic, reorder)
