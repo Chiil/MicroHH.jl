@@ -1,5 +1,5 @@
 ## Grid generation function.
-function make_grid()
+function make_grid(float_type)
     # set the height (ktot = 512)
     # kmax = 512
     # dn = 1. / kmax
@@ -53,14 +53,13 @@ function make_grid()
     
     zsize = z[kmax] + 0.5*dz[kmax]
 
-    return z, zsize
+    return convert(Array{float_type, 1}, z), convert(float_type, zsize)
 end
-
-z, zsize = make_grid()
 
 
 ## Settings.
 float_type = Float32
+z, zsize = make_grid(float_type)
 
 settings_grid = Dict{String, Any}(
     "itot" => 2048,
