@@ -77,9 +77,24 @@ function transpose_zx!(data_out, data, g::Grid, p::ParallelDistributed)
             @tturbo sendbuf[:, :, :, i] .= data_view
         end
 
-        # Communicate data.
-        message_size = g.imax*g.jmax*g.kblock
-        MPI.Alltoall!(MPI.UBuffer(sendbuf, message_size), MPI.UBuffer(recvbuf, message_size), p.commx)
+        # Communicate data using collective
+        # message_size = g.imax*g.jmax*g.kblock
+        # MPI.Alltoall!(MPI.UBuffer(sendbuf, message_size), MPI.UBuffer(recvbuf, message_size), p.commx)
+
+        # Communicate data using point-to-point.
+        reqs = Vector{MPI.Request}(undef, 2*p.npx)
+
+        for i in 1:p.npx
+            recvbuf_view = @view recvbuf[:, :, :, i];
+            reqs[i] = MPI.Irecv!(recvbuf_view, i-1, 1, p.commx)
+        end
+
+        for i in 1:p.npx
+            sendbuf_view = @view sendbuf[:, :, :, i]
+            reqs[i+p.npx] = MPI.Isend(sendbuf_view, i-1, 1, p.commx)
+        end
+
+        MPI.Waitall!(reqs)
 
         # Unload the buffer.
         for i in 1:p.npx
@@ -108,8 +123,23 @@ function transpose_xy!(data_out, data, g::Grid, p::ParallelDistributed)
         end
 
         # Communicate data.
-        message_size = g.iblock*g.jmax*g.kblock
-        MPI.Alltoall!(MPI.UBuffer(sendbuf, message_size), MPI.UBuffer(recvbuf, message_size), p.commy)
+        # message_size = g.iblock*g.jmax*g.kblock
+        # MPI.Alltoall!(MPI.UBuffer(sendbuf, message_size), MPI.UBuffer(recvbuf, message_size), p.commy)
+
+        # Communicate data using point-to-point.
+        reqs = Vector{MPI.Request}(undef, 2*p.npy)
+
+        for i in 1:p.npy
+            recvbuf_view = @view recvbuf[:, :, :, i];
+            reqs[i] = MPI.Irecv!(recvbuf_view, i-1, 1, p.commy)
+        end
+
+        for i in 1:p.npy
+            sendbuf_view = @view sendbuf[:, :, :, i]
+            reqs[i+p.npy] = MPI.Isend(sendbuf_view, i-1, 1, p.commy)
+        end
+
+        MPI.Waitall!(reqs)
 
         # Unload the buffer.
         for i in 1:p.npy
@@ -138,8 +168,23 @@ function transpose_yzt!(data_out, data, g::Grid, p::ParallelDistributed)
         end
 
         # Communicate data.
-        message_size = g.iblock*g.jblock*g.kblock
-        MPI.Alltoall!(MPI.UBuffer(sendbuf, message_size), MPI.UBuffer(recvbuf, message_size), p.commx)
+        # message_size = g.iblock*g.jblock*g.kblock
+        # MPI.Alltoall!(MPI.UBuffer(sendbuf, message_size), MPI.UBuffer(recvbuf, message_size), p.commx)
+
+        # Communicate data using point-to-point.
+        reqs = Vector{MPI.Request}(undef, 2*p.npx)
+
+        for i in 1:p.npx
+            recvbuf_view = @view recvbuf[:, :, :, i];
+            reqs[i] = MPI.Irecv!(recvbuf_view, i-1, 1, p.commx)
+        end
+
+        for i in 1:p.npx
+            sendbuf_view = @view sendbuf[:, :, :, i]
+            reqs[i+p.npx] = MPI.Isend(sendbuf_view, i-1, 1, p.commx)
+        end
+
+        MPI.Waitall!(reqs)
 
         # Unload the buffer.
         for i in 1:p.npx
@@ -168,8 +213,23 @@ function transpose_zty!(data_out, data, g::Grid, p::ParallelDistributed)
         end
 
         # Communicate data.
-        message_size = g.iblock*g.jblock*g.kblock
-        MPI.Alltoall!(MPI.UBuffer(sendbuf, message_size), MPI.UBuffer(recvbuf, message_size), p.commx)
+        # message_size = g.iblock*g.jblock*g.kblock
+        # MPI.Alltoall!(MPI.UBuffer(sendbuf, message_size), MPI.UBuffer(recvbuf, message_size), p.commx)
+
+        # Communicate data using point-to-point.
+        reqs = Vector{MPI.Request}(undef, 2*p.npx)
+
+        for i in 1:p.npx
+            recvbuf_view = @view recvbuf[:, :, :, i];
+            reqs[i] = MPI.Irecv!(recvbuf_view, i-1, 1, p.commx)
+        end
+
+        for i in 1:p.npx
+            sendbuf_view = @view sendbuf[:, :, :, i]
+            reqs[i+p.npx] = MPI.Isend(sendbuf_view, i-1, 1, p.commx)
+        end
+
+        MPI.Waitall!(reqs)
 
         # Unload the buffer.
         for i in 1:p.npx
@@ -198,8 +258,23 @@ function transpose_yx!(data_out, data, g::Grid, p::ParallelDistributed)
         end
 
         # Communicate data.
-        message_size = g.iblock*g.jmax*g.kblock
-        MPI.Alltoall!(MPI.UBuffer(sendbuf, message_size), MPI.UBuffer(recvbuf, message_size), p.commy)
+        # message_size = g.iblock*g.jmax*g.kblock
+        # MPI.Alltoall!(MPI.UBuffer(sendbuf, message_size), MPI.UBuffer(recvbuf, message_size), p.commy)
+
+        # Communicate data using point-to-point.
+        reqs = Vector{MPI.Request}(undef, 2*p.npy)
+
+        for i in 1:p.npy
+            recvbuf_view = @view recvbuf[:, :, :, i];
+            reqs[i] = MPI.Irecv!(recvbuf_view, i-1, 1, p.commy)
+        end
+
+        for i in 1:p.npy
+            sendbuf_view = @view sendbuf[:, :, :, i]
+            reqs[i+p.npy] = MPI.Isend(sendbuf_view, i-1, 1, p.commy)
+        end
+
+        MPI.Waitall!(reqs)
 
         # Unload the buffer.
         for i in 1:p.npy
@@ -228,8 +303,23 @@ function transpose_xz!(data_out, data, g::Grid, p::ParallelDistributed)
         end
 
         # Communicate data.
-        message_size = g.imax*g.jmax*g.kblock
-        MPI.Alltoall!(MPI.UBuffer(sendbuf, message_size), MPI.UBuffer(recvbuf, message_size), p.commx)
+        # message_size = g.imax*g.jmax*g.kblock
+        # MPI.Alltoall!(MPI.UBuffer(sendbuf, message_size), MPI.UBuffer(recvbuf, message_size), p.commx)
+
+        # Communicate data using point-to-point.
+        reqs = Vector{MPI.Request}(undef, 2*p.npx)
+
+        for i in 1:p.npx
+            recvbuf_view = @view recvbuf[:, :, :, i];
+            reqs[i] = MPI.Irecv!(recvbuf_view, i-1, 1, p.commx)
+        end
+
+        for i in 1:p.npx
+            sendbuf_view = @view sendbuf[:, :, :, i]
+            reqs[i+p.npx] = MPI.Isend(sendbuf_view, i-1, 1, p.commx)
+        end
+
+        MPI.Waitall!(reqs)
 
         # Unload the buffer.
         for i in 1:p.npx
