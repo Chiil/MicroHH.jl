@@ -1,5 +1,5 @@
 ## Transpose functions for serial code.
-function transpose_zx(data_out, data, g::Grid, p::ParallelSerial)
+function transpose_zx!(data_out, data, g::Grid, p::ParallelSerial)
     ## Check whether data and data_out point to the same memory
     if data_out === data
         return
@@ -9,7 +9,7 @@ function transpose_zx(data_out, data, g::Grid, p::ParallelSerial)
 end
 
 
-function transpose_xy(data_out, data, g::Grid, p::ParallelSerial)
+function transpose_xy!(data_out, data, g::Grid, p::ParallelSerial)
     ## Check whether data and data_out point to the same memory
     if data_out === data
         return
@@ -19,7 +19,7 @@ function transpose_xy(data_out, data, g::Grid, p::ParallelSerial)
 end
 
 
-function transpose_yzt(data_out, data, g::Grid, p::ParallelSerial)
+function transpose_yzt!(data_out, data, g::Grid, p::ParallelSerial)
     ## Check whether data and data_out point to the same memory
     if data_out === data
         return
@@ -29,7 +29,7 @@ function transpose_yzt(data_out, data, g::Grid, p::ParallelSerial)
 end
 
 
-function transpose_zty(data_out, data, g::Grid, p::ParallelSerial)
+function transpose_zty!(data_out, data, g::Grid, p::ParallelSerial)
     ## Check whether data and data_out point to the same memory
     if data_out === data
         return
@@ -39,7 +39,7 @@ function transpose_zty(data_out, data, g::Grid, p::ParallelSerial)
 end
 
 
-function transpose_yx(data_out, data, g::Grid, p::ParallelSerial)
+function transpose_yx!(data_out, data, g::Grid, p::ParallelSerial)
     ## Check whether data and data_out point to the same memory
     if data_out === data
         return
@@ -49,7 +49,7 @@ function transpose_yx(data_out, data, g::Grid, p::ParallelSerial)
 end
 
 
-function transpose_xz(data_out, data, g::Grid, p::ParallelSerial)
+function transpose_xz!(data_out, data, g::Grid, p::ParallelSerial)
     ## Check whether data and data_out point to the same memory
     if data_out === data
         return
@@ -60,7 +60,7 @@ end
 
 
 ## Transpose functions for parallel code.
-function transpose_zx(data_out, data, g::Grid, p::ParallelDistributed)
+function transpose_zx!(data_out, data, g::Grid, p::ParallelDistributed)
     ## Check whether data and data_out point to the same memory
     if data_out === data
         return
@@ -91,7 +91,7 @@ function transpose_zx(data_out, data, g::Grid, p::ParallelDistributed)
 end
 
 
-function transpose_xy(data_out, data, g::Grid, p::ParallelDistributed)
+function transpose_xy!(data_out, data, g::Grid, p::ParallelDistributed)
     if data_out === data
         return
     elseif size(data_out) == size(data)
@@ -121,7 +121,7 @@ function transpose_xy(data_out, data, g::Grid, p::ParallelDistributed)
 end
 
 
-function transpose_yzt(data_out, data, g::Grid, p::ParallelDistributed)
+function transpose_yzt!(data_out, data, g::Grid, p::ParallelDistributed)
     if data_out === data
         return
     elseif size(data_out) == size(data)
@@ -151,7 +151,7 @@ function transpose_yzt(data_out, data, g::Grid, p::ParallelDistributed)
 end
 
 
-function transpose_zty(data_out, data, g::Grid, p::ParallelDistributed)
+function transpose_zty!(data_out, data, g::Grid, p::ParallelDistributed)
     if data_out === data
         return
     elseif size(data_out) == size(data)
@@ -181,7 +181,7 @@ function transpose_zty(data_out, data, g::Grid, p::ParallelDistributed)
 end
 
 
-function transpose_yx(data_out, data, g::Grid, p::ParallelDistributed)
+function transpose_yx!(data_out, data, g::Grid, p::ParallelDistributed)
     if data_out === data
         return
     elseif size(data_out) == size(data)
@@ -211,7 +211,7 @@ function transpose_yx(data_out, data, g::Grid, p::ParallelDistributed)
 end
 
 
-function transpose_xz(data_out, data, g::Grid, p::ParallelDistributed)
+function transpose_xz!(data_out, data, g::Grid, p::ParallelDistributed)
     if data_out === data
         return
     elseif size(data_out) == size(data)

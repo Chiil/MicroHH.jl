@@ -197,17 +197,17 @@ function calc_pressure_tend!(f::Fields, g::Grid, t::Timeloop, p::Pressure, pp::P
         g.is, g.ie, g.js, g.je, g.ks, g.ke)
 
     p_nogc_x = reshape(p.p_nogc, (g.itot, g.jmax, g.kblock))
-    transpose_zx(p_nogc_x, p.p_nogc, g, pp)
+    transpose_zx!(p_nogc_x, p.p_nogc, g, pp)
 
     p.fft_tmp .= p.fft_forward_i * p_nogc_x
 
     p_fft_tmp2 = reshape(p.fft_tmp, (g.iblock, g.jtot, g.kblock))
-    transpose_xy(p_fft_tmp2, p.fft_tmp, g, pp)
+    transpose_xy!(p_fft_tmp2, p.fft_tmp, g, pp)
 
     p.fft .= p.fft_forward_j * p_fft_tmp2
 
     p_fft_z = reshape(p.fft, (g.iblock, g.jblock, g.ktot))
-    transpose_yzt(p_fft_z, p.fft, g, pp)
+    transpose_yzt!(p_fft_z, p.fft, g, pp)
 
     solve_pre_kernel!(
         p_fft_z, p.b,
@@ -220,16 +220,16 @@ function calc_pressure_tend!(f::Fields, g::Grid, t::Timeloop, p::Pressure, pp::P
         p.a, p.b, p.c,
         g.iblock, g.jblock, g.ktot)
 
-    transpose_zty(p.fft, p_fft_z, g, pp)
+    transpose_zty!(p.fft, p_fft_z, g, pp)
 
     p_fft_tmp2 .= (p.fft_backward_j * p.fft) ./ g.jtot
 
     p_fft_tmp = reshape(p_fft_tmp2, (g.itot, g.jmax, g.kblock))
-    transpose_yx(p_fft_tmp, p_fft_tmp2, g, pp)
+    transpose_yx!(p_fft_tmp, p_fft_tmp2, g, pp)
 
     p_nogc_x .= (p.fft_backward_i * p_fft_tmp) ./ g.itot
 
-    transpose_xz(p.p_nogc, p_nogc_x, g, pp)
+    transpose_xz!(p.p_nogc, p_nogc_x, g, pp)
 
     solve_post_kernel!(
         f.p, p.p_nogc,
