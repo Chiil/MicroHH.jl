@@ -476,6 +476,7 @@ function output_timer_model!(m::Model)
         @info ""
         @info "Timer output:"
         show(m.to)
+        println("")
     end
 end
 
