@@ -170,16 +170,16 @@ function output_kernel!(
     end
 end
 
-function calc_pressure_tend!(f::Fields, g::Grid, t::Timeloop, p::Pressure, pp::Parallel)
+function calc_pressure_tend!(f::Fields, g::Grid, t::Timeloop, p::Pressure, pp::Parallel, to::TimerOutput)
     # Set the cyclic boundaries for the tendencies.
-    boundary_cyclic_kernel!(
+    @timeit to "boundary_cyclic_kernel" boundary_cyclic_kernel!(
         f.u_tend, g.is, g.ie, g.js, g.je, g.igc, g.jgc, pp)
-    boundary_cyclic_kernel!(
+    @timeit to "boundary_cyclic_kernel" boundary_cyclic_kernel!(
         f.v_tend, g.is, g.ie, g.js, g.je, g.igc, g.jgc, pp)
 
     # Set the boundaries of wtend to zero.
     # CvH: Fix this later.
-    @tturbo for j in 1:g.jcells
+    @timeit to "bot_top_bcs" @tturbo for j in 1:g.jcells
         for i in 1:g.icells
             f.w_tend[i, j, g.ks ] = 0
             f.w_tend[i, j, g.keh] = 0
@@ -189,7 +189,7 @@ function calc_pressure_tend!(f::Fields, g::Grid, t::Timeloop, p::Pressure, pp::P
     # Convert the dti to the type of the arrays to prevent casting in kernel.
     dti_sub = convert(typeof(f.u_tend[1]), 1/get_sub_dt(t))
 
-    input_kernel!(
+    @timeit to "input_kernel" input_kernel!(
         p.p_nogc,
         f.u, f.v, f.w,
         f.u_tend, f.v_tend, f.w_tend,
@@ -197,57 +197,57 @@ function calc_pressure_tend!(f::Fields, g::Grid, t::Timeloop, p::Pressure, pp::P
         g.is, g.ie, g.js, g.je, g.ks, g.ke)
 
     p_nogc_x = reshape(p.p_nogc, (g.itot, g.jmax, g.kblock))
-    transpose_zx!(p_nogc_x, p.p_nogc, g, pp)
+    @timeit to "transpose_zx" transpose_zx!(p_nogc_x, p.p_nogc, g, pp)
 
-    p.fft_tmp .= p.fft_forward_i * p_nogc_x
+    @timeit to "fft_forward_i" p.fft_tmp .= p.fft_forward_i * p_nogc_x
 
     p_fft_tmp2 = reshape(p.fft_tmp, (g.iblock, g.jtot, g.kblock))
-    transpose_xy!(p_fft_tmp2, p.fft_tmp, g, pp)
+    @timeit to "transpose_xy" transpose_xy!(p_fft_tmp2, p.fft_tmp, g, pp)
 
-    p.fft .= p.fft_forward_j * p_fft_tmp2
+    @timeit to "fft_forward_j" p.fft .= p.fft_forward_j * p_fft_tmp2
 
     p_fft_z = reshape(p.fft, (g.iblock, g.jblock, g.ktot))
-    transpose_yzt!(p_fft_z, p.fft, g, pp)
+    @timeit to "transpose_yzt" transpose_yzt!(p_fft_z, p.fft, g, pp)
 
-    solve_pre_kernel!(
+    @timeit to "solve_pre_kernel" solve_pre_kernel!(
         p_fft_z, p.b,
         g.dz, p.bmati, p.bmatj, p.a, p.c,
         g.iblock, g.jblock, g.ktot, g.kgc,
         pp.id_x, pp.id_y)
 
-    solve_tdma_kernel!(
+    @timeit to "solve_tdma_kernel" solve_tdma_kernel!(
         p_fft_z, p.work3d, p.work2d,
         p.a, p.b, p.c,
         g.iblock, g.jblock, g.ktot)
 
-    transpose_zty!(p.fft, p_fft_z, g, pp)
+    @timeit to "transpose_zty" transpose_zty!(p.fft, p_fft_z, g, pp)
 
-    p_fft_tmp2 .= (p.fft_backward_j * p.fft) ./ g.jtot
+    @timeit to "fft_backward_j" p_fft_tmp2 .= (p.fft_backward_j * p.fft) ./ g.jtot
 
     p_fft_tmp = reshape(p_fft_tmp2, (g.itot, g.jmax, g.kblock))
-    transpose_yx!(p_fft_tmp, p_fft_tmp2, g, pp)
+    @timeit to "transpose_yz" transpose_yx!(p_fft_tmp, p_fft_tmp2, g, pp)
 
-    p_nogc_x .= (p.fft_backward_i * p_fft_tmp) ./ g.itot
+    @timeit to "fft_backward_i" p_nogc_x .= (p.fft_backward_i * p_fft_tmp) ./ g.itot
 
-    transpose_xz!(p.p_nogc, p_nogc_x, g, pp)
+    @timeit to "transpose_xz" transpose_xz!(p.p_nogc, p_nogc_x, g, pp)
 
-    solve_post_kernel!(
+    @timeit to "solve_post_kernel" solve_post_kernel!(
         f.p, p.p_nogc,
         g.is, g.ie, g.js, g.je, g.ks, g.ke,
         g.igc, g.jgc, g.kgc)
 
     # Set the bot and top bc's
-    @tturbo for j in 1:g.jcells
+    @timeit to "bot_top_bcs" @tturbo for j in 1:g.jcells
         for i in 1:g.icells
             f.p[i, j, g.ks-1] = f.p[i, j, g.ks]
             f.p[i, j, g.ke+1] = f.p[i, j, g.ke]
         end
     end
 
-    boundary_cyclic_kernel!(
+    @timeit to "boundary_cyclic_kernel" boundary_cyclic_kernel!(
         f.p, g.is, g.ie, g.js, g.je, g.igc, g.jgc, pp)
 
-    output_kernel!(
+    @timeit to "output_kernel" output_kernel!(
         f.u_tend, f.v_tend, f.w_tend,
         f.p,
         g.dxi, g.dyi, g.dzhi,
