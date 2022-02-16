@@ -225,7 +225,7 @@ function calc_pressure_tend!(f::Fields, g::Grid, t::Timeloop, p::Pressure, pp::P
     @timeit to "fft_backward_j" p_fft_tmp2 .= (p.fft_backward_j * p.fft) ./ g.jtot
 
     p_fft_tmp = reshape(p_fft_tmp2, (g.itot, g.jmax, g.kblock))
-    @timeit to "transpose_yz" transpose_yx!(p_fft_tmp, p_fft_tmp2, g, pp)
+    @timeit to "transpose_yx" transpose_yx!(p_fft_tmp, p_fft_tmp2, g, pp)
 
     @timeit to "fft_backward_i" p_nogc_x .= (p.fft_backward_i * p_fft_tmp) ./ g.itot
 
