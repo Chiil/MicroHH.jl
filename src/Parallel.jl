@@ -34,10 +34,6 @@ struct ParallelSerial <: Parallel
     id_east::Int64
     id_south::Int64
     id_north::Int64
-
-    commxy
-    commx
-    commy
 end
 
 
@@ -77,8 +73,7 @@ function Parallel(npx, npy)
         return ParallelSerial(
             npx, npy,
             id, id_x, id_y,
-            id_west, id_east, id_south, id_north,
-            commxy, commx, commy)
+            id_west, id_east, id_south, id_north)
     end
 end
 
