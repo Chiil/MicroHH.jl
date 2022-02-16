@@ -72,27 +72,27 @@ end
 
 
 ## Dynamics kernels launcher.
-function calc_dynamics_tend!(f::Fields, g::Grid)
-    dynamics_u_kernel!(
+function calc_dynamics_tend!(f::Fields, g::Grid, to::TimerOutput)
+    @timeit to "dynamics_u_kernel" dynamics_u_kernel!(
         f.u_tend, f.u, f.v, f.w,
         f.visc,
         g.dxi, g.dyi, g.dzi, g.dzhi,
         g.is, g.ie, g.js, g.je, g.ks, g.ke)
 
-    dynamics_v_kernel!(
+    @timeit to "dynamics_v_kernel" dynamics_v_kernel!(
         f.v_tend, f.u, f.v, f.w,
         f.visc,
         g.dxi, g.dyi, g.dzi, g.dzhi,
         g.is, g.ie, g.js, g.je, g.ks, g.ke)
 
-    dynamics_w_kernel!(
+    @timeit to "dynamics_w_kernel" dynamics_w_kernel!(
         f.w_tend, f.u, f.v, f.w, f.s, f.s_ref,
         f.visc, f.alpha,
         g.dxi, g.dyi, g.dzi, g.dzhi,
         # g.is, g.ie, g.js, g.je, g.ks, g.keh) # CvH temporary hack
         g.is, g.ie, g.js, g.je, g.ks+1, g.keh-1)
 
-    dynamics_s_kernel!(
+    @timeit to "dynamics_s_kernel" dynamics_s_kernel!(
         f.s_tend, f.u, f.v, f.w, f.s,
         f.visc,
         g.dxi, g.dyi, g.dzi, g.dzhi,

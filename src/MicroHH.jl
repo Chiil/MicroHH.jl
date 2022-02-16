@@ -70,7 +70,7 @@ end
 
 function calc_rhs!(m::Model, i)
     @timeit m.to "set_boundary"       set_boundary!(m.fields[i], m.grid[i], m.boundary[i], m.parallel)
-    @timeit m.to "calc_dynamics_tend" calc_dynamics_tend!(m.fields[i], m.grid[i])
+    @timeit m.to "calc_dynamics_tend" calc_dynamics_tend!(m.fields[i], m.grid[i], m.to)
     @timeit m.to "calc_nudge_tend"    calc_nudge_tend!(m.fields[i], m.grid[i], m.multidomain[i])
     @timeit m.to "calc_pressure_tend" calc_pressure_tend!(m.fields[i], m.grid[i], m.timeloop[i], m.pressure[i], m.parallel, m.to)
 end
