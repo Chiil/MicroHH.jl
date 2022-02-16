@@ -3,7 +3,7 @@ module MicroHH
 
 ## Export types and functions.
 export Model
-export prepare_model!, step_model!, save_model, load_model!
+export prepare_model!, step_model!, save_model, load_model!, output_timer_model!
 
 
 ## Load packages.
@@ -15,6 +15,7 @@ using Tullio
 using Printf
 using HDF5
 using ArgParse
+using TimerOutputs
 
 
 ## Include the necessary files.
@@ -37,6 +38,7 @@ struct Model{TF <: Union{Float32, Float64}}
     n_domains::Int
     last_measured_time::Ref{UInt64}
     parallel::Parallel
+    to::TimerOutput
 
     grid::Vector{Grid}
     fields::Vector{Fields}
@@ -49,7 +51,10 @@ end
 
 function Model(name, n_domains, settings, TF)
     parallel = Parallel(npx[], npy[])
-    m = Model{TF}(name, n_domains, 0, parallel, [], [], [], [], [], [])
+    to = TimerOutput()
+    disable_timer!(to)
+
+    m = Model{TF}(name, n_domains, 0, parallel, to, [], [], [], [], [], [])
     for i in 1:n_domains
         push!(m.grid, Grid(settings[i]["grid"], TF, m.parallel))
         push!(m.fields, Fields(m.grid[i], settings[i]["fields"], TF))
@@ -64,10 +69,10 @@ end
 
 
 function calc_rhs!(m::Model, i)
-    set_boundary!(m.fields[i], m.grid[i], m.boundary[i], m.parallel)
-    calc_dynamics_tend!(m.fields[i], m.grid[i])
-    calc_nudge_tend!(m.fields[i], m.grid[i], m.multidomain[i])
-    calc_pressure_tend!(m.fields[i], m.grid[i], m.timeloop[i], m.pressure[i], m.parallel)
+    @timeit m.to "set_boundary"       set_boundary!(m.fields[i], m.grid[i], m.boundary[i], m.parallel)
+    @timeit m.to "calc_dynamics_tend" calc_dynamics_tend!(m.fields[i], m.grid[i])
+    @timeit m.to "calc_nudge_tend"    calc_nudge_tend!(m.fields[i], m.grid[i], m.multidomain[i])
+    @timeit m.to "calc_pressure_tend" calc_pressure_tend!(m.fields[i], m.grid[i], m.timeloop[i], m.pressure[i], m.parallel)
 end
 
 
@@ -407,27 +412,32 @@ function step_model!(m::Model)
 
     itime_next = m.timeloop[1].itime + m.timeloop[1].idt
 
-    for i in 1:m.n_domains
-        # Compute the nudging fields, which remain constant throughout the step.
-        if i > 1
-            calc_nudge_fields!(m.multidomain[i], m.fields[i], m.fields[i-1], m.grid[i], m.grid[i-1])
-        end
-
-        while (m.timeloop[i].itime < itime_next)
-            integrate_time!(m.fields[i], m.grid[i], m.timeloop[i])
-            step_time!(m.timeloop[i])
-
-            if is_save_time(m.timeloop[i])
-                save_domain(m, i, m.parallel)
+    @timeit m.to "domains" begin
+        for i in 1:m.n_domains
+            # Compute the nudging fields, which remain constant throughout the step.
+            if i > 1
+                @timeit m.to "calc_nudge_fields" calc_nudge_fields!(m.multidomain[i], m.fields[i], m.fields[i-1], m.grid[i], m.grid[i-1])
             end
 
-            calc_rhs!(m, i)
+            while (m.timeloop[i].itime < itime_next)
+                @timeit m.to "integrate_time" integrate_time!(m.fields[i], m.grid[i], m.timeloop[i])
+                @timeit m.to "step_time" step_time!(m.timeloop[i])
+
+                if is_save_time(m.timeloop[i])
+                    @timeit m.to "save_domain" save_domain(m, i, m.parallel)
+                end
+
+                @timeit m.to "calc_rhs" calc_rhs!(m, i)
+            end
         end
     end
 
     if is_check_time(m.timeloop[1])
-        check_model(m)
+        @timeit m.to "check_model" check_model(m)
     end
+
+    # Enable the timer after the first round to avoid measuring compilation.
+    enable_timer!(m.to)
 
     return is_in_progress(m.timeloop[1])
 end
@@ -457,6 +467,15 @@ function check_model(m::Model)
         if m.parallel.id == 0
             @info "$status_string"
         end
+    end
+end
+
+
+function output_timer_model!(m::Model)
+    if m.parallel.id == 0
+        @info ""
+        @info "Timer output"
+        show(m.to)
     end
 end
 

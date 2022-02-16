@@ -23,3 +23,5 @@ while in_progress
     global in_progress = step_model!(m)
     # @profile global in_progress = step_model!(m)
 end
+
+output_timer_model!(m)
