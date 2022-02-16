@@ -7,7 +7,7 @@ export prepare_model!, step_model!, save_model, load_model!
 
 
 ## Load packages.
-const do_mpi = Ref{Bool}(false)
+const use_mpi = Ref{Bool}(false)
 const npx = Ref{Int}(1); const npy = Ref{Int}(1)
 
 using LoopVectorization
@@ -479,12 +479,12 @@ function __init__()
 
     parsed_args = parse_args(s)
 
-    do_mpi[] = parsed_args["use-mpi"]
+    use_mpi[] = parsed_args["use-mpi"]
     npx[] = parsed_args["npx"]
     npy[] = parsed_args["npy"]
 
     # Only load MPI if parallel run is required.
-    if do_mpi[]
+    if use_mpi[]
         @eval using MPI
     end
 end
