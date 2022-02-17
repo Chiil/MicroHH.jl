@@ -56,11 +56,11 @@ function Model(name, n_domains, settings, TF)
 
     m = Model{TF}(name, n_domains, 0, parallel, to, [], [], [], [], [], [])
     for i in 1:n_domains
-        push!(m.grid, Grid(settings[i]["grid"], TF, m.parallel))
+        push!(m.grid, Grid(settings[i]["grid"], m.parallel, TF))
         push!(m.fields, Fields(m.grid[i], settings[i]["fields"], TF))
         push!(m.boundary, Boundary(settings[i]["boundary"]))
         push!(m.timeloop, Timeloop(settings[i]["timeloop"]))
-        push!(m.pressure, Pressure(m.grid[i], TF))
+        push!(m.pressure, Pressure(m.grid[i], m.parallel, TF))
         push!(m.multidomain, MultiDomain(m.grid[i], settings[i]["multidomain"], TF))
     end
 

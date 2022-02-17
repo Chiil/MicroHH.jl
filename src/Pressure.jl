@@ -1,6 +1,5 @@
 using FFTW
-using Printf
-using HDF5
+
 
 struct Pressure{TF <: Union{Float32, Float64}}
     fft_forward_i
@@ -17,9 +16,12 @@ struct Pressure{TF <: Union{Float32, Float64}}
     p_nogc::Array{TF, 3}
     fft_tmp::Array{TF, 3}
     fft::Array{TF, 3}
+    sendbuf::Array{TF, 1}
+    recvbuf::Array{TF, 1}
 end
 
-function Pressure(g::Grid, TF)
+
+function Pressure(g::Grid, pp::Parallel, TF)
     nthreads = Threads.nthreads()
     FFTW.set_num_threads(nthreads)
 
@@ -68,8 +70,18 @@ function Pressure(g::Grid, TF)
     fft_tmp = zeros(g.itot, g.jmax, g.kblock)
     fft = zeros(g.iblock, g.jtot, g.kblock)
 
-    Pressure{TF}(fft_plan_fi, fft_plan_bi, fft_plan_fj, fft_plan_bj, bmati, bmatj, a, c, work3d, work2d, b, p_nogc, fft_tmp, fft)
+    if pp isa ParallelSerial
+        sendbuf = zeros(0); recvbuf = zeros(0);
+    elseif pp isa ParallelDistributed
+        sendbuf = zeros(g.imax*g.jmax*g.ktot); recvbuf = zeros(g.imax*g.jmax*g.ktot);
+    end
+
+    Pressure{TF}(
+        fft_plan_fi, fft_plan_bi, fft_plan_fj, fft_plan_bj,
+        bmati, bmatj, a, c, work3d, work2d, b, p_nogc, fft_tmp, fft,
+        sendbuf, recvbuf)
 end
+
 
 function input_kernel!(
     p,
@@ -84,6 +96,7 @@ function input_kernel!(
         end
     end
 end
+
 
 function solve_pre_kernel!(
     p, b,
@@ -114,6 +127,7 @@ function solve_pre_kernel!(
         b[1, 1, ktot] -= 2*c[ktot]
     end
 end
+
 
 function solve_tdma_kernel!(
     p, work3d, work2d,
@@ -147,6 +161,7 @@ function solve_tdma_kernel!(
     end
 end
 
+
 function solve_post_kernel!(
     p, p_nogc,
     is, ie, js, je, ks, ke,
@@ -156,6 +171,7 @@ function solve_post_kernel!(
         p[i, j, k] = p_nogc[i-igc, j-jgc, k-kgc]
     end
 end
+
 
 function output_kernel!(
     ut, vt, wt,
@@ -169,6 +185,7 @@ function output_kernel!(
         @fd (wt[i, j, kh], p[i, j, k]) wt -= gradz(p)
     end
 end
+
 
 function calc_pressure_tend!(f::Fields, g::Grid, t::Timeloop, p::Pressure, pp::Parallel, to::TimerOutput)
     # Set the cyclic boundaries for the tendencies.
@@ -197,17 +214,17 @@ function calc_pressure_tend!(f::Fields, g::Grid, t::Timeloop, p::Pressure, pp::P
         g.is, g.ie, g.js, g.je, g.ks, g.ke)
 
     p_nogc_x = reshape(p.p_nogc, (g.itot, g.jmax, g.kblock))
-    @timeit to "transpose_zx" transpose_zx!(p_nogc_x, p.p_nogc, g, pp)
+    @timeit to "transpose_zx" transpose_zx!(p_nogc_x, p.p_nogc, p.sendbuf, p.recvbuf, g, pp)
 
     @timeit to "fft_forward_i" p.fft_tmp .= p.fft_forward_i * p_nogc_x
 
     p_fft_tmp2 = reshape(p.fft_tmp, (g.iblock, g.jtot, g.kblock))
-    @timeit to "transpose_xy" transpose_xy!(p_fft_tmp2, p.fft_tmp, g, pp)
+    @timeit to "transpose_xy" transpose_xy!(p_fft_tmp2, p.fft_tmp, p.sendbuf, p.recvbuf, g, pp)
 
     @timeit to "fft_forward_j" p.fft .= p.fft_forward_j * p_fft_tmp2
 
     p_fft_z = reshape(p.fft, (g.iblock, g.jblock, g.ktot))
-    @timeit to "transpose_yzt" transpose_yzt!(p_fft_z, p.fft, g, pp)
+    @timeit to "transpose_yzt" transpose_yzt!(p_fft_z, p.fft, p.sendbuf, p.recvbuf, g, pp)
 
     @timeit to "solve_pre_kernel" solve_pre_kernel!(
         p_fft_z, p.b,
@@ -220,16 +237,16 @@ function calc_pressure_tend!(f::Fields, g::Grid, t::Timeloop, p::Pressure, pp::P
         p.a, p.b, p.c,
         g.iblock, g.jblock, g.ktot)
 
-    @timeit to "transpose_zty" transpose_zty!(p.fft, p_fft_z, g, pp)
+    @timeit to "transpose_zty" transpose_zty!(p.fft, p_fft_z, p.sendbuf, p.recvbuf, g, pp)
 
     @timeit to "fft_backward_j" p_fft_tmp2 .= (p.fft_backward_j * p.fft) ./ g.jtot
 
     p_fft_tmp = reshape(p_fft_tmp2, (g.itot, g.jmax, g.kblock))
-    @timeit to "transpose_yx" transpose_yx!(p_fft_tmp, p_fft_tmp2, g, pp)
+    @timeit to "transpose_yx" transpose_yx!(p_fft_tmp, p_fft_tmp2, p.sendbuf, p.recvbuf, g, pp)
 
     @timeit to "fft_backward_i" p_nogc_x .= (p.fft_backward_i * p_fft_tmp) ./ g.itot
 
-    @timeit to "transpose_xz" transpose_xz!(p.p_nogc, p_nogc_x, g, pp)
+    @timeit to "transpose_xz" transpose_xz!(p.p_nogc, p_nogc_x, p.sendbuf, p.recvbuf, g, pp)
 
     @timeit to "solve_post_kernel" solve_post_kernel!(
         f.p, p.p_nogc,
