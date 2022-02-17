@@ -95,38 +95,54 @@ end
 
 
 function boundary_cyclic_kernel!(
-    a, is, ie, js, je, igc, jgc, bufs::BoundaryBuffers, p::ParallelDistributed)
+    a, is, ie, js, je, igc, jgc, buf::BoundaryBuffers, p::ParallelDistributed)
+
+    if length(size(a)) == 2 || (length(size(a)) == 3 && size(a, 3) == 1)
+        sw = @view buf.send_west[:, :, 1:1]
+        rw = @view buf.recv_west[:, :, 1:1]
+        se = @view buf.send_east[:, :, 1:1]
+        re = @view buf.recv_east[:, :, 1:1]
+        ss = @view buf.send_south[:, :, 1:1]
+        rs = @view buf.recv_south[:, :, 1:1]
+        sn = @view buf.send_north[:, :, 1:1]
+        rn = @view buf.recv_north[:, :, 1:1]
+    else
+        sw = buf.send_west; rw = buf.recv_west
+        se = buf.send_east; re = buf.recv_east
+        ss = buf.send_south; rs = buf.recv_south
+        sn = buf.send_north; rn = buf.recv_north
+    end
 
     # Transfer the east-west data.
     a_east = @view a[ie-igc+1:ie, :, :]
     a_west = @view a[is:is+igc-1, :, :]
-    @tturbo bufs.send_east .= a_east
-    @tturbo bufs.send_west .= a_west
+    @tturbo se .= a_east
+    @tturbo sw .= a_west
 
     reqs = Vector{MPI.Request}(undef, 4)
-    reqs[1] = MPI.Irecv!(bufs.recv_west, p.id_west, 1, p.commxy);
-    reqs[2] = MPI.Irecv!(bufs.recv_east, p.id_east, 2, p.commxy);
-    reqs[3] = MPI.Isend( bufs.send_east, p.id_east, 1, p.commxy);
-    reqs[4] = MPI.Isend( bufs.send_west, p.id_west, 2, p.commxy);
+    reqs[1] = MPI.Irecv!(rw, p.id_west, 1, p.commxy);
+    reqs[2] = MPI.Irecv!(re, p.id_east, 2, p.commxy);
+    reqs[3] = MPI.Isend( se, p.id_east, 1, p.commxy);
+    reqs[4] = MPI.Isend( sw, p.id_west, 2, p.commxy);
     MPI.Waitall!(reqs)
 
-    @tturbo a[   1:igc, :, :] .= bufs.recv_west
-    @tturbo a[ie+1:end, :, :] .= bufs.recv_east
+    @tturbo a[   1:igc, :, :] .= rw
+    @tturbo a[ie+1:end, :, :] .= re
 
     # Transfer the north-south data.
     a_north = @view a[:, je-jgc+1:je, :]
     a_south = @view a[:, js:js+jgc-1, :]
-    @tturbo bufs.send_north .= a_north
-    @tturbo bufs.send_south .= a_south
+    @tturbo sn .= a_north
+    @tturbo ss .= a_south
 
-    reqs[1] = MPI.Irecv!(bufs.recv_north, p.id_north, 1, p.commxy);
-    reqs[2] = MPI.Irecv!(bufs.recv_south, p.id_south, 2, p.commxy);
-    reqs[3] = MPI.Isend( bufs.send_south, p.id_south, 1, p.commxy);
-    reqs[4] = MPI.Isend( bufs.send_north, p.id_north, 2, p.commxy);
+    reqs[1] = MPI.Irecv!(rn, p.id_north, 1, p.commxy);
+    reqs[2] = MPI.Irecv!(rs, p.id_south, 2, p.commxy);
+    reqs[3] = MPI.Isend( ss, p.id_south, 1, p.commxy);
+    reqs[4] = MPI.Isend( sn, p.id_north, 2, p.commxy);
     MPI.Waitall!(reqs)
 
-    @tturbo a[:,    1:jgc, :] .= bufs.recv_south
-    @tturbo a[:, je+1:end, :] .= bufs.recv_north
+    @tturbo a[:,    1:jgc, :] .= rs
+    @tturbo a[:, je+1:end, :] .= rn
 end
 
 
