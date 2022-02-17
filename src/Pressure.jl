@@ -187,12 +187,14 @@ function output_kernel!(
 end
 
 
-function calc_pressure_tend!(f::Fields, g::Grid, t::Timeloop, p::Pressure, pp::Parallel, to::TimerOutput)
+function calc_pressure_tend!(
+        f::Fields, g::Grid, t::Timeloop, p::Pressure, b::Boundary, pp::Parallel, to::TimerOutput)
+
     # Set the cyclic boundaries for the tendencies.
     @timeit to "boundary_cyclic_kernel" boundary_cyclic_kernel!(
-        f.u_tend, g.is, g.ie, g.js, g.je, g.igc, g.jgc, pp)
+        f.u_tend, g.is, g.ie, g.js, g.je, g.igc, g.jgc, b.buffers, pp)
     @timeit to "boundary_cyclic_kernel" boundary_cyclic_kernel!(
-        f.v_tend, g.is, g.ie, g.js, g.je, g.igc, g.jgc, pp)
+        f.v_tend, g.is, g.ie, g.js, g.je, g.igc, g.jgc, b.buffers, pp)
 
     # Set the boundaries of wtend to zero.
     # CvH: Fix this later.
@@ -262,7 +264,7 @@ function calc_pressure_tend!(f::Fields, g::Grid, t::Timeloop, p::Pressure, pp::P
     end
 
     @timeit to "boundary_cyclic_kernel" boundary_cyclic_kernel!(
-        f.p, g.is, g.ie, g.js, g.je, g.igc, g.jgc, pp)
+        f.p, g.is, g.ie, g.js, g.je, g.igc, g.jgc, b.buffers, pp)
 
     @timeit to "output_kernel" output_kernel!(
         f.u_tend, f.v_tend, f.w_tend,

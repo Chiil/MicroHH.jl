@@ -58,7 +58,7 @@ function Model(name, n_domains, settings, TF)
     for i in 1:n_domains
         push!(m.grid, Grid(settings[i]["grid"], m.parallel, TF))
         push!(m.fields, Fields(m.grid[i], settings[i]["fields"], TF))
-        push!(m.boundary, Boundary(settings[i]["boundary"]))
+        push!(m.boundary, Boundary(m.grid[i], m.parallel, settings[i]["boundary"], TF))
         push!(m.timeloop, Timeloop(settings[i]["timeloop"]))
         push!(m.pressure, Pressure(m.grid[i], m.parallel, TF))
         push!(m.multidomain, MultiDomain(m.grid[i], settings[i]["multidomain"], TF))
@@ -72,7 +72,7 @@ function calc_rhs!(m::Model, i)
     @timeit m.to "set_boundary"       set_boundary!(m.fields[i], m.grid[i], m.boundary[i], m.parallel)
     @timeit m.to "calc_dynamics_tend" calc_dynamics_tend!(m.fields[i], m.grid[i], m.to)
     @timeit m.to "calc_nudge_tend"    calc_nudge_tend!(m.fields[i], m.grid[i], m.multidomain[i])
-    @timeit m.to "calc_pressure_tend" calc_pressure_tend!(m.fields[i], m.grid[i], m.timeloop[i], m.pressure[i], m.parallel, m.to)
+    @timeit m.to "calc_pressure_tend" calc_pressure_tend!(m.fields[i], m.grid[i], m.timeloop[i], m.pressure[i], m.boundary[i], m.parallel, m.to)
 end
 
 
