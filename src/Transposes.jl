@@ -330,3 +330,65 @@ function transpose_xz!(data_out, data, sendbuf, recvbuf, g::Grid, p::ParallelDis
     end
 end
 
+
+function transpose_zx_h!(data_out, data, sendbuf, recvbuf, g::Grid, p::ParallelDistributed)
+    ## Check whether data and data_out point to the same memory
+    if data_out === data
+        return
+    elseif size(data_out) == size(data)
+        @tturbo data_out[:, :, :] .= data
+    else
+        # Prepare the buffer
+        sendbufs = []; recvbufs = []
+        for i in 1:p.npx
+            ks = (i-1)*g.kblock + 1; ke = (i == p.npx) ? i*g.kblock + 1 : i*g.kblock
+            push!(sendbufs, @view sendbuf[:, :, ks:ke])
+        end
+
+        for i in 1:p.npx
+            is = (i-1)*g.imax + 1; ie = i*g.imax
+            push!(recvbufs, @view recvbuf[is:ie, :, :])
+        end
+
+        # Load the buffer.
+        for i in 1:p.npx
+            ks = (i-1)*g.kblock + 1; ke = (i == p.npx) ? i*g.kblock + 1 : i*g.kblock
+            data_view = @view data[:, :, ks:ke]
+            @tturbo sendbufs[i] .= data_view
+        end
+
+        # Communicate data using point-to-point.
+        reqs = Vector{MPI.Request}(undef, 2*p.npx)
+
+        for i in 1:p.npx
+            reqs[i] = MPI.Irecv!(recvbufs[i], i-1, 1, p.commx)
+        end
+
+        for i in 1:p.npx
+            reqs[i+p.npx] = MPI.Isend(sendbufs[i], i-1, 1, p.commx)
+        end
+
+        MPI.Waitall!(reqs)
+
+        # Unload the buffer.
+        for i in 1:p.npx
+            is = (i-1)*g.imax + 1; ie = i*g.imax
+            @tturbo data_out[is:ie, :, :] .= recvbufs[i]
+        end
+    end
+end
+
+
+## Function variants that allocate own buffers.
+function transpose_zx!(data_out, data, g::Grid, p::Parallel)
+    sendbuf = similar(data)
+    recvbuf = similar(data_out)
+    transpose_zx!(data_out, data, sendbuf, recvbuf, g, p)
+end
+
+
+function transpose_zx_h!(data_out, data, g::Grid, p::Parallel)
+    sendbuf = similar(data)
+    recvbuf = similar(data_out)
+    transpose_zx_h!(data_out, data, sendbuf, recvbuf, g, p)
+end

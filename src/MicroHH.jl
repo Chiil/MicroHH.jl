@@ -235,10 +235,34 @@ function save_domain(m::Model, i, p::ParallelDistributed)
 
     map(items_to_save) do item
         name, a, ktot = item
+
+        # Remove the ghost cells.
         a_nogc = a[g.is:g.ie, g.js:g.je, g.ks:g.ks+ktot-1]
+
+        # Create the dataset for the entire field.
         aid = create_dataset(fid, name, datatype(a_nogc), dataspace((g.itot, g.jtot, ktot)), dxpl_mpio=HDF5.H5FD_MPIO_COLLECTIVE)
-        aid[is:ie, js:je, :] = a_nogc[:, :, :]
+
+        # Transpose the data to xz format to have far more contiguous data. This prevents having to use chunking and keeps files viewable.
+        if ktot == g.ktoth
+            a_nogc_t = (p.id_x == p.npx-1) ? Array{eltype(a), 3}(undef, g.itot, g.jmax, g.kblock+1) : Array{eltype(a), 3}(undef, g.itot, g.jmax, g.kblock)
+            transpose_zx_h!(a_nogc_t, a_nogc, g, p)
+        else
+            a_nogc_t = reshape(a_nogc, (g.itot, g.jmax, g.kblock))
+            transpose_zx!(a_nogc_t, a_nogc, g, p)
+        end
+
+        # Save the data to disk.
+        # ks = p.id_x*g.kblock + 1; ke = (p.id_x == p.npx-1) ? (p.id_x+1)*g.kblock + 1 : (p.id_x+1)*g.kblock
+        ks = p.id_x*g.kblock + 1; ke = (p.id_x+1)*g.kblock
+        aid[:, js:je, ks:ke] = a_nogc_t[:, :, 1:g.kblock]
+
+        # Save the top slice using the nontransposed field.
+        if ktot == g.ktoth
+            aid[is:ie, js:je, end] = a_nogc[:, :, end]
+        end
+
         close(aid)
+
     end
 
     items_to_save = [
