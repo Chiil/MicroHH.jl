@@ -242,7 +242,7 @@ function save_domain(m::Model, i, p::ParallelDistributed)
         # Create the dataset for the entire field.
         aid = create_dataset(fid, name, datatype(a_nogc), dataspace((g.itot, g.jtot, ktot)), dxpl_mpio=HDF5.H5FD_MPIO_COLLECTIVE)
 
-        # Save the top slice using the nontransposed field.
+        # Save the top slice before running transposes.
         if ktot == g.ktoth
             aid[is:ie, js:je, ktot] = a_nogc[:, :, ktot]
         end
@@ -250,7 +250,8 @@ function save_domain(m::Model, i, p::ParallelDistributed)
         # Take a view without top.
         a_nogc_notop = @view a_nogc[:, :, 1:g.ktot]
 
-        # Transpose the data to xz format to have far more contiguous data. This prevents having to use chunking and keeps files viewable.
+        # Transpose the data to xz format to have far more contiguous data.
+        # This prevents having to use chunking and keeps files viewable.
         a_nogc_t = reshape(a_nogc_notop, (g.itot, g.jmax, g.kblock))
         transpose_zx!(a_nogc_t, a_nogc_notop, g, p)
 
