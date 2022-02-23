@@ -22,6 +22,7 @@ mutable struct Timeloop
     itime::Int64
 
     rkstep::Int64
+    iter::Int64
 end
 
 
@@ -41,11 +42,12 @@ function Timeloop(d::Dict)
     itime = istart_time
 
     rkstep = 1
+    iter = istart_time ÷ idt
 
     Timeloop(
         start_time, end_time, save_time, check_time, dt, time,
         istart_time, iend_time, isave_time, icheck_time, idt, itime,
-        rkstep)
+        rkstep, iter)
 end
 
 
@@ -73,7 +75,7 @@ function integrate_time!(
     f::Fields, g::Grid, t::Timeloop)
 
     # Make sure the dt is in Float32 if the array is.
-    dt = convert(typeof(f.u[1]), t.dt)
+    dt = convert(eltype(f.u), t.dt)
 
     integrate_time_kernel!(
         f.u, f.u_tend,
@@ -104,6 +106,7 @@ function step_time!(t::Timeloop)
         t.rkstep = 1
         t.itime += t.idt
         t.time = convert(Float64, t.itime) / ifactor
+        t.iter += 1
     end
 end
 
@@ -112,6 +115,7 @@ function get_sub_dt(t::Timeloop)
     c_b = [1//3, 15//16, 8//15];
     return c_b[t.rkstep]*t.dt;
 end
+
 
 function is_in_progress(t::Timeloop)
     return t.itime < t.iend_time
