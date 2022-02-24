@@ -1,4 +1,9 @@
-## Stats functions.
+module Stats
+
+export open_stats, add_dimension!, add_field!, add_record!, add_time_record!
+using HDF5
+
+
 function open_stats(filename::String)
     fid = h5open(filename, "cw")
     return fid
@@ -108,3 +113,5 @@ end
 
 add_time_record!(fid, time, iter) = add_record!(fid, time, "time", (), iter)
 
+
+end
