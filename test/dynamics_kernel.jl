@@ -11,18 +11,18 @@ float_type = Float32
 ## CPU dynamics kernel.
 function dynamics_w_kernel!(
     wt, u, v, w, s,
-    visc,
+    visc, alpha,
     dxi, dyi, dzi, dzhi,
     is, ie, js, je, ks, ke)
 
-    alpha = 9.81/300;
-
     @fast3d begin
-        @fd (wt, u, v, w, s) wt += (
-            - gradx(interpz(u) * interpx(w)) + visc * (gradx(gradx(w)))
-            - grady(interpz(v) * interpy(w)) + visc * (grady(grady(w)))
-            - gradz(interpz(w) * interpz(w)) + visc * (gradz(gradz(w)))
-            + alpha*interpz(s) )
+        @fd (wt[i, j, kh], u[ih, j, k], v[i, jh, k], w[i, j, kh], s[i, j, k]) begin
+            wt += (
+                - gradx(interpz(u) * interpx(w)) + visc * (gradx(gradx(w)))
+                - grady(interpz(v) * interpy(w)) + visc * (grady(grady(w)))
+                - gradz(interpz(w) * interpz(w)) + visc * (gradz(gradz(w)))
+                + alpha*interpz(s) )
+        end
     end
 end
 
@@ -44,12 +44,13 @@ dyi = rand(float_type)
 dzi = rand(float_type, kcells)
 dzhi = rand(float_type, kcells)
 visc = convert(float_type, 1)
+alpha = convert(float_type, 9.81/300)
 
 
 ## Run CPU kernel
 @btime dynamics_w_kernel!(
     $wt, $u, $v, $w, $s,
-    $visc,
+    $visc, $alpha,
     $dxi, $dyi, $dzi, $dzhi,
     $is, $ie, $js, $je, $ks, $ke)
 
