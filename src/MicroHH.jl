@@ -5,6 +5,10 @@ module MicroHH
 export Model
 export prepare_model!, step_model!, save_model, load_model!, output_timer_model!
 
+# CvH: I export the stats here, but I would like to export the stats as a module.
+# Not sure yet how to do that properly.
+export open_stats, add_dimension!, add_field!, add_record!, add_time_record!
+
 
 ## Load packages.
 const use_mpi = Ref{Bool}(false)
@@ -30,6 +34,7 @@ include("Pressure.jl")
 include("Transposes.jl")
 include("Diagnostics.jl")
 include("MultiDomain.jl")
+include("Stats.jl")
 
 
 ## Global model data.
