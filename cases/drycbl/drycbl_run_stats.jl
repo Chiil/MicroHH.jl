@@ -29,6 +29,14 @@ let
     close(fid)
 end
 
+let
+    fid = open_stats("drycbl_cross.h5")
+    g = m.grid[1]
+    add_dimension!(fid, "x", g.x[g.is:g.ie])
+    add_dimension!(fid, "y", g.y[g.js:g.je])
+    close(fid)
+end
+
 function do_stats(m::Model)
     g = m.grid[1]; f = m.fields[1]; t = m.timeloop[1]
     fid = open_stats("drycbl_stats.h5")
@@ -59,16 +67,37 @@ function do_stats(m::Model)
     close(fid)
 end
 
+function do_cross(m::Model)
+    g = m.grid[1]; f = m.fields[1]; t = m.timeloop[1]
+    fid = open_stats("drycbl_cross.h5")
+
+    # 1. Add the time
+    add_time_record!(fid, m.timeloop[1].time, t.iter)
+
+    # 2. Add desired cross sctions.
+    s = @view f.s[g.is:g.ie, g.js:g.je, g.ks]
+    add_record!(fid, s .- mean(s), "s_xy", ("x", "y"), t.iter)
+
+    close(fid)
+end
+
 
 ## Run the model.
 in_progress = prepare_model!(m)
 do_stats(m)
+do_cross(m)
 
 while in_progress
     global in_progress = step_model!(m)
     # @profile global in_progress = step_model!(m)
 
-    do_stats(m)
+    if mod(round(Int, m.timeloop[1].time), 60) == 0
+        do_stats(m)
+    end
+
+    if mod(round(Int, m.timeloop[1].time), 10) == 0
+        do_cross(m)
+    end
 end
 
 
