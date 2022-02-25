@@ -72,7 +72,7 @@ function add_record!(fid, a, a_name, dims, iter)
     if !haskey(fid, a_name)
         # Create variable.
         @info "Variable $a_name does not exist, incrementing size and adding variable"
-        aid = create_dataset(fid, a_name, datatype(eltype(a)), ((size(a)..., 1,), (size(a)..., -1,)), chunk=(size(a)..., 1,))
+        aid = create_dataset(fid, a_name, datatype(eltype(a)), dataspace((size(a)..., 1,), max_dims=(size(a)..., -1,)), chunk=(size(a)..., 1,))
 
         if length(dims) == 0
             HDF5.h5ds_set_scale(fid["time"], "time")
