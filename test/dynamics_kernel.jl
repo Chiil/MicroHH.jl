@@ -1,9 +1,7 @@
 ## Packages and settings.
-include("../src/StencilBuilder.jl")
-
 using BenchmarkTools
 using LoopVectorization
-using .StencilBuilder
+using MicroHH.StencilBuilder
 
 float_type = Float32
 
