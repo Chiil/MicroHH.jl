@@ -6,7 +6,7 @@ using MicroHH.StencilBuilder
 float_type = Float32
 
 
-## CPU dynamics kernel.
+## Dynamics kernel with all processes combined.
 function dynamics_w_kernel!(
     wt, u, v, w, s,
     visc, alpha,
@@ -20,6 +20,53 @@ function dynamics_w_kernel!(
                 - grady(interpz(v) * interpy(w)) + visc * (grady(grady(w)))
                 - gradz(interpz(w) * interpz(w)) + visc * (gradz(gradz(w)))
                 + alpha*interpz(s) )
+        end
+    end
+end
+
+
+## Dynamics kernel split per process.
+function dynamics_w_kernel_1!(
+    wt, u, v, w,
+    dxi, dyi, dzi,
+    is, ie, js, je, ks, ke)
+
+    @fast3d begin
+        @fd (wt[i, j, kh], u[ih, j, k], v[i, jh, k], w[i, j, kh]) begin
+            wt += (
+                - gradx(interpz(u) * interpx(w))
+                - grady(interpz(v) * interpy(w))
+                - gradz(interpz(w) * interpz(w)) )
+        end
+    end
+end
+
+
+function dynamics_w_kernel_2!(
+    wt, w,
+    visc,
+    dxi, dyi, dzi, dzhi,
+    is, ie, js, je, ks, ke)
+
+    @fast3d begin
+        @fd (wt[i, j, kh], w[i, j, kh]) begin
+            wt += (
+                + visc * (gradx(gradx(w)))
+                + visc * (grady(grady(w)))
+                + visc * (gradz(gradz(w))) )
+        end
+    end
+end
+
+
+function dynamics_w_kernel_3!(
+    wt, s,
+    alpha,
+    is, ie, js, je, ks, ke)
+
+    @fast3d begin
+        @fd (wt[i, j, kh], s[i, j, k]) begin
+            wt += alpha*interpz(s)
         end
     end
 end
@@ -45,10 +92,49 @@ visc = convert(float_type, 1)
 alpha = convert(float_type, 9.81/300)
 
 
-## Run CPU kernel
+## Benchmark kernels.
 @btime dynamics_w_kernel!(
     $wt, $u, $v, $w, $s,
     $visc, $alpha,
     $dxi, $dyi, $dzi, $dzhi,
     $is, $ie, $js, $je, $ks, $ke)
 
+@btime begin
+    dynamics_w_kernel_1!(
+        $wt, $u, $v, $w,
+        $dxi, $dyi, $dzi,
+        $is, $ie, $js, $je, $ks, $ke)
+
+    dynamics_w_kernel_2!(
+        $wt, $w,
+        $visc,
+        $dxi, $dyi, $dzi, $dzhi,
+        $is, $ie, $js, $je, $ks, $ke)
+
+    dynamics_w_kernel_3!(
+        $wt, $s,
+        $alpha,
+        $is, $ie, $js, $je, $ks, $ke)
+end
+
+@btime begin
+    dynamics_w_kernel_1!(
+        $wt, $u, $v, $w,
+        $dxi, $dyi, $dzi,
+        $is, $ie, $js, $je, $ks, $ke)
+end
+
+@btime begin
+    dynamics_w_kernel_2!(
+        $wt, $w,
+        $visc,
+        $dxi, $dyi, $dzi, $dzhi,
+        $is, $ie, $js, $je, $ks, $ke)
+end
+
+@btime begin
+    dynamics_w_kernel_3!(
+        $wt, $s,
+        $alpha,
+        $is, $ie, $js, $je, $ks, $ke)
+end
