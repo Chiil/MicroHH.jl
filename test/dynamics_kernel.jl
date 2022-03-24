@@ -28,7 +28,7 @@ end
 ## Dynamics kernel split per process.
 function dynamics_w_kernel_1!(
     wt, u, v, w,
-    dxi, dyi, dzi,
+    dxi, dyi, dzhi,
     is, ie, js, je, ks, ke)
 
     @fast3d begin
@@ -102,7 +102,7 @@ alpha = convert(float_type, 9.81/300)
 @btime begin
     dynamics_w_kernel_1!(
         $wt, $u, $v, $w,
-        $dxi, $dyi, $dzi,
+        $dxi, $dyi, $dzhi,
         $is, $ie, $js, $je, $ks, $ke)
 
     dynamics_w_kernel_2!(
@@ -120,7 +120,7 @@ end
 @btime begin
     dynamics_w_kernel_1!(
         $wt, $u, $v, $w,
-        $dxi, $dyi, $dzi,
+        $dxi, $dyi, $dzhi,
         $is, $ie, $js, $je, $ks, $ke)
 end
 
