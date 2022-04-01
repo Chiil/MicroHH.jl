@@ -15,11 +15,13 @@ function dynamics_w_kernel_cpu!(
     is, ie, js, je, ks, ke)
 
     @fast3d begin
-        @fd (wt[i, j, kh], u[ih, j, k], v[i, jh, k], w[i, j, kh], s[i, j, k]) wt += (
-            - gradx(interpz(u) * interpx(w)) + visc * (gradx(gradx(w)))
-            - grady(interpz(v) * interpy(w)) + visc * (grady(grady(w)))
-            - gradz(interpz(w) * interpz(w)) + visc * (gradz(gradz(w)))
-            + alpha*interpz(s) )
+        @fd (wt[i, j, kh], u[ih, j, k], v[i, jh, k], w[i, j, kh], s[i, j, k]) begin
+            wt += (
+                - gradx(interpz(u) * interpx(w)) + visc * (gradx(gradx(w)))
+                - grady(interpz(v) * interpy(w)) + visc * (grady(grady(w)))
+                - gradz(interpz(w) * interpz(w)) + visc * (gradz(gradz(w)))
+                + alpha*interpz(s) )
+        end
     end
 end
 
@@ -43,11 +45,13 @@ function dynamics_w_kernel_gpu!(
     @calc_ijk(is, js, ks)
 
     if i <= ie && j <= je && k <= ke
-        @inbounds @fd (wt[i, j, kh], u[ih, j, k], v[i, jh, k], w[i, j, kh], s[i, j, k]) wt += (
-            - gradx(interpz(u) * interpx(w)) + visc * (gradx(gradx(w)))
-            - grady(interpz(v) * interpy(w)) + visc * (grady(grady(w)))
-            - gradz(interpz(w) * interpz(w)) + visc * (gradz(gradz(w)))
-            + alpha*interpz(s) )
+        @inbounds @fd (wt[i, j, kh], u[ih, j, k], v[i, jh, k], w[i, j, kh], s[i, j, k]) begin
+            wt += (
+                - gradx(interpz(u) * interpx(w)) + visc * (gradx(gradx(w)))
+                - grady(interpz(v) * interpy(w)) + visc * (grady(grady(w)))
+                - gradz(interpz(w) * interpz(w)) + visc * (gradz(gradz(w)))
+                + alpha*interpz(s) )
+        end
     end
 
     return
