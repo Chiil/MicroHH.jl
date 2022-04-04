@@ -3,6 +3,7 @@ include("../src/StencilBuilder.jl")
 
 using BenchmarkTools
 using LoopVectorization
+using Tullio
 using CUDA
 using .StencilBuilder
 
@@ -124,6 +125,22 @@ function benchmark_gpu(
     end
 end
 
+function benchmark_tullio(
+    wt, u, v, w, s,
+    visc, alpha,
+    dxi, dyi, dzi, dzhi,
+    is, ie, js, je, ks, ke)
+
+    @fd_tullio (wt[i, j, kh], u[ih, j, k], v[i, jh, k], w[i, j, kh], s[i, j, k]) begin
+        wt += (
+            - gradx(interpz(u) * interpx(w)) + visc * (gradx(gradx(w)))
+            - grady(interpz(v) * interpy(w)) + visc * (grady(grady(w)))
+            - gradz(interpz(w) * interpz(w)) + visc * (gradz(gradz(w)))
+            + alpha*interpz(s) )
+    end
+
+end
+
 
 ## Correctness test
 benchmark_cpu(
@@ -132,6 +149,7 @@ benchmark_cpu(
     dxi, dyi, dzi, dzhi,
     is, ie, js, je, ks, ke)
 
+# benchmark_gpu(
 benchmark_gpu(
     wt_gpu, u_gpu, v_gpu, w_gpu, s_gpu,
     visc, alpha,
@@ -144,14 +162,23 @@ println("Are wt and wt_gpu (exactly, approximately) equal? ", isequal(wt, wt_gpu
 
 ## Benchmarks
 @btime benchmark_cpu(
-    wt, u, v, w, s,
-    visc, alpha,
-    dxi, dyi, dzi, dzhi,
-    is, ie, js, je, ks, ke)
+    $wt, $u, $v, $w, $s,
+    $visc, $alpha,
+    $dxi, $dyi, $dzi, $dzhi,
+    $is, $ie, $js, $je, $ks, $ke)
 
 @btime benchmark_gpu(
-    wt_gpu, u_gpu, v_gpu, w_gpu, s_gpu,
-    visc, alpha,
-    dxi, dyi, dzi_gpu, dzhi_gpu,
-    is, ie, js, je, ks, ke)
+    $wt_gpu, $u_gpu, $v_gpu, $w_gpu, $s_gpu,
+    $visc, $alpha,
+    $dxi, $dyi, $dzi_gpu, $dzhi_gpu,
+    $is, $ie, $js, $je, $ks, $ke)
 
+@btime benchmark_tullio(
+    # wt_gpu, u_gpu, v_gpu, w_gpu, s_gpu,
+    # visc, alpha,
+    # dxi, dyi, dzi_gpu, dzhi_gpu,
+    # is, ie, js, je, ks, ke)
+    $wt, $u, $v, $w, $s,
+    $visc, $alpha,
+    $dxi, $dyi, $dzi, $dzhi,
+    $is, $ie, $js, $je, $ks, $ke)
