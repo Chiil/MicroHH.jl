@@ -25,7 +25,7 @@ let
     add_dimension!(fid, "x", g.x[g.is:g.ie])
     add_dimension!(fid, "z", g.z[g.ks:g.ke])
     add_dimension!(fid, "xh", g.xh[g.is:g.ie])
-    add_dimension!(fid, "zh", g.zh[g.ks:g.ke])
+    add_dimension!(fid, "zh", g.zh[g.ks:g.keh])
     close(fid)
 end
 

@@ -7,16 +7,22 @@ using Printf
 pygui(false)
 
 
+## Loading settings.
+include("drycbl_settings.jl")
+
+
 ## Read the data.
+zsize = settings[1]["grid"]["zsize"]
+println(zsize)
 x = h5read("drycbl_cross.h5", "x")[:]
 z = h5read("drycbl_cross.h5", "z")[:]
-xh = [ h5read("drycbl_cross.h5", "xh")[:]; 2.]
-zh = [ h5read("drycbl_cross.h5", "zh")[:]; 2.]
+xh = [ h5read("drycbl_cross.h5", "xh")[:]; zsize ]
+zh = h5read("drycbl_cross.h5", "zh")[:]
 s = h5read("drycbl_cross.h5", "s_xz")
 
 
 ## Surface temperature figure.
-for i in 50:size(s, 3)
+for i in 1:size(s, 3)
     println("Processing frame $i")
     s_prime = s[:, :, i] .- mean(s[:, :, i], dims=1)
 
