@@ -21,6 +21,7 @@ s = h5read("drycbl_cross.h5", "s_xz")
 
 
 ## Surface temperature figure.
+mkpath("figs")
 for i in 1:size(s, 3)
     println("Processing frame $i")
     s_prime = s[:, :, i] .- mean(s[:, :, i], dims=1)
