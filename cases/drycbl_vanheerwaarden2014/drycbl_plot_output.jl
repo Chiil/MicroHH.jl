@@ -12,11 +12,10 @@ include("drycbl_settings.jl")
 
 
 ## Read the data.
-zsize = settings[1]["grid"]["zsize"]
-println(zsize)
+xsize = settings[1]["grid"]["xsize"]
 x = h5read("drycbl_cross.h5", "x")[:]
 z = h5read("drycbl_cross.h5", "z")[:]
-xh = [ h5read("drycbl_cross.h5", "xh")[:]; zsize ]
+xh = [ h5read("drycbl_cross.h5", "xh")[:]; xsize ]
 zh = h5read("drycbl_cross.h5", "zh")[:]
 s = h5read("drycbl_cross.h5", "s_xz")
 
