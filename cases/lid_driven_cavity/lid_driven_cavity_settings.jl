@@ -32,8 +32,8 @@ settings_timeloop = Dict(
     "start_time" => 0.,
     "end_time" => 1.,
     "save_time" => 1.,
-    "check_time" => 0.01,
-    "dt" => 0.01)
+    "check_time" => 0.001,
+    "dt" => 0.001)
 
 settings_multidomain = Dict(
     "enable_nudge" => false)

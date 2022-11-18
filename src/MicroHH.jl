@@ -125,13 +125,22 @@ function save_domain(m::Model, i, p::ParallelSerial)
         write(fid, "v", f.v[g.is:g.ie, g.js:g.je, g.ks:g.ke ])
         write(fid, "w", f.w[g.is:g.ie, g.js:g.je, g.ks:g.keh])
         write(fid, "s", f.s[g.is:g.ie, g.js:g.je, g.ks:g.ke ])
+        write(fid, "u_bot", f.u_bot[g.is:g.ie, g.js:g.je])
+        write(fid, "u_top", f.u_top[g.is:g.ie, g.js:g.je])
+        write(fid, "u_gradbot", f.u_gradbot[g.is:g.ie, g.js:g.je])
+        write(fid, "u_gradtop", f.u_gradtop[g.is:g.ie, g.js:g.je])
+        write(fid, "v_bot", f.v_bot[g.is:g.ie, g.js:g.je])
+        write(fid, "v_top", f.v_top[g.is:g.ie, g.js:g.je])
+        write(fid, "v_gradbot", f.v_gradbot[g.is:g.ie, g.js:g.je])
+        write(fid, "v_gradtop", f.v_gradtop[g.is:g.ie, g.js:g.je])
         write(fid, "s_bot", f.s_bot[g.is:g.ie, g.js:g.je])
         write(fid, "s_top", f.s_top[g.is:g.ie, g.js:g.je])
         write(fid, "s_gradbot", f.s_gradbot[g.is:g.ie, g.js:g.je])
         write(fid, "s_gradtop", f.s_gradtop[g.is:g.ie, g.js:g.je])
         write(fid, "s_ref", f.s_ref[g.ks:g.ke])
 
-        # Attach the dimensions. Note the c-indexing.
+        # Attach the dimensions. Note the c-indexing,
+        # zero-based and swapped dim order.
         HDF5.h5ds_attach_scale(fid["u"], fid["xh"], 2)
         HDF5.h5ds_attach_scale(fid["u"], fid["y"], 1)
         HDF5.h5ds_attach_scale(fid["u"], fid["z"], 0)
@@ -147,6 +156,30 @@ function save_domain(m::Model, i, p::ParallelSerial)
         HDF5.h5ds_attach_scale(fid["s"], fid["x"], 2)
         HDF5.h5ds_attach_scale(fid["s"], fid["y"], 1)
         HDF5.h5ds_attach_scale(fid["s"], fid["z"], 0)
+
+        HDF5.h5ds_attach_scale(fid["u_bot"], fid["xh"], 1)
+        HDF5.h5ds_attach_scale(fid["u_bot"], fid["y"], 0)
+
+        HDF5.h5ds_attach_scale(fid["u_top"], fid["xh"], 1)
+        HDF5.h5ds_attach_scale(fid["u_top"], fid["y"], 0)
+
+        HDF5.h5ds_attach_scale(fid["u_gradbot"], fid["xh"], 1)
+        HDF5.h5ds_attach_scale(fid["u_gradbot"], fid["y"], 0)
+
+        HDF5.h5ds_attach_scale(fid["u_gradtop"], fid["xh"], 1)
+        HDF5.h5ds_attach_scale(fid["u_gradtop"], fid["y"], 0)
+
+        HDF5.h5ds_attach_scale(fid["v_bot"], fid["x"], 1)
+        HDF5.h5ds_attach_scale(fid["v_bot"], fid["yh"], 0)
+
+        HDF5.h5ds_attach_scale(fid["v_top"], fid["x"], 1)
+        HDF5.h5ds_attach_scale(fid["v_top"], fid["yh"], 0)
+
+        HDF5.h5ds_attach_scale(fid["v_gradbot"], fid["x"], 1)
+        HDF5.h5ds_attach_scale(fid["v_gradbot"], fid["yh"], 0)
+
+        HDF5.h5ds_attach_scale(fid["v_gradtop"], fid["x"], 1)
+        HDF5.h5ds_attach_scale(fid["v_gradtop"], fid["yh"], 0)
 
         HDF5.h5ds_attach_scale(fid["s_bot"], fid["x"], 1)
         HDF5.h5ds_attach_scale(fid["s_bot"], fid["y"], 0)
@@ -264,6 +297,14 @@ function save_domain(m::Model, i, p::ParallelDistributed)
     end
 
     items_to_save = [
+        ("u_bot", f.u_bot),
+        ("u_top", f.u_top),
+        ("u_gradbot", f.u_gradbot),
+        ("u_gradtop", f.u_gradtop),
+        ("v_bot", f.v_bot),
+        ("v_top", f.v_top),
+        ("v_gradbot", f.v_gradbot),
+        ("v_gradtop", f.v_gradtop),
         ("s_bot", f.s_bot),
         ("s_top", f.s_top),
         ("s_gradbot", f.s_gradbot),
@@ -298,6 +339,14 @@ function save_domain(m::Model, i, p::ParallelDistributed)
     end
 
     vars_2d = [
+        ("u_bot", "xh", "y"),
+        ("u_top", "xh", "y"),
+        ("u_gradbot", "xh", "y"),
+        ("u_gradtop", "xh", "y"),
+        ("v_bot", "x", "yh"),
+        ("v_top", "x", "yh"),
+        ("v_gradbot", "x", "yh"),
+        ("v_gradtop", "x", "yh"),
         ("s_bot", "x", "y"),
         ("s_top", "x", "y"),
         ("s_gradbot", "x", "y"),
@@ -336,6 +385,14 @@ function load_domain!(m::Model, i, p::ParallelSerial)
         f.v[g.is:g.ie, g.js:g.je, g.ks:g.ke ] = read(fid, "v")
         f.w[g.is:g.ie, g.js:g.je, g.ks:g.keh] = read(fid, "w")
         f.s[g.is:g.ie, g.js:g.je, g.ks:g.ke ] = read(fid, "s")
+        f.u_bot[g.is:g.ie, g.js:g.je] = read(fid, "u_bot")
+        f.u_top[g.is:g.ie, g.js:g.je] = read(fid, "u_top")
+        f.u_gradbot[g.is:g.ie, g.js:g.je] = read(fid, "u_gradbot")
+        f.u_gradtop[g.is:g.ie, g.js:g.je] = read(fid, "u_gradtop")
+        f.v_bot[g.is:g.ie, g.js:g.je] = read(fid, "v_bot")
+        f.v_top[g.is:g.ie, g.js:g.je] = read(fid, "v_top")
+        f.v_gradbot[g.is:g.ie, g.js:g.je] = read(fid, "v_gradbot")
+        f.v_gradtop[g.is:g.ie, g.js:g.je] = read(fid, "v_gradtop")
         f.s_bot[g.is:g.ie, g.js:g.je] = read(fid, "s_bot")
         f.s_top[g.is:g.ie, g.js:g.je] = read(fid, "s_top")
         f.s_gradbot[g.is:g.ie, g.js:g.je] = read(fid, "s_gradbot")
@@ -386,6 +443,38 @@ function load_domain!(m::Model, i, p::ParallelDistributed)
     s_id = open_dataset(fid, "s", dapl, dxpl)
     f.s[g.is:g.ie, g.js:g.je, g.ks:g.ke ] = s_id[is:ie, js:je, :]
     close(s_id)
+
+    u_bot_id = open_dataset(fid, "u_bot", dapl, dxpl)
+    f.u_bot[g.is:g.ie, g.js:g.je] = u_bot_id[is:ie, js:je]
+    close(s_bot_id)
+
+    u_top_id = open_dataset(fid, "u_top", dapl, dxpl)
+    f.u_top[g.is:g.ie, g.js:g.je] = u_top_id[is:ie, js:je]
+    close(u_top_id)
+
+    u_gradbot_id = open_dataset(fid, "u_gradbot", dapl, dxpl)
+    f.u_gradbot[g.is:g.ie, g.js:g.je] = u_gradbot_id[is:ie, js:je]
+    close(u_gradbot_id)
+
+    u_gradtop_id = open_dataset(fid, "u_gradtop", dapl, dxpl)
+    f.u_gradtop[g.is:g.ie, g.js:g.je] = u_gradtop_id[is:ie, js:je]
+    close(u_gradtop_id)
+
+    v_bot_id = open_dataset(fid, "v_bot", dapl, dxpl)
+    f.v_bot[g.is:g.ie, g.js:g.je] = v_bot_id[is:ie, js:je]
+    close(v_bot_id)
+
+    v_top_id = open_dataset(fid, "v_top", dapl, dxpl)
+    f.v_top[g.is:g.ie, g.js:g.je] = v_top_id[is:ie, js:je]
+    close(v_top_id)
+
+    v_gradbot_id = open_dataset(fid, "v_gradbot", dapl, dxpl)
+    f.v_gradbot[g.is:g.ie, g.js:g.je] = v_gradbot_id[is:ie, js:je]
+    close(v_gradbot_id)
+
+    v_gradtop_id = open_dataset(fid, "v_gradtop", dapl, dxpl)
+    f.v_gradtop[g.is:g.ie, g.js:g.je] = v_gradtop_id[is:ie, js:je]
+    close(v_gradtop_id)
 
     s_bot_id = open_dataset(fid, "s_bot", dapl, dxpl)
     f.s_bot[g.is:g.ie, g.js:g.je] = s_bot_id[is:ie, js:je]
