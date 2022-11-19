@@ -10,16 +10,16 @@ end
 float_type = Float64
 
 settings_grid = Dict{String, Any}(
-    "itot" => 256,
+    "itot" => 128,
     "jtot" => 1,
-    "ktot" => 256,
+    "ktot" => 128,
 
     "xsize" => 1.,
     "ysize" => 1. / 256.,
     "zsize" => 1.)
 
 settings_fields = Dict(
-    "visc" => 1. / 400.,
+    "visc" => 1. / 100.,
     "alpha" => 0.)
 
 settings_boundary = Dict(
