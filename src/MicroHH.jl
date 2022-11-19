@@ -560,7 +560,7 @@ function check_model(m::Model)
     m.last_measured_time[] = time_ns()
 
     # First, print the model time and the wall clock since last sample.
-    status_string = @sprintf("(%11.2f) Time = %8.3f",
+    status_string = @sprintf("(%11.3f) Time = %8.3f",
         m.timeloop[1].time,
         (m.last_measured_time[] - old_time) * 1e-9)
     if m.parallel.id == 0
