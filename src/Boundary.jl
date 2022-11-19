@@ -206,6 +206,10 @@ function set_boundary!(f::Fields, g::Grid, b::Boundary, p::Parallel)
     # CvH TMP, set the walls to zero velocity
     f.u[g.is  , :, :] .= 0.
     f.u[g.ie+1, :, :] .= 0.
+    f.w[g.is-1, :, :] .= f.w[g.is, :, :]
+    f.w[g.ie+1, :, :] .= f.w[g.ie, :, :]
+    f.s[g.is-1, :, :] .= f.s[g.is, :, :]
+    f.s[g.ie+1, :, :] .= f.s[g.ie, :, :]
     # CvH END TMP
 
     # Cyclic BCs of boundary f.
@@ -235,6 +239,12 @@ function set_boundary!(f::Fields, g::Grid, b::Boundary, p::Parallel)
         f.s_top, g.is, g.ie, g.js, g.je, g.igc, g.jgc, b.buffers, p)
     boundary_cyclic_kernel!(
         f.s_gradtop, g.is, g.ie, g.js, g.je, g.igc, g.jgc, b.buffers, p)
+
+    # CvH TMP, set the walls to zero velocity
+    f.s_gradbot[g.is-1, :, :] .= f.s_gradbot[g.is, :, :]
+    f.s_gradbot[g.ie+1, :, :] .= f.s_gradbot[g.ie, :, :]
+    # CvH END TMP
+
 
     # Bottom BC.
     set_ghost_cells_bot_kernel!(
