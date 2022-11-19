@@ -25,10 +25,10 @@ function Pressure(g::Grid, pp::Parallel, TF)
 
     # We set the type of rand here explictly to trigger the right precision in FFTW
     tmp = rand(TF, g.itot, g.jmax, g.kblock)
-    fft_plan_fi = FFTW.plan_r2r!(tmp, FFTW.R2HC, 1, flags=FFTW.MEASURE)
-    fft_plan_bi = FFTW.plan_r2r!(tmp, FFTW.HC2R, 1, flags=FFTW.MEASURE)
-    # fft_plan_fi = FFTW.plan_r2r!(tmp, FFTW.REDFT10, 1, flags=FFTW.MEASURE)
-    # fft_plan_bi = FFTW.plan_r2r!(tmp, FFTW.REDFT01, 1, flags=FFTW.MEASURE)
+    # fft_plan_fi = FFTW.plan_r2r!(tmp, FFTW.R2HC, 1, flags=FFTW.MEASURE)
+    # fft_plan_bi = FFTW.plan_r2r!(tmp, FFTW.HC2R, 1, flags=FFTW.MEASURE)
+    fft_plan_fi = FFTW.plan_r2r!(tmp, FFTW.REDFT10, 1, flags=FFTW.MEASURE)
+    fft_plan_bi = FFTW.plan_r2r!(tmp, FFTW.REDFT01, 1, flags=FFTW.MEASURE)
 
     tmp = rand(TF, g.iblock, g.jtot, g.kblock)
     fft_plan_fj = FFTW.plan_r2r!(tmp, FFTW.R2HC, 2, flags=FFTW.MEASURE)
@@ -50,14 +50,19 @@ function Pressure(g::Grid, pp::Parallel, TF)
         bmatj[j+1] = bmatj[g.jtot-j+1];
     end
 
-    for i in 0:g.itot÷2
-        bmati[i+1] = 2 * (cos(2pi*i/g.itot) - 1) * dxidxi;
-        # bmati[i+1] = 2 * (cos(pi*i/g.itot) - 1) * dxidxi;
-    end
+    # for i in 0:g.itot÷2
+    #     bmati[i+1] = 2 * (cos(2pi*i/g.itot) - 1) * dxidxi;
+    # end
 
-    for i in g.itot÷2+1:g.itot-1
-        bmati[i+1] = bmati[g.itot-i+1];
+    # for i in g.itot÷2+1:g.itot-1
+    #     bmati[i+1] = bmati[g.itot-i+1];
+    # end
+
+    # CvH TMP
+    for i in 0:g.itot-1
+        bmati[i+1] = 2 * (cos(pi*i/g.itot) - 1) * dxidxi;
     end
+    # CvH END TMP
 
     for k in 1:g.ktot
         a[k] = g.dz[k+g.kgc] * g.dzhi[k+g.kgc  ];
@@ -253,9 +258,9 @@ function calc_pressure_tend!(
     @timeit to "transpose_yx" transpose_yx!(p_fft_tmp, p_fft_tmp2, p.sendbuf, p.recvbuf, g, pp)
 
     @timeit to "fft_backward_i" p_nogc_x = p.fft_backward_i * p_fft_tmp
-    @tturbo p_nogc_x ./= (g.itot*g.jtot)
+    # @tturbo p_nogc_x ./= (g.itot*g.jtot)
     # CvH TMP
-    # @tturbo p_nogc_x ./= (2*g.itot*g.jtot)
+    @tturbo p_nogc_x ./= (2*g.itot*g.jtot)
     # CvH END TMP
 
     @timeit to "transpose_xz" transpose_xz!(p.p_nogc, p_nogc_x, p.sendbuf, p.recvbuf, g, pp)
@@ -286,4 +291,9 @@ function calc_pressure_tend!(
         f.p,
         g.dxi, g.dyi, g.dzhi,
         g.is, g.ie, g.js, g.je, g.ks, g.ke)
+
+    # CvH TMP
+    f.u_tend[g.is  , :, :] .= 0
+    f.u_tend[g.ie+1, :, :] .= 0
+    # CvH END TMP
 end
