@@ -196,10 +196,10 @@ function calc_pressure_tend!(
         f.v_tend, g.is, g.ie, g.js, g.je, g.igc, g.jgc, b.buffers, pp)
 
     # CvH TMP set side bcs
-    # f.u[g.is  , :, :] .= 0
-    # f.u[g.ie+1, :, :] .= 0
-    # f.u_tend[g.is  , :, :] .= 0
-    # f.u_tend[g.ie+1, :, :] .= 0
+    f.u[g.is  , :, :] .= 0
+    f.u[g.ie+1, :, :] .= 0
+    f.u_tend[g.is  , :, :] .= 0
+    f.u_tend[g.ie+1, :, :] .= 0
     # CvH END TMP
 
     # Set the boundaries of wtend to zero.
@@ -254,7 +254,9 @@ function calc_pressure_tend!(
 
     @timeit to "fft_backward_i" p_nogc_x = p.fft_backward_i * p_fft_tmp
     @tturbo p_nogc_x ./= (g.itot*g.jtot)
+    # CvH TMP
     # @tturbo p_nogc_x ./= (2*g.itot*g.jtot)
+    # CvH END TMP
 
     @timeit to "transpose_xz" transpose_xz!(p.p_nogc, p_nogc_x, p.sendbuf, p.recvbuf, g, pp)
 
@@ -275,8 +277,8 @@ function calc_pressure_tend!(
         f.p, g.is, g.ie, g.js, g.je, g.igc, g.jgc, b.buffers, pp)
 
     # CvH TMP
-    # f.p[g.is-1, :, :] .= f.p[g.is, :, :]
-    # f.p[g.ie+1, :, :] .= f.p[g.ie, :, :]
+    f.p[g.is-1, :, :] .= f.p[g.is, :, :]
+    f.p[g.ie+1, :, :] .= f.p[g.ie, :, :]
     # CvH END TMP
 
     @timeit to "output_kernel" output_kernel!(

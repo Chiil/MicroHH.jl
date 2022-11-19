@@ -204,8 +204,8 @@ function set_boundary!(f::Fields, g::Grid, b::Boundary, p::Parallel)
         f.s, g.is, g.ie, g.js, g.je, g.igc, g.jgc, b.buffers, p)
 
     # CvH TMP, set the walls to zero velocity
-    # f.u[g.is  , :, :] .= 0.
-    # f.u[g.ie+1, :, :] .= 0.
+    f.u[g.is  , :, :] .= 0.
+    f.u[g.ie+1, :, :] .= 0.
     # CvH END TMP
 
     # Cyclic BCs of boundary f.
