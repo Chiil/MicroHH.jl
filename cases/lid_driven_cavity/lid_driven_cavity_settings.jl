@@ -30,7 +30,7 @@ settings_boundary = Dict(
 
 settings_timeloop = Dict(
     "start_time" => 0.,
-    "end_time" => 1.,
+    "end_time" => 0.01,
     "save_time" => 1.,
     "check_time" => 0.001,
     "dt" => 0.001)
