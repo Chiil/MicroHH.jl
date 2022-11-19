@@ -7,7 +7,7 @@ end
 
 
 ## Settings.
-float_type = Float32
+float_type = Float64
 
 settings_grid = Dict{String, Any}(
     "itot" => 256,
@@ -30,9 +30,9 @@ settings_boundary = Dict(
 
 settings_timeloop = Dict(
     "start_time" => 0.,
-    "end_time" => 0.01,
+    "end_time" => 10.,
     "save_time" => 1.,
-    "check_time" => 0.001,
+    "check_time" => 0.1,
     "dt" => 0.001)
 
 settings_multidomain = Dict(

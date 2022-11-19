@@ -27,6 +27,8 @@ function Pressure(g::Grid, pp::Parallel, TF)
     tmp = rand(TF, g.itot, g.jmax, g.kblock)
     fft_plan_fi = FFTW.plan_r2r!(tmp, FFTW.R2HC, 1, flags=FFTW.MEASURE)
     fft_plan_bi = FFTW.plan_r2r!(tmp, FFTW.HC2R, 1, flags=FFTW.MEASURE)
+    # fft_plan_fi = FFTW.plan_r2r!(tmp, FFTW.REDFT10, 1, flags=FFTW.MEASURE)
+    # fft_plan_bi = FFTW.plan_r2r!(tmp, FFTW.REDFT01, 1, flags=FFTW.MEASURE)
 
     tmp = rand(TF, g.iblock, g.jtot, g.kblock)
     fft_plan_fj = FFTW.plan_r2r!(tmp, FFTW.R2HC, 2, flags=FFTW.MEASURE)
@@ -50,6 +52,7 @@ function Pressure(g::Grid, pp::Parallel, TF)
 
     for i in 0:g.itot÷2
         bmati[i+1] = 2 * (cos(2pi*i/g.itot) - 1) * dxidxi;
+        # bmati[i+1] = 2 * (cos(pi*i/g.itot) - 1) * dxidxi;
     end
 
     for i in g.itot÷2+1:g.itot-1
@@ -192,6 +195,13 @@ function calc_pressure_tend!(
     @timeit to "boundary_cyclic_kernel" boundary_cyclic_kernel!(
         f.v_tend, g.is, g.ie, g.js, g.je, g.igc, g.jgc, b.buffers, pp)
 
+    # CvH TMP set side bcs
+    # f.u[g.is  , :, :] .= 0
+    # f.u[g.ie+1, :, :] .= 0
+    # f.u_tend[g.is  , :, :] .= 0
+    # f.u_tend[g.ie+1, :, :] .= 0
+    # CvH END TMP
+
     # Set the boundaries of wtend to zero.
     # CvH: Fix this later.
     @timeit to "bot_top_bcs" @tturbo for j in 1:g.jcells
@@ -244,6 +254,7 @@ function calc_pressure_tend!(
 
     @timeit to "fft_backward_i" p_nogc_x = p.fft_backward_i * p_fft_tmp
     @tturbo p_nogc_x ./= (g.itot*g.jtot)
+    # @tturbo p_nogc_x ./= (2*g.itot*g.jtot)
 
     @timeit to "transpose_xz" transpose_xz!(p.p_nogc, p_nogc_x, p.sendbuf, p.recvbuf, g, pp)
 
@@ -262,6 +273,11 @@ function calc_pressure_tend!(
 
     @timeit to "boundary_cyclic_kernel" boundary_cyclic_kernel!(
         f.p, g.is, g.ie, g.js, g.je, g.igc, g.jgc, b.buffers, pp)
+
+    # CvH TMP
+    # f.p[g.is-1, :, :] .= f.p[g.is, :, :]
+    # f.p[g.ie+1, :, :] .= f.p[g.ie, :, :]
+    # CvH END TMP
 
     @timeit to "output_kernel" output_kernel!(
         f.u_tend, f.v_tend, f.w_tend,

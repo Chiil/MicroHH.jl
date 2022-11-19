@@ -27,8 +27,7 @@ u_top = @view f.u_top[g.is:g.ie, g.js:g.je]
 v_bot = @view f.v_bot[g.is:g.ie, g.js:g.je]
 v_top = @view f.v_top[g.is:g.ie, g.js:g.je]
 f.u_bot[:, :] .= 0.
-# f.u_top[:, :] .= 1.
-f.u_top[:, :] .= 0.
+f.u_top[:, :] .= 1.
 f.v_bot[:, :] .= 0.
 f.v_top[:, :] .= 0.
 
