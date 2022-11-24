@@ -9,6 +9,10 @@ struct Grid{TF <: Union{Float32, Float64}}
     ysize::TF
     zsize::TF
 
+    xoffset::TF
+    yoffset::TF
+    zoffset::TF
+
     igc::Int64
     jgc::Int64
     kgc::Int64
@@ -62,6 +66,10 @@ function Grid(d::Dict, p::Parallel, TF)
     ysize = d["ysize"]
     zsize = d["zsize"]
 
+    xoffset = d["xoffset"]
+    yoffset = d["yoffset"]
+    zoffset = d["zoffset"]
+
     z_nogc::Vector{Real} = d["z"]
 
     igc = 1
@@ -94,10 +102,10 @@ function Grid(d::Dict, p::Parallel, TF)
     dxi = 1. / dx
     dyi = 1. / dy
 
-    x = (collect(range(0.5-igc, length=icells)) .+ p.id_x*imax) .* dx
-    y = (collect(range(0.5-jgc, length=jcells)) .+ p.id_y*jmax) .* dy
-    xh = (collect(range(-igc, length=icells)) .+ p.id_x*imax) .* dx
-    yh = (collect(range(-jgc, length=jcells)) .+ p.id_y*jmax) .* dy
+    x = (collect(range(0.5-igc, length=icells)) .+ p.id_x*imax) .* dx .+ xoffset
+    y = (collect(range(0.5-jgc, length=jcells)) .+ p.id_y*jmax) .* dy .+ yoffset
+    xh = (collect(range(-igc, length=icells)) .+ p.id_x*imax) .* dx .+ xoffset
+    yh = (collect(range(-jgc, length=jcells)) .+ p.id_y*jmax) .* dy .+ yoffset
 
     z = zeros(kcells)
     z[ks:ke] = z_nogc[:]
@@ -126,9 +134,13 @@ function Grid(d::Dict, p::Parallel, TF)
 
     dzi = 1. ./ dz[:]
 
+    z[:] .+= zoffset
+    zh[:] .+= zoffset
+
     g = Grid{TF}(
         itot, jtot, ktot, ktoth,
         xsize, ysize, zsize,
+        xoffset, yoffset, zoffset,
         igc, jgc, kgc,
         imax, jmax, iblock, jblock, kblock,
         icells, jcells, kcells,
