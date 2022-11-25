@@ -36,8 +36,8 @@ settings_boundary = Dict(
 
 settings_timeloop = Dict(
     "start_time" => 0.,
-    "end_time" => 10800.,
-    "save_time" => 900.,
+    "end_time" => 300.,
+    "save_time" => 300.,
     "check_time" => 50.,
     "dt" => 5.)
 
@@ -65,7 +65,6 @@ settings_d02["grid"]["zsize"] = 3200.
 settings_d02["grid"]["xoffset"] = 1600.
 settings_d02["grid"]["yoffset"] = 1600.
 settings_d02["grid"]["zoffset"] = 0.
-settings_d02["timeloop"]["dt"] /= 2.
 
 settings_d02["grid"]["z"] = make_grid(settings_d02["grid"]["zsize"], settings_d02["grid"]["ktot"])
 

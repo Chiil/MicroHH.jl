@@ -523,21 +523,51 @@ function step_model!(m::Model)
 
     itime_next = m.timeloop[1].itime + m.timeloop[1].idt
 
+    # CvH TMP disable zoom-in looping
+    # @timeit m.to "domains" begin
+    #     for i in 1:m.n_domains
+    #         # Compute the nudging fields, which remain constant throughout the step.
+    #         if i > 1
+    #             @timeit m.to "calc_nudge_fields" calc_nudge_fields!(m.multidomain[i], m.fields[i], m.fields[i-1], m.grid[i], m.grid[i-1])
+    #         end
+
+    #         while (m.timeloop[i].itime < itime_next)
+    #             @timeit m.to "integrate_time" integrate_time!(m.fields[i], m.grid[i], m.timeloop[i])
+    #             @timeit m.to "step_time" step_time!(m.timeloop[i])
+
+    #             if is_save_time(m.timeloop[i])
+    #                 @timeit m.to "save_domain" save_domain(m, i, m.parallel)
+    #             end
+
+    #             @timeit m.to "calc_rhs" calc_rhs!(m, i)
+    #         end
+    #     end
+    # end
+
+    # if is_check_time(m.timeloop[1])
+    #     @timeit m.to "check_model" check_model(m)
+    # end
+    # CvH TMP disable zoom-in looping
+
+    # CvH TMP
+    # Step all domains with the same time step.
     @timeit m.to "domains" begin
-        for i in 1:m.n_domains
-            # Compute the nudging fields, which remain constant throughout the step.
-            if i > 1
-                @timeit m.to "calc_nudge_fields" calc_nudge_fields!(m.multidomain[i], m.fields[i], m.fields[i-1], m.grid[i], m.grid[i-1])
+        while (m.timeloop[1].itime < itime_next)
+            for i in 1:m.n_domains
+                @timeit m.to "integrate_time" integrate_time!(m.fields[i], m.grid[i], m.timeloop[i])
             end
 
-            while (m.timeloop[i].itime < itime_next)
-                @timeit m.to "integrate_time" integrate_time!(m.fields[i], m.grid[i], m.timeloop[i])
+            for i in 1:m.n_domains
                 @timeit m.to "step_time" step_time!(m.timeloop[i])
+            end
 
+            for i in 1:m.n_domains
                 if is_save_time(m.timeloop[i])
                     @timeit m.to "save_domain" save_domain(m, i, m.parallel)
                 end
+            end
 
+            for i in 1:m.n_domains
                 @timeit m.to "calc_rhs" calc_rhs!(m, i)
             end
         end
@@ -546,6 +576,7 @@ function step_model!(m::Model)
     if is_check_time(m.timeloop[1])
         @timeit m.to "check_model" check_model(m)
     end
+    # CvH TMP END
 
     # Enable the timer after the first round to avoid measuring compilation.
     enable_timer!(m.to)
