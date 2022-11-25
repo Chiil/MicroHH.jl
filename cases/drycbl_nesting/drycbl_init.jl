@@ -30,7 +30,6 @@ for i in 1:n_domains
     sgrad = - 0.1 / settings[i]["fields"]["visc"]
     xsize_max = settings[1]["grid"]["xsize"]
     @tullio s_gradbot[i, j] = (0.5 + x[i] / xsize_max) * sgrad
-    println(i, ": ", mean(s_gradbot[:, 1]))
 
     f.s_gradtop[:, :] .= 0.003
 end

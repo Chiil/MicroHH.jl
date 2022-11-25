@@ -12,9 +12,9 @@ float_type = Float32
 
 ## Settings domain 1.
 settings_grid = Dict{String, Any}(
-    "itot" => 128,
-    "jtot" => 128,
-    "ktot" => 64,
+    "itot" => 256,
+    "jtot" => 256,
+    "ktot" => 128,
 
     "xsize" => 6400.,
     "ysize" => 6400.,
@@ -25,7 +25,7 @@ settings_grid = Dict{String, Any}(
     "zoffset" => 0.)
 
 settings_fields = Dict(
-    "visc" => 5.,
+    "visc" => 2.,
     "alpha" => 9.81 / 300.)
 
 settings_boundary = Dict(

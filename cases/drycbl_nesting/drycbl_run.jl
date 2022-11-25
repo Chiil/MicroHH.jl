@@ -8,7 +8,7 @@ include("drycbl_settings.jl")
 
 
 ## Initialize the model.
-n_domains = 1
+n_domains = 2
 m = Model("drycbl", n_domains, settings, float_type)
 
 

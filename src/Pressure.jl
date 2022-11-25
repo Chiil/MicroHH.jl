@@ -201,8 +201,6 @@ function calc_pressure_tend!(
         f.v_tend, g.is, g.ie, g.js, g.je, g.igc, g.jgc, b.buffers, pp)
 
     # CvH TMP set side bcs
-    f.u[g.is  , :, :] .= 0
-    f.u[g.ie+1, :, :] .= 0
     f.u_tend[g.is  , :, :] .= 0
     f.u_tend[g.ie+1, :, :] .= 0
     # CvH END TMP
