@@ -38,6 +38,10 @@ struct Grid{TF <: Union{Float32, Float64}}
     ke::Int64
     keh::Int64
 
+    ioffset::Int64
+    joffset::Int64
+    koffset::Int64
+
     x::Vector{TF}
     xh::Vector{TF}
     y::Vector{TF}
@@ -102,6 +106,10 @@ function Grid(d::Dict, p::Parallel, TF)
     dxi = 1. / dx
     dyi = 1. / dy
 
+    ioffset = round(Int64, xoffset / dx)
+    joffset = round(Int64, yoffset / dy)
+    koffset = 0
+
     x = (collect(range(0.5-igc, length=icells)) .+ p.id_x*imax) .* dx .+ xoffset
     y = (collect(range(0.5-jgc, length=jcells)) .+ p.id_y*jmax) .* dy .+ yoffset
     xh = (collect(range(-igc, length=icells)) .+ p.id_x*imax) .* dx .+ xoffset
@@ -145,6 +153,7 @@ function Grid(d::Dict, p::Parallel, TF)
         imax, jmax, iblock, jblock, kblock,
         icells, jcells, kcells,
         is, js, ks, ie, je, ke, keh,
+        ioffset, joffset, koffset,
         x, xh, y, yh, z, zh,
         dx, dy, dz, dzh,
         dxi, dyi, dzi, dzhi)

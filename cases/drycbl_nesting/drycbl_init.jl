@@ -26,10 +26,14 @@ for i in 1:n_domains
     s[:, :, 1] .+= rand2d[:, :]
     @tullio s[i, j, k] += 0.003 * z[k]
 
+    # Set the reference profile.
+    # s_ref = @view f.s_ref[g.ks:g.ke]
+    # s_ref[:] .= 0.003 * z[:]
+
     # Set the surface fluxes based on an absolute coordinate
     sgrad = - 0.1 / settings[i]["fields"]["visc"]
     xsize_max = settings[1]["grid"]["xsize"]
-    @tullio s_gradbot[i, j] = (0.5 + x[i] / xsize_max) * sgrad
+    @tullio s_gradbot[i, j] = 2 * (x[i] / xsize_max) * sgrad
 
     f.s_gradtop[:, :] .= 0.003
 end

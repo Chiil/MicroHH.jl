@@ -71,6 +71,51 @@ end
 
 function calc_rhs!(m::Model, i)
     @timeit m.to "set_boundary"       set_boundary!(m.fields[i], m.grid[i], m.boundary[i], m.parallel)
+
+    # CvH TMP (this only works because the grid cells have same size, otherwise interpolation was required.
+    if i > 1
+        g = m.grid[i]
+        f = m.fields[i]; fsrc = m.fields[i-1]
+
+        # Set the walls to zero normal velocity.
+        f.u[g.is  , :, :] .= fsrc.u[g.is   + g.ioffset, (g.js-1 + g.joffset):(g.je+1 + g.joffset), :]
+        f.u[g.ie+1, :, :] .= fsrc.u[g.ie+1 + g.ioffset, (g.js-1 + g.joffset):(g.je+1 + g.joffset), :]
+
+        # For other velocity components we impose free slip (no-flux).
+        f.v[g.is-1, :, :] .= f.v[g.is, :, :]
+        f.v[g.ie+1, :, :] .= f.v[g.ie, :, :]
+        f.w[g.is-1, :, :] .= f.w[g.is, :, :]
+        f.w[g.ie+1, :, :] .= f.w[g.ie, :, :]
+
+        # Setting a Dirichlet for scalars.
+        s_west = 0.5 .* (  fsrc.s[g.is-1 + g.ioffset, (1 + g.joffset):(g.jcells + g.joffset), :]
+                        .+ fsrc.s[g.is   + g.ioffset, (1 + g.joffset):(g.jcells + g.joffset), :] )
+        s_east = 0.5 .* (  fsrc.s[g.ie   + g.ioffset, (1 + g.joffset):(g.jcells + g.joffset), :]
+                        .+ fsrc.s[g.ie+1 + g.ioffset, (1 + g.joffset):(g.jcells + g.joffset), :] )
+
+        @. f.s[g.is-1, :, :] = 2 * s_west - f.s[g.is, :, :]
+        @. f.s[g.ie+1, :, :] = 2 * s_east - f.s[g.ie, :, :]
+
+        f.s_gradbot[:, :] .= fsrc.s_gradbot[1+g.ioffset:g.icells+g.ioffset, 1+g.joffset:g.jcells+g.joffset]
+        f.s_gradbot[:, :] .= fsrc.s_gradbot[1+g.ioffset:g.icells+g.ioffset, 1+g.joffset:g.jcells+g.joffset]
+    else
+        g = m.grid[i]
+        f = m.fields[i]
+
+        # Set the walls to const normal velocity.
+        f.u[g.is  , :, :] .= 0.
+        f.u[g.ie+1, :, :] .= 0.
+
+        # For other velocity components we impose free slip (no-flux).
+        f.v[g.is-1, :, :] .= f.v[g.is, :, :]
+        f.v[g.ie+1, :, :] .= f.v[g.ie, :, :]
+        f.w[g.is-1, :, :] .= f.w[g.is, :, :]
+        f.w[g.ie+1, :, :] .= f.w[g.ie, :, :]
+        f.s[g.is-1, :, :] .= f.s[g.is, :, :]
+        f.s[g.ie+1, :, :] .= f.s[g.ie, :, :]
+    end
+    # CvH END TMP
+
     @timeit m.to "calc_dynamics_tend" calc_dynamics_tend!(m.fields[i], m.grid[i], m.to)
     @timeit m.to "calc_nudge_tend"    calc_nudge_tend!(m.fields[i], m.grid[i], m.multidomain[i])
     @timeit m.to "calc_pressure_tend" calc_pressure_tend!(m.fields[i], m.grid[i], m.timeloop[i], m.pressure[i], m.boundary[i], m.parallel, m.to)
