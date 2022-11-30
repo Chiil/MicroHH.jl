@@ -21,14 +21,14 @@ for i in 1:n_domains
     s = @view f.s[g.is:g.ie, g.js:g.je, g.ks:g.ke]
     s_gradbot = @view f.s_gradbot[g.is:g.ie, g.js:g.je]
 
-    rand2d = rand(g.imax, g.jmax)
+    rand2d = 1e-2 .* rand(g.imax, g.jmax)
     rand2d .-= mean(rand2d)
     s[:, :, 1] .+= rand2d[:, :]
     @tullio s[i, j, k] += 0.003 * z[k]
 
     # Set the reference profile.
-    # s_ref = @view f.s_ref[g.ks:g.ke]
-    # s_ref[:] .= 0.003 * z[:]
+    s_ref = @view f.s_ref[g.ks:g.ke]
+    s_ref[:] .= 0.003 * z[:]
 
     # Set the surface fluxes based on an absolute coordinate
     sgrad = - 0.1 / settings[i]["fields"]["visc"]

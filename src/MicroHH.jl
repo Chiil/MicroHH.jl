@@ -77,17 +77,26 @@ function calc_rhs!(m::Model, i)
         g = m.grid[i]
         f = m.fields[i]; fsrc = m.fields[i-1]
 
-        # Set the walls to zero normal velocity.
+        # Set the walls to the parent domain.
         f.u[g.is  , :, :] .= fsrc.u[g.is   + g.ioffset, (g.js-1 + g.joffset):(g.je+1 + g.joffset), :]
         f.u[g.ie+1, :, :] .= fsrc.u[g.ie+1 + g.ioffset, (g.js-1 + g.joffset):(g.je+1 + g.joffset), :]
 
-        # For other velocity components we impose free slip (no-flux).
-        f.v[g.is-1, :, :] .= f.v[g.is, :, :]
-        f.v[g.ie+1, :, :] .= f.v[g.ie, :, :]
-        f.w[g.is-1, :, :] .= f.w[g.is, :, :]
-        f.w[g.ie+1, :, :] .= f.w[g.ie, :, :]
+        v_west = 0.5 .* (  fsrc.v[g.is-1 + g.ioffset, (1 + g.joffset):(g.jcells + g.joffset), :]
+                        .+ fsrc.v[g.is   + g.ioffset, (1 + g.joffset):(g.jcells + g.joffset), :] )
+        v_east = 0.5 .* (  fsrc.v[g.ie   + g.ioffset, (1 + g.joffset):(g.jcells + g.joffset), :]
+                        .+ fsrc.v[g.ie+1 + g.ioffset, (1 + g.joffset):(g.jcells + g.joffset), :] )
 
-        # Setting a Dirichlet for scalars.
+        @. f.v[g.is-1, :, :] = 2 * v_west - f.v[g.is, :, :]
+        @. f.v[g.ie+1, :, :] = 2 * v_east - f.v[g.ie, :, :]
+
+        w_west = 0.5 .* (  fsrc.w[g.is-1 + g.ioffset, (1 + g.joffset):(g.jcells + g.joffset), :]
+                        .+ fsrc.w[g.is   + g.ioffset, (1 + g.joffset):(g.jcells + g.joffset), :] )
+        w_east = 0.5 .* (  fsrc.w[g.ie   + g.ioffset, (1 + g.joffset):(g.jcells + g.joffset), :]
+                        .+ fsrc.w[g.ie+1 + g.ioffset, (1 + g.joffset):(g.jcells + g.joffset), :] )
+
+        @. f.w[g.is-1, :, :] = 2 * w_west - f.w[g.is, :, :]
+        @. f.w[g.ie+1, :, :] = 2 * w_east - f.w[g.ie, :, :]
+
         s_west = 0.5 .* (  fsrc.s[g.is-1 + g.ioffset, (1 + g.joffset):(g.jcells + g.joffset), :]
                         .+ fsrc.s[g.is   + g.ioffset, (1 + g.joffset):(g.jcells + g.joffset), :] )
         s_east = 0.5 .* (  fsrc.s[g.ie   + g.ioffset, (1 + g.joffset):(g.jcells + g.joffset), :]
