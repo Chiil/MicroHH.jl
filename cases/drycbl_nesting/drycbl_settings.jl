@@ -35,8 +35,8 @@ settings_boundary = Dict(
     "s_top_type" => "Neumann")
 
 settings_timeloop = Dict(
-    "start_time" => 3600.,
-    "end_time" => 7200.,
+    "start_time" => 0.,
+    "end_time" => 10800.,
     "save_time" => 300.,
     "check_time" => 50.,
     "dt" => 1.0)
