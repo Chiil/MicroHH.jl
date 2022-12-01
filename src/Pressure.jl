@@ -194,6 +194,15 @@ end
 function calc_pressure_tend!(
         f::Fields, g::Grid, t::Timeloop, p::Pressure, b::Boundary, pp::Parallel, to::TimerOutput)
 
+    # CvH TMP Apply the pressure gradient of the actual values.
+    @timeit to "output_kernel" output_kernel!(
+        f.u_tend, f.v_tend, f.w_tend,
+        f.p,
+        g.dxi, g.dyi, g.dzhi,
+        g.is, g.ie, g.js, g.je, g.ks, g.ke)
+    # CvH END TMP
+
+
     # Set the cyclic boundaries for the tendencies.
     @timeit to "boundary_cyclic_kernel" boundary_cyclic_kernel!(
         f.u_tend, g.is, g.ie, g.js, g.je, g.igc, g.jgc, b.buffers, pp)

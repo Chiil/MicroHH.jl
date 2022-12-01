@@ -25,7 +25,7 @@ settings_grid = Dict{String, Any}(
     "zoffset" => 0.)
 
 settings_fields = Dict(
-    "visc" => 1.5,
+    "visc" => 3,
     "alpha" => 9.81 / 300.)
 
 settings_boundary = Dict(
@@ -37,7 +37,7 @@ settings_boundary = Dict(
 settings_timeloop = Dict(
     "start_time" => 0.,
     "end_time" => 10800.,
-    "save_time" => 300.,
+    "save_time" => 3600.,
     "check_time" => 50.,
     "dt" => 1.0)
 

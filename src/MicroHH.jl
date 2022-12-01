@@ -74,12 +74,22 @@ function calc_rhs!(m::Model, i)
 
     # CvH TMP (this only works because the grid cells have same size, otherwise interpolation was required.
     if i > 1
-        g = m.grid[i]
+        g = m.grid[i]; gsrc = m.grid[i-1]
         f = m.fields[i]; fsrc = m.fields[i-1]
 
         # Set the walls to the parent domain.
+        # CvH try Dirichlet
         f.u[g.is  , :, :] .= fsrc.u[g.is   + g.ioffset, (g.js-1 + g.joffset):(g.je+1 + g.joffset), :]
         f.u[g.ie+1, :, :] .= fsrc.u[g.ie+1 + g.ioffset, (g.js-1 + g.joffset):(g.je+1 + g.joffset), :]
+
+        # CvH try Neumann
+        # dudx_west = 0.5 * ( fsrc.u[g.is+1 + g.ioffset, (g.js-1 + g.joffset):(g.je+1 + g.joffset), :]
+        #                  .- fsrc.u[g.is-1 + g.ioffset, (g.js-1 + g.joffset):(g.je+1 + g.joffset), :] ) .* gsrc.dxi
+        # dudx_east = 0.5 * ( fsrc.u[g.ie+2 + g.ioffset, (g.js-1 + g.joffset):(g.je+1 + g.joffset), :]
+        #                  .- fsrc.u[g.ie   + g.ioffset, (g.js-1 + g.joffset):(g.je+1 + g.joffset), :] ) .* gsrc.dxi
+
+        # f.u[g.is  , :, :] .= - dudx_west .* g.dxi + f.u[g.is+1, :, :]
+        # f.u[g.ie+1, :, :] .=   dudx_east .* g.dxi + f.u[g.ie+1, :, :]
 
         v_west = 0.5 .* (  fsrc.v[g.is-1 + g.ioffset, (1 + g.joffset):(g.jcells + g.joffset), :]
                         .+ fsrc.v[g.is   + g.ioffset, (1 + g.joffset):(g.jcells + g.joffset), :] )
@@ -107,6 +117,11 @@ function calc_rhs!(m::Model, i)
 
         f.s_gradbot[:, :] .= fsrc.s_gradbot[1+g.ioffset:g.icells+g.ioffset, 1+g.joffset:g.jcells+g.joffset]
         f.s_gradbot[:, :] .= fsrc.s_gradbot[1+g.ioffset:g.icells+g.ioffset, 1+g.joffset:g.jcells+g.joffset]
+
+        # Set the pressure to that of the parent domain to correct only the pressure gradient.
+        f.p[:, :, :] .= fsrc.p[(g.is-1 + g.ioffset):(g.ie+1 + g.ioffset), (g.js-1 + g.joffset):(g.je+1 + g.joffset), :]
+        f.p[:, :, :] .= fsrc.p[(g.is-1 + g.ioffset):(g.ie+1 + g.ioffset), (g.js-1 + g.joffset):(g.je+1 + g.joffset), :]
+
     else
         g = m.grid[i]
         f = m.fields[i]
