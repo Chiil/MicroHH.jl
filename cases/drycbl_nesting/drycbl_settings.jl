@@ -39,7 +39,7 @@ settings_timeloop = Dict(
     "end_time" => 10800.,
     "save_time" => 3600.,
     "check_time" => 50.,
-    "dt" => 1.0)
+    "dt" => 0.5)
 
 settings_multidomain = Dict{String, Any}(
     "enable_nudge" => false)

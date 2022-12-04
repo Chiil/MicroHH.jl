@@ -126,7 +126,7 @@ function calc_rhs!(m::Model, i)
         g = m.grid[i]
         f = m.fields[i]
 
-        # Set the walls to const normal velocity.
+        # Set the walls to const normal velocity (zero for no-penetration BC).
         f.u[g.is  , :, :] .= 0.
         f.u[g.ie+1, :, :] .= 0.
 
@@ -137,7 +137,25 @@ function calc_rhs!(m::Model, i)
         f.w[g.ie+1, :, :] .= f.w[g.ie, :, :]
         f.s[g.is-1, :, :] .= f.s[g.is, :, :]
         f.s[g.ie+1, :, :] .= f.s[g.ie, :, :]
-    end
+
+        # Set the BCs again, this needs to be done more clean if ever implemented properly...
+        b = m.boundary[1]
+        # Bottom BC.
+        set_ghost_cells_bot_kernel!(
+            f.u, f.u_bot, f.u_gradbot, g.dzh, g.ks, b.mom_bot_type)
+        set_ghost_cells_bot_kernel!(
+            f.v, f.v_bot, f.v_gradbot, g.dzh, g.ks, b.mom_bot_type)
+        set_ghost_cells_bot_kernel!(
+            f.s, f.s_bot, f.s_gradbot, g.dzh, g.ks, b.s_bot_type)
+
+        # Top BC.
+        set_ghost_cells_top_kernel!(
+            f.u, f.u_top, f.u_gradtop, g.dzh, g.ke, b.mom_top_type)
+        set_ghost_cells_top_kernel!(
+            f.v, f.v_top, f.v_gradtop, g.dzh, g.ke, b.mom_top_type)
+        set_ghost_cells_top_kernel!(
+            f.s, f.s_top, f.s_gradtop, g.dzh, g.ke, b.s_top_type)
+        end
     # CvH END TMP
 
     @timeit m.to "calc_dynamics_tend" calc_dynamics_tend!(m.fields[i], m.grid[i], m.to)
@@ -625,6 +643,17 @@ function step_model!(m::Model)
             for i in 1:m.n_domains
                 @timeit m.to "integrate_time" integrate_time!(m.fields[i], m.grid[i], m.timeloop[i])
             end
+
+            # CvH TMP TWO WAY NEST HERE
+            if m.n_domains > 1
+                f1 = m.fields[1]; g1 = m.grid[1]
+                f2 = m.fields[2]; g2 = m.grid[2]
+                f1.u[g2.is+1+g2.ioffset:g2.ie+g2.ioffset, g2.js+g2.joffset:g2.je+g2.joffset, g2.ks:g2.ke] .= f2.u[g2.is+1:g2.ie, g2.js:g2.je, g2.ks:g2.ke]
+                f1.v[g2.is+g2.ioffset:g2.ie+g2.ioffset, g2.js+g2.joffset:g2.je+g2.joffset, g2.ks:g2.ke] .= f2.v[g2.is:g2.ie, g2.js:g2.je, g2.ks:g2.ke]
+                f1.w[g2.is+g2.ioffset:g2.ie+g2.ioffset, g2.js+g2.joffset:g2.je+g2.joffset, g2.ks:g2.ke] .= f2.w[g2.is:g2.ie, g2.js:g2.je, g2.ks:g2.ke]
+                f1.s[g2.is+g2.ioffset:g2.ie+g2.ioffset, g2.js+g2.joffset:g2.je+g2.joffset, g2.ks:g2.ke] .= f2.s[g2.is:g2.ie, g2.js:g2.je, g2.ks:g2.ke]
+            end
+            # CvH END TMP
 
             for i in 1:m.n_domains
                 @timeit m.to "step_time" step_time!(m.timeloop[i])
