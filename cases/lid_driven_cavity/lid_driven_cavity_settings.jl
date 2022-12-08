@@ -16,7 +16,11 @@ settings_grid = Dict{String, Any}(
 
     "xsize" => 1.,
     "ysize" => 1. / 256.,
-    "zsize" => 1.)
+    "zsize" => 1.,
+
+    "xoffset" => 0.,
+    "yoffset" => 0.,
+    "zoffset" => 0.)
 
 settings_fields = Dict(
     "visc" => 1. / 100.,

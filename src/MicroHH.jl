@@ -155,7 +155,7 @@ function calc_rhs!(m::Model, i)
             f.v, f.v_top, f.v_gradtop, g.dzh, g.ke, b.mom_top_type)
         set_ghost_cells_top_kernel!(
             f.s, f.s_top, f.s_gradtop, g.dzh, g.ke, b.s_top_type)
-        end
+    end
     # CvH END TMP
 
     @timeit m.to "calc_dynamics_tend" calc_dynamics_tend!(m.fields[i], m.grid[i], m.to)
