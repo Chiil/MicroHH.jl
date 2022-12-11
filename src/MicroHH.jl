@@ -127,8 +127,8 @@ function calc_rhs!(m::Model, i)
         f = m.fields[i]
 
         # Set the walls to const normal velocity (zero for no-penetration BC).
-        f.u[g.is  , :, :] .= 0.
-        f.u[g.ie+1, :, :] .= 0.
+        f.u[g.is  , :, :] .= 0
+        f.u[g.ie+1, :, :] .= 0
 
         # For other velocity components we impose free slip (no-flux).
         f.v[g.is-1, :, :] .= f.v[g.is, :, :]

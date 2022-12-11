@@ -27,8 +27,14 @@ function Pressure(g::Grid, pp::Parallel, TF)
     tmp = rand(TF, g.itot, g.jmax, g.kblock)
     # fft_plan_fi = FFTW.plan_r2r!(tmp, FFTW.R2HC, 1, flags=FFTW.MEASURE)
     # fft_plan_bi = FFTW.plan_r2r!(tmp, FFTW.HC2R, 1, flags=FFTW.MEASURE)
+
+    # cos-transform
     fft_plan_fi = FFTW.plan_r2r!(tmp, FFTW.REDFT10, 1, flags=FFTW.MEASURE)
     fft_plan_bi = FFTW.plan_r2r!(tmp, FFTW.REDFT01, 1, flags=FFTW.MEASURE)
+
+    # sin-transform
+    # fft_plan_fi = FFTW.plan_r2r!(tmp, FFTW.RODFT10, 1, flags=FFTW.MEASURE)
+    # fft_plan_bi = FFTW.plan_r2r!(tmp, FFTW.RODFT01, 1, flags=FFTW.MEASURE)
 
     tmp = rand(TF, g.iblock, g.jtot, g.kblock)
     fft_plan_fj = FFTW.plan_r2r!(tmp, FFTW.R2HC, 2, flags=FFTW.MEASURE)
@@ -59,9 +65,15 @@ function Pressure(g::Grid, pp::Parallel, TF)
     # end
 
     # CvH TMP
+    # cos transform
     for i in 0:g.itot-1
         bmati[i+1] = 2 * (cos(pi*i/g.itot) - 1) * dxidxi;
     end
+
+    # sin transform (does not give full divergence free field yet)
+    # for i in 0:g.itot-1
+    #     bmati[i+1] = 2 * (cos(pi*(i+1)/g.itot) - 1) * dxidxi;
+    # end
     # CvH END TMP
 
     for k in 1:g.ktot
@@ -289,8 +301,13 @@ function calc_pressure_tend!(
         f.p, g.is, g.ie, g.js, g.je, g.igc, g.jgc, b.buffers, pp)
 
     # CvH TMP
+    # cos transform (dpdx = 0)
     f.p[g.is-1, :, :] .= f.p[g.is, :, :]
     f.p[g.ie+1, :, :] .= f.p[g.ie, :, :]
+
+    # sin transform (p = 0)
+    # f.p[g.is-1, :, :] .= - f.p[g.is, :, :]
+    # f.p[g.ie+1, :, :] .= - f.p[g.ie, :, :]
     # CvH END TMP
 
     @timeit to "output_kernel" output_kernel!(

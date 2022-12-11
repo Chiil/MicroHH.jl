@@ -22,7 +22,7 @@ for i in 1:n_domains
     s = @view f.s[g.is:g.ie, g.js:g.je, g.ks:g.ke]
     s_gradbot = @view f.s_gradbot[g.is:g.ie, g.js:g.je]
 
-    u .= 0.
+    u .= 0
 
     rand2d = 1e-2 .* rand(g.imax, g.jmax)
     rand2d .-= mean(rand2d)

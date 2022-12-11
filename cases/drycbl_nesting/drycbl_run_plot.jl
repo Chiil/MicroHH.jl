@@ -30,9 +30,9 @@ s_ref = reshape(f.s_ref[g.ks:g.ke], (1, 1, length(z)))
 node1 = Observable(s_bot .- mean(s_bot))
 node2 = Observable(s[:, 1, :] .- s_ref[:, 1, :])
 h1 = heatmap(fig[1, 1], x, y, node1, colorrange=(-2, 2))
-h2 = heatmap(fig[1, 2], x, z, node2, colorrange=(0, 2))
+h2 = heatmap(fig[1, 2], x, z, node2, colorrange=(-1, 2))
 h1ref = heatmap(fig[2, 1], x, y, node1, colorrange=(-2, 2))
-h2ref = heatmap(fig[2, 2], x, z, node2, colorrange=(0, 2))
+h2ref = heatmap(fig[2, 2], x, z, node2, colorrange=(-1, 2))
 
 if n_domains > 1
     f2 = m.fields[2]; g2 = m.grid[2]
@@ -47,7 +47,7 @@ if n_domains > 1
     node3 = Observable(s_bot2 .- mean(s_bot))
     node4 = Observable(s2[:, 1, :] .- s_ref2[:, 1, :])
     h3 = heatmap!(fig[1, 1], x2, y2, node3, colorrange=(-2, 2))
-    h4 = heatmap!(fig[1, 2], x2, z2, node4, colorrange=(0, 2))
+    h4 = heatmap!(fig[1, 2], x2, z2, node4, colorrange=(-1, 2))
 end
 
 display(fig)
