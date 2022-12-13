@@ -12,12 +12,12 @@ float_type = Float64
 
 ## Settings domain 1.
 settings_grid = Dict{String, Any}(
-    "itot" => 64,
+    "itot" => 128,
     "jtot" => 32,
-    "ktot" => 64,
+    "ktot" => 128,
 
     "xsize" => 3200.,
-    "ysize" => 1600.,
+    "ysize" => 3200. / 4,
     "zsize" => 3200.,
 
     "xoffset" => 0.,
@@ -56,7 +56,7 @@ settings_d01["grid"]["z"] = make_grid(settings_d01["grid"]["zsize"], settings_d0
 
 # Settings domain 2.
 settings_d02 = deepcopy(settings_d01)
-settings_d02["grid"]["itot"] = 32
+settings_d02["grid"]["itot"] = 64
 settings_d02["grid"]["xsize"] = 1600.
 settings_d02["grid"]["xoffset"] = 800.
 
