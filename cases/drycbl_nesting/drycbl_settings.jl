@@ -25,7 +25,7 @@ settings_grid = Dict{String, Any}(
     "zoffset" => 0.)
 
 settings_fields = Dict(
-    "visc" => 3,
+    "visc" => 3.,
     "alpha" => 9.81 / 300.)
 
 settings_boundary = Dict(
@@ -39,7 +39,7 @@ settings_timeloop = Dict(
     "end_time" => 10800.,
     "save_time" => 3600.,
     "check_time" => 50.,
-    "dt" => 0.5)
+    "dt" => 1.)
 
 settings_multidomain = Dict{String, Any}(
     "enable_nudge" => false)
