@@ -60,6 +60,7 @@ struct Grid{TF <: Union{Float32, Float64}}
     dzhi::Vector{TF}
 end
 
+
 function Grid(d::Dict, p::Parallel, TF)
     itot = d["itot"]
     jtot = d["jtot"]
@@ -70,11 +71,11 @@ function Grid(d::Dict, p::Parallel, TF)
     ysize = d["ysize"]
     zsize = d["zsize"]
 
-    xoffset = d["xoffset"]
-    yoffset = d["yoffset"]
-    zoffset = d["zoffset"]
+    xoffset = haskey(d, "xoffset") ? d["xoffset"] : 0.
+    yoffset = haskey(d, "xoffset") ? d["yoffset"] : 0.
+    zoffset = haskey(d, "xoffset") ? d["zoffset"] : 0.
 
-    z_nogc::Vector{Real} = d["z"]
+    z_nogc::Vector{TF} = d["z"]
 
     igc = 1
     jgc = 1
