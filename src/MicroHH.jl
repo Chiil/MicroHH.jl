@@ -72,55 +72,60 @@ end
 function calc_rhs!(m::Model, i)
     @timeit m.to "set_boundary"       set_boundary!(m.fields[i], m.grid[i], m.boundary[i], m.parallel)
 
-    # CvH TMP (this only works because the grid cells have same size, otherwise interpolation was required.
+    # CvH TMP
     if i > 1
         g = m.grid[i]; gsrc = m.grid[i-1]
         f = m.fields[i]; fsrc = m.fields[i-1]
 
+        # HARDCODE THE NESTING, FIX THIS ONCE IT WORKS
+        isc = gsrc.is + gsrc.itot ÷ 4; iec = gsrc.is + 3*(gsrc.itot÷4)
+        jsc = gsrc.js; jec = gsrc.je
+        ksc = gsrc.ks; kec = gsrc.ke
+
         # Set the walls to the parent domain.
-        # CvH try Dirichlet
-        f.u[g.is  , :, :] .= fsrc.u[g.is   + g.ioffset, (g.js-1 + g.joffset):(g.je+1 + g.joffset), :]
-        f.u[g.ie+1, :, :] .= fsrc.u[g.ie+1 + g.ioffset, (g.js-1 + g.joffset):(g.je+1 + g.joffset), :]
+        u_west = @view fsrc.u[isc, jsc-1:jec+1, ksc-1:kec+1]
+        u_east = @view fsrc.u[iec, jsc-1:jec+1, ksc-1:kec+1]
 
-        # CvH try Neumann
-        # dudx_west = 0.5 * ( fsrc.u[g.is+1 + g.ioffset, (g.js-1 + g.joffset):(g.je+1 + g.joffset), :]
-        #                  .- fsrc.u[g.is-1 + g.ioffset, (g.js-1 + g.joffset):(g.je+1 + g.joffset), :] ) .* gsrc.dxi
-        # dudx_east = 0.5 * ( fsrc.u[g.ie+2 + g.ioffset, (g.js-1 + g.joffset):(g.je+1 + g.joffset), :]
-        #                  .- fsrc.u[g.ie   + g.ioffset, (g.js-1 + g.joffset):(g.je+1 + g.joffset), :] ) .* gsrc.dxi
+        interp = interpolate((gsrc.y, gsrc.z), u_west, (Gridded(Linear()), Gridded(Linear())))
+        f.u[g.is, :, :] .= interp(g.y, g.z)
+        interp = interpolate((gsrc.y, gsrc.z), u_east, (Gridded(Linear()), Gridded(Linear())))
+        f.u[g.ie+1, :, :] .= interp(g.y, g.z)
 
-        # f.u[g.is  , :, :] .= - dudx_west .* g.dxi + f.u[g.is+1, :, :]
-        # f.u[g.ie+1, :, :] .=   dudx_east .* g.dxi + f.u[g.ie+1, :, :]
+        # v_west = 0.5 .* (  fsrc.v[g.is-1 + g.ioffset, (1 + g.joffset):(g.jcells + g.joffset), :]
+        #                 .+ fsrc.v[g.is   + g.ioffset, (1 + g.joffset):(g.jcells + g.joffset), :] )
+        # v_east = 0.5 .* (  fsrc.v[g.ie   + g.ioffset, (1 + g.joffset):(g.jcells + g.joffset), :]
+        #                 .+ fsrc.v[g.ie+1 + g.ioffset, (1 + g.joffset):(g.jcells + g.joffset), :] )
 
-        v_west = 0.5 .* (  fsrc.v[g.is-1 + g.ioffset, (1 + g.joffset):(g.jcells + g.joffset), :]
-                        .+ fsrc.v[g.is   + g.ioffset, (1 + g.joffset):(g.jcells + g.joffset), :] )
-        v_east = 0.5 .* (  fsrc.v[g.ie   + g.ioffset, (1 + g.joffset):(g.jcells + g.joffset), :]
-                        .+ fsrc.v[g.ie+1 + g.ioffset, (1 + g.joffset):(g.jcells + g.joffset), :] )
+        # @. f.v[g.is-1, :, :] = 2 * v_west - f.v[g.is, :, :]
+        # @. f.v[g.ie+1, :, :] = 2 * v_east - f.v[g.ie, :, :]
 
-        @. f.v[g.is-1, :, :] = 2 * v_west - f.v[g.is, :, :]
-        @. f.v[g.ie+1, :, :] = 2 * v_east - f.v[g.ie, :, :]
+        # w_west = 0.5 .* (  fsrc.w[g.is-1 + g.ioffset, (1 + g.joffset):(g.jcells + g.joffset), :]
+        #                 .+ fsrc.w[g.is   + g.ioffset, (1 + g.joffset):(g.jcells + g.joffset), :] )
+        # w_east = 0.5 .* (  fsrc.w[g.ie   + g.ioffset, (1 + g.joffset):(g.jcells + g.joffset), :]
+        #                 .+ fsrc.w[g.ie+1 + g.ioffset, (1 + g.joffset):(g.jcells + g.joffset), :] )
 
-        w_west = 0.5 .* (  fsrc.w[g.is-1 + g.ioffset, (1 + g.joffset):(g.jcells + g.joffset), :]
-                        .+ fsrc.w[g.is   + g.ioffset, (1 + g.joffset):(g.jcells + g.joffset), :] )
-        w_east = 0.5 .* (  fsrc.w[g.ie   + g.ioffset, (1 + g.joffset):(g.jcells + g.joffset), :]
-                        .+ fsrc.w[g.ie+1 + g.ioffset, (1 + g.joffset):(g.jcells + g.joffset), :] )
+        # @. f.w[g.is-1, :, :] = 2 * w_west - f.w[g.is, :, :]
+        # @. f.w[g.ie+1, :, :] = 2 * w_east - f.w[g.ie, :, :]
 
-        @. f.w[g.is-1, :, :] = 2 * w_west - f.w[g.is, :, :]
-        @. f.w[g.ie+1, :, :] = 2 * w_east - f.w[g.ie, :, :]
+        s_west_p = 0.5 .* (  fsrc.s[isc-1, jsc-1:jec+1, ksc-1:kec+1]
+                          .+ fsrc.s[isc  , jsc-1:jec+1, ksc-1:kec+1] )
+        s_east_p = 0.5 .* (  fsrc.s[iec  , jsc-1:jec+1, ksc-1:kec+1]
+                          .+ fsrc.s[iec+1, jsc-1:jec+1, ksc-1:kec+1] )
 
-        s_west = 0.5 .* (  fsrc.s[g.is-1 + g.ioffset, (1 + g.joffset):(g.jcells + g.joffset), :]
-                        .+ fsrc.s[g.is   + g.ioffset, (1 + g.joffset):(g.jcells + g.joffset), :] )
-        s_east = 0.5 .* (  fsrc.s[g.ie   + g.ioffset, (1 + g.joffset):(g.jcells + g.joffset), :]
-                        .+ fsrc.s[g.ie+1 + g.ioffset, (1 + g.joffset):(g.jcells + g.joffset), :] )
+        interp = interpolate((gsrc.y, gsrc.z), s_west_p, (Gridded(Linear()), Gridded(Linear())))
+        s_west = interp(g.y, g.z)
+        interp = interpolate((gsrc.y, gsrc.z), s_east_p, (Gridded(Linear()), Gridded(Linear())))
+        s_east = interp(g.y, g.z)
 
         @. f.s[g.is-1, :, :] = 2 * s_west - f.s[g.is, :, :]
         @. f.s[g.ie+1, :, :] = 2 * s_east - f.s[g.ie, :, :]
 
-        f.s_gradbot[:, :] .= fsrc.s_gradbot[1+g.ioffset:g.icells+g.ioffset, 1+g.joffset:g.jcells+g.joffset]
-        f.s_gradbot[:, :] .= fsrc.s_gradbot[1+g.ioffset:g.icells+g.ioffset, 1+g.joffset:g.jcells+g.joffset]
+        # f.s_gradbot[:, :] .= fsrc.s_gradbot[1+g.ioffset:g.icells+g.ioffset, 1+g.joffset:g.jcells+g.joffset]
+        # f.s_gradbot[:, :] .= fsrc.s_gradbot[1+g.ioffset:g.icells+g.ioffset, 1+g.joffset:g.jcells+g.joffset]
 
-        # Set the pressure to that of the parent domain to correct only the pressure gradient.
-        f.p[:, :, :] .= fsrc.p[(g.is-1 + g.ioffset):(g.ie+1 + g.ioffset), (g.js-1 + g.joffset):(g.je+1 + g.joffset), :]
-        f.p[:, :, :] .= fsrc.p[(g.is-1 + g.ioffset):(g.ie+1 + g.ioffset), (g.js-1 + g.joffset):(g.je+1 + g.joffset), :]
+        # # Set the pressure to that of the parent domain to correct only the pressure gradient.
+        # f.p[:, :, :] .= fsrc.p[(g.is-1 + g.ioffset):(g.ie+1 + g.ioffset), (g.js-1 + g.joffset):(g.je+1 + g.joffset), :]
+        # f.p[:, :, :] .= fsrc.p[(g.is-1 + g.ioffset):(g.ie+1 + g.ioffset), (g.js-1 + g.joffset):(g.je+1 + g.joffset), :]
 
     else
         g = m.grid[i]
@@ -649,14 +654,14 @@ function step_model!(m::Model)
             end
 
             # CvH TMP TWO WAY NEST HERE
-            if m.n_domains > 1
-                f1 = m.fields[1]; g1 = m.grid[1]
-                f2 = m.fields[2]; g2 = m.grid[2]
-                f1.u[g2.is+1+g2.ioffset:g2.ie+g2.ioffset, g2.js+g2.joffset:g2.je+g2.joffset, g2.ks:g2.ke] .= f2.u[g2.is+1:g2.ie, g2.js:g2.je, g2.ks:g2.ke]
-                f1.v[g2.is+g2.ioffset:g2.ie+g2.ioffset, g2.js+g2.joffset:g2.je+g2.joffset, g2.ks:g2.ke] .= f2.v[g2.is:g2.ie, g2.js:g2.je, g2.ks:g2.ke]
-                f1.w[g2.is+g2.ioffset:g2.ie+g2.ioffset, g2.js+g2.joffset:g2.je+g2.joffset, g2.ks:g2.ke] .= f2.w[g2.is:g2.ie, g2.js:g2.je, g2.ks:g2.ke]
-                f1.s[g2.is+g2.ioffset:g2.ie+g2.ioffset, g2.js+g2.joffset:g2.je+g2.joffset, g2.ks:g2.ke] .= f2.s[g2.is:g2.ie, g2.js:g2.je, g2.ks:g2.ke]
-            end
+            # if m.n_domains > 1
+            #     f1 = m.fields[1]; g1 = m.grid[1]
+            #     f2 = m.fields[2]; g2 = m.grid[2]
+            #     f1.u[g2.is+1+g2.ioffset:g2.ie+g2.ioffset, g2.js+g2.joffset:g2.je+g2.joffset, g2.ks:g2.ke] .= f2.u[g2.is+1:g2.ie, g2.js:g2.je, g2.ks:g2.ke]
+            #     f1.v[g2.is+g2.ioffset:g2.ie+g2.ioffset, g2.js+g2.joffset:g2.je+g2.joffset, g2.ks:g2.ke] .= f2.v[g2.is:g2.ie, g2.js:g2.je, g2.ks:g2.ke]
+            #     f1.w[g2.is+g2.ioffset:g2.ie+g2.ioffset, g2.js+g2.joffset:g2.je+g2.joffset, g2.ks:g2.ke] .= f2.w[g2.is:g2.ie, g2.js:g2.je, g2.ks:g2.ke]
+            #     f1.s[g2.is+g2.ioffset:g2.ie+g2.ioffset, g2.js+g2.joffset:g2.je+g2.joffset, g2.ks:g2.ke] .= f2.s[g2.is:g2.ie, g2.js:g2.je, g2.ks:g2.ke]
+            # end
             # CvH END TMP
 
             for i in 1:m.n_domains

@@ -1,5 +1,6 @@
 using Interpolations
 
+
 struct MultiDomain{TF <: Union{Float32, Float64}}
     enable_nudge::Bool
     nudge_time::TF
