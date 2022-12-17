@@ -130,12 +130,14 @@ function calc_rhs!(m::Model, i)
         @. f.s[g.is-1, :, :] = 2 * s_west - f.s[g.is, :, :]
         @. f.s[g.ie+1, :, :] = 2 * s_east - f.s[g.ie, :, :]
 
-        # f.s_gradbot[:, :] .= fsrc.s_gradbot[1+g.ioffset:g.icells+g.ioffset, 1+g.joffset:g.jcells+g.joffset]
-        # f.s_gradbot[:, :] .= fsrc.s_gradbot[1+g.ioffset:g.icells+g.ioffset, 1+g.joffset:g.jcells+g.joffset]
+        interp = interpolate((gsrc.x, gsrc.y), fsrc.s_gradbot, (Gridded(Linear()), Gridded(Linear())))
+        f.s_gradbot[:, :] .= interp(g.x, g.y)
+        interp = interpolate((gsrc.x, gsrc.y), fsrc.s_gradtop, (Gridded(Linear()), Gridded(Linear())))
+        f.s_gradtop[:, :] .= interp(g.x, g.y)
 
-        # # Set the pressure to that of the parent domain to correct only the pressure gradient.
-        # f.p[:, :, :] .= fsrc.p[(g.is-1 + g.ioffset):(g.ie+1 + g.ioffset), (g.js-1 + g.joffset):(g.je+1 + g.joffset), :]
-        # f.p[:, :, :] .= fsrc.p[(g.is-1 + g.ioffset):(g.ie+1 + g.ioffset), (g.js-1 + g.joffset):(g.je+1 + g.joffset), :]
+        # Set the pressure to that of the parent domain to correct only the pressure gradient.
+        interp = interpolate((gsrc.x, gsrc.y, gsrc.z), fsrc.p, (Gridded(Linear()), Gridded(Linear()), Gridded(Linear())))
+        f.p[:, :, :] .= interp(g.x, g.y, g.z)
 
     else
         g = m.grid[i]
