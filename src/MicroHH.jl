@@ -91,21 +91,31 @@ function calc_rhs!(m::Model, i)
         interp = interpolate((gsrc.y, gsrc.z), u_east, (Gridded(Linear()), Gridded(Linear())))
         f.u[g.ie+1, :, :] .= interp(g.y, g.z)
 
-        # v_west = 0.5 .* (  fsrc.v[g.is-1 + g.ioffset, (1 + g.joffset):(g.jcells + g.joffset), :]
-        #                 .+ fsrc.v[g.is   + g.ioffset, (1 + g.joffset):(g.jcells + g.joffset), :] )
-        # v_east = 0.5 .* (  fsrc.v[g.ie   + g.ioffset, (1 + g.joffset):(g.jcells + g.joffset), :]
-        #                 .+ fsrc.v[g.ie+1 + g.ioffset, (1 + g.joffset):(g.jcells + g.joffset), :] )
+        v_west_p = 0.5 .* (  fsrc.v[isc-1, jsc-1:jec+1, ksc-1:kec+1]
+                          .+ fsrc.v[isc  , jsc-1:jec+1, ksc-1:kec+1] )
+        v_east_p = 0.5 .* (  fsrc.v[iec  , jsc-1:jec+1, ksc-1:kec+1]
+                          .+ fsrc.v[iec+1, jsc-1:jec+1, ksc-1:kec+1] )
 
-        # @. f.v[g.is-1, :, :] = 2 * v_west - f.v[g.is, :, :]
-        # @. f.v[g.ie+1, :, :] = 2 * v_east - f.v[g.ie, :, :]
+        interp = interpolate((gsrc.y, gsrc.z), v_west_p, (Gridded(Linear()), Gridded(Linear())))
+        v_west = interp(g.y, g.z)
+        interp = interpolate((gsrc.y, gsrc.z), v_east_p, (Gridded(Linear()), Gridded(Linear())))
+        v_east = interp(g.y, g.z)
 
-        # w_west = 0.5 .* (  fsrc.w[g.is-1 + g.ioffset, (1 + g.joffset):(g.jcells + g.joffset), :]
-        #                 .+ fsrc.w[g.is   + g.ioffset, (1 + g.joffset):(g.jcells + g.joffset), :] )
-        # w_east = 0.5 .* (  fsrc.w[g.ie   + g.ioffset, (1 + g.joffset):(g.jcells + g.joffset), :]
-        #                 .+ fsrc.w[g.ie+1 + g.ioffset, (1 + g.joffset):(g.jcells + g.joffset), :] )
+        @. f.v[g.is-1, :, :] = 2 * v_west - f.v[g.is, :, :]
+        @. f.v[g.ie+1, :, :] = 2 * v_east - f.v[g.ie, :, :]
 
-        # @. f.w[g.is-1, :, :] = 2 * w_west - f.w[g.is, :, :]
-        # @. f.w[g.ie+1, :, :] = 2 * w_east - f.w[g.ie, :, :]
+        w_west_p = 0.5 .* (  fsrc.w[isc-1, jsc-1:jec+1, ksc-1:kec+1]
+                          .+ fsrc.w[isc  , jsc-1:jec+1, ksc-1:kec+1] )
+        w_east_p = 0.5 .* (  fsrc.w[iec  , jsc-1:jec+1, ksc-1:kec+1]
+                          .+ fsrc.w[iec+1, jsc-1:jec+1, ksc-1:kec+1] )
+
+        interp = interpolate((gsrc.y, gsrc.zh), w_west_p, (Gridded(Linear()), Gridded(Linear())))
+        w_west = interp(g.y, g.zh)
+        interp = interpolate((gsrc.y, gsrc.zh), w_east_p, (Gridded(Linear()), Gridded(Linear())))
+        w_east = interp(g.y, g.zh)
+
+        @. f.w[g.is-1, :, :] = 2 * w_west - f.w[g.is, :, :]
+        @. f.w[g.ie+1, :, :] = 2 * w_east - f.w[g.ie, :, :]
 
         s_west_p = 0.5 .* (  fsrc.s[isc-1, jsc-1:jec+1, ksc-1:kec+1]
                           .+ fsrc.s[isc  , jsc-1:jec+1, ksc-1:kec+1] )
