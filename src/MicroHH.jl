@@ -666,14 +666,69 @@ function step_model!(m::Model)
             end
 
             # CvH TMP TWO WAY NEST HERE
-            # if m.n_domains > 1
-            #     f1 = m.fields[1]; g1 = m.grid[1]
-            #     f2 = m.fields[2]; g2 = m.grid[2]
-            #     f1.u[g2.is+1+g2.ioffset:g2.ie+g2.ioffset, g2.js+g2.joffset:g2.je+g2.joffset, g2.ks:g2.ke] .= f2.u[g2.is+1:g2.ie, g2.js:g2.je, g2.ks:g2.ke]
-            #     f1.v[g2.is+g2.ioffset:g2.ie+g2.ioffset, g2.js+g2.joffset:g2.je+g2.joffset, g2.ks:g2.ke] .= f2.v[g2.is:g2.ie, g2.js:g2.je, g2.ks:g2.ke]
-            #     f1.w[g2.is+g2.ioffset:g2.ie+g2.ioffset, g2.js+g2.joffset:g2.je+g2.joffset, g2.ks:g2.ke] .= f2.w[g2.is:g2.ie, g2.js:g2.je, g2.ks:g2.ke]
-            #     f1.s[g2.is+g2.ioffset:g2.ie+g2.ioffset, g2.js+g2.joffset:g2.je+g2.joffset, g2.ks:g2.ke] .= f2.s[g2.is:g2.ie, g2.js:g2.je, g2.ks:g2.ke]
-            # end
+
+            if m.n_domains > 1
+                f1 = m.fields[1]; g1 = m.grid[1]
+                f2 = m.fields[2]; g2 = m.grid[2]
+
+                # HARDCODE THE NESTING, FIX THIS ONCE IT WORKS
+                isc = g1.is + g1.itot÷4; iec = g1.is + 3*(g1.itot÷4) - 1
+                jsc = g1.js; jec = g1.je
+                ksc = g1.ks; kec = g1.ke
+
+                ni = round(Int, g1.dx / g2.dx)
+                nj = round(Int, g1.dy / g2.dy)
+                nk = round(Int, g1.dz[g1.ks] / g2.dz[g2.ks])
+
+                for k in ksc:kec
+                    for j in jsc:jec
+                        for i in isc:iec
+                            iis = 2*(i-isc) + g2.is; jjs = 2*(j-jsc) + g2.js; kks = 2*(k-ksc) + g2.ks
+                            iie = iis+ni-1; jje = jjs+nj-1; kke = kks+nk-1;
+                            f1.s[i, j, k] = sum(f2.s[iis:iie, jjs:jje, kks:kke]) / (ni*nj*nk);
+                        end
+                    end
+                end
+
+                # for k in ksc:kec
+                #     for j in jsc:jec
+                #         for i in isc:iec
+                #             ii = 2*(i-isc); jj = 2*(j-jsc); kk = 2*(k-ksc)
+                #             f1.u[i, j, k] = 0;
+                #         end
+                #     end
+                # end
+
+                # for k in ksc:kec
+                #     for j in jsc:jec
+                #         for i in isc:iec
+                #             ii = 2*(i-isc); jj = 2*(j-jsc); kk = 2*(k-ksc)
+                #             f1.v[i, j, k] = 0;
+                #         end
+                #     end
+                # end
+
+                # for k in ksc:kec
+                #     for j in jsc:jec
+                #         for i in isc:iec
+                #             ii = 2*(i-isc); jj = 2*(j-jsc); kk = 2*(k-ksc)
+                #             f1.w[i, j, k] = 0;
+                #         end
+                #     end
+                # end
+
+                # interp = interpolate((g2.xh, g2.y, g2.z), f2.u, (Gridded(Linear()), Gridded(Linear()), Gridded(Linear())))
+                # f1.u[isc:iec+1, jsc:jec, ksc:kec] .= interp(g1.xh[isc:iec+1], g1.y[jsc:jec], g1.z[ksc:kec])
+
+                # interp = interpolate((g2.x, g2.yh, g2.z), f2.v, (Gridded(Linear()), Gridded(Linear()), Gridded(Linear())))
+                # f1.v[isc:iec, jsc:jec, ksc:kec] .= interp(g1.x[isc:iec], g1.yh[jsc:jec], g1.z[ksc:kec])
+
+                # interp = interpolate((g2.x, g2.y, g2.zh), f2.w, (Gridded(Linear()), Gridded(Linear()), Gridded(Linear())))
+                # f1.w[isc:iec, jsc:jec, ksc:kec] .= interp(g1.x[isc:iec], g1.y[jsc:jec], g1.zh[ksc:kec])
+
+                # interp = interpolate((g2.x, g2.y, g2.z), f2.s, (Gridded(Linear()), Gridded(Linear()), Gridded(Linear())))
+                # f1.s[isc:iec, jsc:jec, ksc:kec] .= interp(g1.x[isc:iec], g1.y[jsc:jec], g1.z[ksc:kec])
+            end
             # CvH END TMP
 
             for i in 1:m.n_domains
