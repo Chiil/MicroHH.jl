@@ -7,7 +7,7 @@ end
 
 
 ## Default float type.
-float_type = Float64
+float_type = Float32
 
 
 ## Settings domain 1.

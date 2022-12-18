@@ -666,7 +666,6 @@ function step_model!(m::Model)
             end
 
             # CvH TMP TWO WAY NEST HERE
-
             if m.n_domains > 1
                 f1 = m.fields[1]; g1 = m.grid[1]
                 f2 = m.fields[2]; g2 = m.grid[2]
@@ -680,15 +679,15 @@ function step_model!(m::Model)
                 nj = round(Int, g1.dy / g2.dy)
                 nk = round(Int, g1.dz[g1.ks] / g2.dz[g2.ks])
 
-                for k in ksc:kec
-                    for j in jsc:jec
-                        for i in isc:iec
-                            iis = 2*(i-isc) + g2.is; jjs = 2*(j-jsc) + g2.js; kks = 2*(k-ksc) + g2.ks
-                            iie = iis+ni-1; jje = jjs+nj-1; kke = kks+nk-1;
-                            f1.s[i, j, k] = sum(f2.s[iis:iie, jjs:jje, kks:kke]) / (ni*nj*nk);
-                        end
-                    end
-                end
+                # for k in ksc:kec
+                #     for j in jsc:jec
+                #         for i in isc:iec
+                #             iis = 2*(i-isc) + g2.is; jjs = 2*(j-jsc) + g2.js; kks = 2*(k-ksc) + g2.ks
+                #             iie = iis+ni-1; jje = jjs+nj-1; kke = kks+nk-1;
+                #             f1.s[i, j, k] = sum(f2.s[iis:iie, jjs:jje, kks:kke]) / (ni*nj*nk);
+                #         end
+                #     end
+                # end
 
                 # for k in ksc:kec
                 #     for j in jsc:jec
