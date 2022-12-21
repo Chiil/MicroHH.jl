@@ -86,9 +86,9 @@ function calc_rhs!(m::Model, i)
         u_west = @view fsrc.u[isc, jsc-1:jec+1, ksc-1:kec+1]
         u_east = @view fsrc.u[iec, jsc-1:jec+1, ksc-1:kec+1]
 
-        interp = interpolate((gsrc.y, gsrc.z), u_west, (Gridded(Linear()), Gridded(Linear())))
+        interp = interpolate((gsrc.y, gsrc.z), u_west, (Gridded(Constant()), Gridded(Constant())))
         f.u[g.is, :, :] .= interp(g.y, g.z)
-        interp = interpolate((gsrc.y, gsrc.z), u_east, (Gridded(Linear()), Gridded(Linear())))
+        interp = interpolate((gsrc.y, gsrc.z), u_east, (Gridded(Constant()), Gridded(Constant())))
         f.u[g.ie+1, :, :] .= interp(g.y, g.z)
 
         v_west_p = 0.5 .* (  fsrc.v[isc-1, jsc-1:jec+1, ksc-1:kec+1]

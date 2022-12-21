@@ -12,12 +12,12 @@ float_type = Float32
 
 ## Settings domain 1.
 settings_grid = Dict{String, Any}(
-    "itot" => 64,
-    "jtot" => 32,
-    "ktot" => 64,
+    "itot" => 128,
+    "jtot" => 64,
+    "ktot" => 128,
 
-    "xsize" => 3200.,
-    "ysize" => 1600.,
+    "xsize" => 6400.,
+    "ysize" => 3200.,
     "zsize" => 3200.,
 
     "xoffset" => 0.,
@@ -25,7 +25,7 @@ settings_grid = Dict{String, Any}(
     "zoffset" => 0.)
 
 settings_fields = Dict(
-    "visc" => 3.,
+    "visc" => 6.,
     "alpha" => 9.81 / 300.)
 
 settings_boundary = Dict(
@@ -37,9 +37,9 @@ settings_boundary = Dict(
 settings_timeloop = Dict(
     "start_time" => 0.,
     "end_time" => 10800.,
-    "save_time" => 3600.,
+    "save_time" => 1800.,
     "check_time" => 50.,
-    "dt" => 1.)
+    "dt" => 2.)
 
 settings_multidomain = Dict{String, Any}(
     "enable_nudge" => false)
@@ -56,11 +56,11 @@ settings_d01["grid"]["z"] = make_grid(settings_d01["grid"]["zsize"], settings_d0
 
 # Settings domain 2.
 settings_d02 = deepcopy(settings_d01)
-settings_d02["grid"]["itot"] = 64
-settings_d02["grid"]["jtot"] = 64
-settings_d02["grid"]["ktot"] = 128
-settings_d02["grid"]["xsize"] = 1600.
-settings_d02["grid"]["xoffset"] = 800.
+settings_d02["grid"]["itot"] = 192
+settings_d02["grid"]["jtot"] = 192
+settings_d02["grid"]["ktot"] = 384
+settings_d02["grid"]["xsize"] = 3200.
+settings_d02["grid"]["xoffset"] = 1600.
 
 settings_d02["grid"]["z"] = make_grid(settings_d02["grid"]["zsize"], settings_d02["grid"]["ktot"])
 
