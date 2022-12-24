@@ -96,10 +96,10 @@ function calc_rhs!(m::Model, i)
         v_east_p = 0.5 .* (  fsrc.v[iec  , jsc-1:jec+1, ksc-1:kec+1]
                           .+ fsrc.v[iec+1, jsc-1:jec+1, ksc-1:kec+1] )
 
-        interp = interpolate((gsrc.y, gsrc.z), v_west_p, (Gridded(Linear()), Gridded(Linear())))
-        v_west = interp(g.y, g.z)
-        interp = interpolate((gsrc.y, gsrc.z), v_east_p, (Gridded(Linear()), Gridded(Linear())))
-        v_east = interp(g.y, g.z)
+        interp = interpolate((gsrc.yh, gsrc.z), v_west_p, (Gridded(Linear()), Gridded(Linear())))
+        v_west = interp(g.yh, g.z)
+        interp = interpolate((gsrc.yh, gsrc.z), v_east_p, (Gridded(Linear()), Gridded(Linear())))
+        v_east = interp(g.yh, g.z)
 
         @. f.v[g.is-1, :, :] = 2 * v_west - f.v[g.is, :, :]
         @. f.v[g.ie+1, :, :] = 2 * v_east - f.v[g.ie, :, :]
@@ -158,24 +158,89 @@ function calc_rhs!(m::Model, i)
         f.w[g.ie+1, :, :] .= f.w[g.ie, :, :]
         f.s[g.is-1, :, :] .= f.s[g.is, :, :]
         f.s[g.ie+1, :, :] .= f.s[g.ie, :, :]
+    end
 
-        # Set the BCs again, this needs to be done more clean if ever implemented properly...
-        b = m.boundary[1]
-        # Bottom BC.
-        set_ghost_cells_bot_kernel!(
-            f.u, f.u_bot, f.u_gradbot, g.dzh, g.ks, b.mom_bot_type)
-        set_ghost_cells_bot_kernel!(
-            f.v, f.v_bot, f.v_gradbot, g.dzh, g.ks, b.mom_bot_type)
-        set_ghost_cells_bot_kernel!(
-            f.s, f.s_bot, f.s_gradbot, g.dzh, g.ks, b.s_bot_type)
+    # Set the BCs again, this needs to be done more clean if ever implemented properly...
+    b = m.boundary[i]
+    # Bottom BC.
+    set_ghost_cells_bot_kernel!(
+        f.u, f.u_bot, f.u_gradbot, g.dzh, g.ks, b.mom_bot_type)
+    set_ghost_cells_bot_kernel!(
+        f.v, f.v_bot, f.v_gradbot, g.dzh, g.ks, b.mom_bot_type)
+    set_ghost_cells_bot_kernel!(
+        f.s, f.s_bot, f.s_gradbot, g.dzh, g.ks, b.s_bot_type)
 
-        # Top BC.
-        set_ghost_cells_top_kernel!(
-            f.u, f.u_top, f.u_gradtop, g.dzh, g.ke, b.mom_top_type)
-        set_ghost_cells_top_kernel!(
-            f.v, f.v_top, f.v_gradtop, g.dzh, g.ke, b.mom_top_type)
-        set_ghost_cells_top_kernel!(
-            f.s, f.s_top, f.s_gradtop, g.dzh, g.ke, b.s_top_type)
+    # Top BC.
+    set_ghost_cells_top_kernel!(
+        f.u, f.u_top, f.u_gradtop, g.dzh, g.ke, b.mom_top_type)
+    set_ghost_cells_top_kernel!(
+        f.v, f.v_top, f.v_gradtop, g.dzh, g.ke, b.mom_top_type)
+    set_ghost_cells_top_kernel!(
+        f.s, f.s_top, f.s_gradtop, g.dzh, g.ke, b.s_top_type)
+
+    # Apply the sponge layer
+    if i > 1
+        g = m.grid[i]; gsrc = m.grid[i-1]
+        f = m.fields[i]; fsrc = m.fields[i-1]
+
+        W_dt = 0.1 / m.timeloop[1].dt
+        N = 5
+
+        # This can be done much faster, but first test.
+        interp = interpolate((gsrc.xh, gsrc.y, gsrc.z), fsrc.u, (Gridded(Linear()), Gridded(Linear()), Gridded(Linear())))
+        du = f.u .- interp(g.xh, g.y, g.z)
+        Threads.@threads for k in g.ks:g.ke
+            for j in g.js:g.je
+                @inbounds @fastmath @simd for i in g.is+1:g.is+N-1
+                    ii = i - g.is + 1
+                    w1 = W_dt * (1+N-ii) / N;
+                    w2 = 0.2*w1
+                    du_diff = du[i-1, j, k] + du[i+1, j, k] + du[i, j-1, k] + du[i, j+1, k] + du[i, j, k-1] + du[i, j, k+1] - 6*du[i, j, k]
+                    f.u_tend[i, j, k] += - w1*du[i, j, k] + w2*du_diff
+                end
+            end
+        end
+
+        interp = interpolate((gsrc.x, gsrc.yh, gsrc.z), fsrc.v, (Gridded(Linear()), Gridded(Linear()), Gridded(Linear())))
+        dv = f.v .- interp(g.x, g.yh, g.z)
+        Threads.@threads for k in g.ks:g.ke
+            for j in g.js:g.je
+                @inbounds @fastmath @simd for i in g.is:g.is+N-1
+                    ii = i - g.is + 1
+                    w1 = W_dt * (1+N-ii) / N;
+                    w2 = 0.2*w1
+                    dv_diff = dv[i-1, j, k] + dv[i+1, j, k] + dv[i, j-1, k] + dv[i, j+1, k] + dv[i, j, k-1] + dv[i, j, k+1] - 6*dv[i, j, k]
+                    f.v_tend[i, j, k] += - w1*dv[i, j, k] + w2*dv_diff
+                end
+            end
+        end
+
+        interp = interpolate((gsrc.x, gsrc.y, gsrc.zh), fsrc.w, (Gridded(Linear()), Gridded(Linear()), Gridded(Linear())))
+        dw = f.w .- interp(g.x, g.y, g.zh)
+        Threads.@threads for k in g.ks+1:g.ke-1
+            for j in g.js:g.je
+                @inbounds @fastmath @simd for i in g.is:g.is+N-1
+                    ii = i - g.is + 1
+                    w1 = W_dt * (1+N-ii) / N;
+                    w2 = 0.2*w1
+                    dw_diff = dw[i-1, j, k] + dw[i+1, j, k] + dw[i, j-1, k] + dw[i, j+1, k] + dw[i, j, k-1] + dw[i, j, k+1] - 6*dw[i, j, k]
+                    f.w_tend[i, j, k] += - w1*dw[i, j, k] + w2*dw_diff
+                end
+            end
+        end
+
+        interp = interpolate((gsrc.x, gsrc.y, gsrc.z), fsrc.s, (Gridded(Linear()), Gridded(Linear()), Gridded(Linear())))
+        ds = f.s .- interp(g.x, g.y, g.z)
+        Threads.@threads for k in g.ks:g.ke
+            for j in g.js:g.je
+                @inbounds @fastmath @simd for i in g.is:g.is+N-1
+                    ii = i - g.is + 1
+                    w1 = W_dt * (1+N-ii) / N; w2 = 0.2*w1
+                    ds_diff = ds[i-1, j, k] + ds[i+1, j, k] + ds[i, j-1, k] + ds[i, j+1, k] + ds[i, j, k-1] + ds[i, j, k+1] - 6*ds[i, j, k]
+                    f.s_tend[i, j, k] += - w1*ds[i, j, k] + w2*ds_diff
+                end
+            end
+        end
     end
     # CvH END TMP
 
@@ -666,7 +731,7 @@ function step_model!(m::Model)
             end
 
             # CvH TMP TWO WAY NEST HERE
-            do_two_way = true
+            do_two_way = false
 
             if do_two_way
                 if m.n_domains > 1
@@ -705,7 +770,7 @@ function step_model!(m::Model)
                     end
 
                     Threads.@threads for k in ksc:kec
-                        for j in jsc+1:jec
+                        for j in jsc:jec
                             @inbounds @fastmath @simd for i in isc:iec
                                 iis = ni*(i-isc) + g2.is; jjs = nj*(j-jsc) + g2.js - (nj-1)÷2; kks = nk*(k-ksc) + g2.ks
                                 iie = iis+ni-1; jje = jjs+nj-1; kke = kks+nk-1;
@@ -714,7 +779,7 @@ function step_model!(m::Model)
                         end
                     end
 
-                    Threads.@threads for k in ksc+1:kec
+                    Threads.@threads for k in ksc:kec
                         for j in jsc:jec
                             @inbounds @fastmath @simd for i in isc:iec
                                 iis = ni*(i-isc) + g2.is; jjs = nj*(j-jsc) + g2.js; kks = nk*(k-ksc) + g2.ks - (nk-1)÷2
