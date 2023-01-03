@@ -504,15 +504,20 @@ end
 
 
 ## Precompilation
-let
+include("precompile_settings.jl")
+
+# map([Float32, Float64]) do float_type
+for float_type in [Float32, Float64]
     n_domains = 1
-    include("precompile_settings.jl")
-    m = Model("drycbl", n_domains, settings, Float32)
+    m = Model("precompile", n_domains, create_precompile_settings(), float_type)
+    save_model(m)
+    load_model!(m)
     in_progress = prepare_model!(m)
     in_progress = step_model!(m)
 end
 
 
+## Initialization
 function __init__()
     s = ArgParseSettings()
     @add_arg_table! s begin
