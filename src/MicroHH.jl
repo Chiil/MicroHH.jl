@@ -506,7 +506,6 @@ end
 ## Precompilation
 include("precompile_settings.jl")
 
-# map([Float32, Float64]) do float_type
 for float_type in [Float32, Float64]
     n_domains = 1
     m = Model("precompile", n_domains, create_precompile_settings(), float_type)
