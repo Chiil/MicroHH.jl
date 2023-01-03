@@ -903,6 +903,20 @@ let
 end
 
 
+## Precompilation
+include("precompile_settings.jl")
+
+for float_type in [Float32, Float64]
+    n_domains = 1
+    m = Model("precompile", n_domains, create_precompile_settings(), float_type)
+    save_model(m)
+    load_model!(m)
+    in_progress = prepare_model!(m)
+    in_progress = step_model!(m)
+end
+
+
+## Initialization
 function __init__()
     s = ArgParseSettings()
     @add_arg_table! s begin
