@@ -894,16 +894,6 @@ end
 
 
 ## Precompilation
-let
-    n_domains = 1
-    include("precompile_settings.jl")
-    m = Model("drycbl", n_domains, settings, Float32)
-    in_progress = prepare_model!(m)
-    in_progress = step_model!(m)
-end
-
-
-## Precompilation
 include("precompile_settings.jl")
 
 for float_type in [Float32, Float64]
