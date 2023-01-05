@@ -235,7 +235,7 @@ function save_domain(m::Model, i, p::ParallelDistributed)
         ("w", f.w, g.ktoth),
         ("s", f.s, g.ktot )]
 
-    map(items_to_save) do item
+    for item in items_to_save
         name, a, ktot = item
 
         # Remove the ghost cells.
@@ -270,7 +270,7 @@ function save_domain(m::Model, i, p::ParallelDistributed)
         ("s_gradbot", f.s_gradbot),
         ("s_gradtop", f.s_gradtop)]
 
-    map(items_to_save) do item
+    for item in items_to_save
         name, a = item
         a_nogc = a[g.is:g.ie, g.js:g.je]
         aid = create_dataset(fid, name, datatype(a_nogc), dataspace((g.itot, g.jtot)), dxpl_mpio=HDF5.H5FD_MPIO_COLLECTIVE)
@@ -291,7 +291,7 @@ function save_domain(m::Model, i, p::ParallelDistributed)
         ("w", "x" , "y" , "zh"),
         ("s", "x" , "y" , "z" )]
 
-    map(vars_3d) do var
+    for var in vars_3d
         name::String, x::String, y::String, z::String = var
         HDF5.h5ds_attach_scale(fid[name], fid[x], 2)
         HDF5.h5ds_attach_scale(fid[name], fid[y], 1)
@@ -304,7 +304,7 @@ function save_domain(m::Model, i, p::ParallelDistributed)
         ("s_gradbot", "x", "y"),
         ("s_gradtop", "x", "y")]
 
-    map(vars_2d) do var
+    for var in vars_2d
         name::String, x::String, y::String = var
         HDF5.h5ds_attach_scale(fid[name], fid[x], 1)
         HDF5.h5ds_attach_scale(fid[name], fid[y], 0)
