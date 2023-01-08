@@ -29,7 +29,7 @@ node1 = Observable(s_bot .- mean(s_bot))
 h1 = heatmap(fig[1, 1], x, y, node1, colorrange=(-0.4, 0.4))
 node2 = Observable(s[:, 1, :] .- mean(s, dims=(1, 2))[:, 1, :])
 h2 = heatmap(fig[1, 2], x, z, node2, colorrange=(-0.4, 0.4))
-fig
+display(fig)
 
 
 ## Run the model.
