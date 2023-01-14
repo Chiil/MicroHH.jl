@@ -512,8 +512,6 @@ end
         @precompile_all_calls begin
             n_domains = 1
             m = Model("precompile", n_domains, create_precompile_settings(), float_type)
-            save_model(m)
-            load_model!(m)
             in_progress = prepare_model!(m)
             in_progress = step_model!(m)
         end
