@@ -7,9 +7,6 @@ export prepare_model!, step_model!, save_model, load_model!, output_timer_model!
 
 
 ## Load packages.
-const use_mpi = Ref{Bool}(false)
-const npx = Ref{Int}(1); const npy = Ref{Int}(1)
-
 using LoopVectorization
 using Tullio
 using Printf
@@ -17,6 +14,15 @@ using HDF5
 using ArgParse
 using TimerOutputs
 using SnoopPrecompile
+using Preferences
+
+
+## Set global constants.
+const use_mpi = @load_preference("use_mpi", false)
+@static if use_mpi
+    @eval using MPI
+end
+const npx = Ref{Int}(1); const npy = Ref{Int}(1)
 
 
 ## Include the necessary files.
@@ -519,13 +525,16 @@ end
 end
 
 
-## Initialization
+## Global settings setters.
+function set_use_mpi(use_mpi_value::Bool)
+    @set_preferences!("use_mpi" => use_mpi_value)
+end
+
+
+## Initialization.
 function __init__()
     s = ArgParseSettings()
     @add_arg_table! s begin
-        "--use-mpi"
-            help = "Enable MPI"
-            action = :store_true
         "--npx"
             help = "MPI pencils in x-direction"
             arg_type = Int
@@ -538,14 +547,8 @@ function __init__()
 
     parsed_args = parse_args(s)
 
-    use_mpi[] = parsed_args["use-mpi"]
     npx[] = parsed_args["npx"]
     npy[] = parsed_args["npy"]
-
-    # Only load MPI if parallel run is required.
-    if use_mpi[]
-        @eval using MPI
-    end
 end
 
 

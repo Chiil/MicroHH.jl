@@ -38,7 +38,7 @@ end
 
 
 function Parallel(npx, npy)
-    if use_mpi[]
+    if use_mpi
         MPI.Init()
 
         dims = [npy, npx]; periodic = [1, 1]; reorder = true
@@ -55,7 +55,7 @@ function Parallel(npx, npy)
         id_south, id_north = MPI.Cart_shift(commxy, 0, 1)
 
         if id == 0
-            @info "Initialized MicroHH with use_mpi = $(use_mpi[]), on npx = $(npx[]), npy = $(npy[]) tasks, nthreads = $(Threads.nthreads())."
+            @info "Initialized MicroHH with use_mpi = $use_mpi, on npx = $(npx[]), npy = $(npy[]) tasks, nthreads = $(Threads.nthreads())."
         end
 
         return ParallelDistributed(
@@ -68,7 +68,7 @@ function Parallel(npx, npy)
         id_west = 0; id_east = 0; id_south = 0; id_north = 0
         commxy = Nothing; commx = Nothing; commy = Nothing
 
-        @info "Initialized MicroHH with use_mpi = $(use_mpi[]), on npx = $(npx[]), npy = $(npy[]) tasks, nthreads = $(Threads.nthreads())."
+        @info "Initialized MicroHH with use_mpi = $use_mpi, on npx = $(npx[]), npy = $(npy[]) tasks, nthreads = $(Threads.nthreads())."
 
         return ParallelSerial(
             npx, npy,
