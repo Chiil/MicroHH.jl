@@ -23,6 +23,7 @@ const use_mpi = @load_preference("use_mpi", false)
     @eval using MPI
 end
 const npx = Ref{Int}(1); const npy = Ref{Int}(1)
+const float_type = (@load_preference("use_sp", false)) ? Float32 : Float64
 
 
 ## Include the necessary files.
@@ -57,7 +58,8 @@ struct Model{TF <: Union{Float32, Float64}}
 end
 
 
-function Model(name, n_domains, settings, TF)
+function Model(name, n_domains, settings)
+    TF = float_type
     parallel = Parallel(npx[], npy[])
     to = TimerOutput()
     disable_timer!(to)
@@ -70,6 +72,10 @@ function Model(name, n_domains, settings, TF)
         push!(m.timeloop, Timeloop(settings[i]))
         push!(m.pressure, Pressure(m.grid[i], m.parallel, TF))
         push!(m.multidomain, MultiDomain(m.grid[i], settings[i], TF))
+    end
+
+    if m.parallel.id == 0
+        @info "Initialized MicroHH with float_type = $float_type, use_mpi = $use_mpi, and nthreads = $(Threads.nthreads())."
     end
 
     return m
@@ -514,20 +520,22 @@ end
 @precompile_setup begin
     include("precompile_settings.jl")
 
-    for float_type in [Float32, Float64]
-        @precompile_all_calls begin
-            n_domains = 1
-            m = Model("precompile", n_domains, create_precompile_settings(), float_type)
-            in_progress = prepare_model!(m)
-            in_progress = step_model!(m)
-        end
+    @precompile_all_calls begin
+        n_domains = 1
+        m = Model("precompile", n_domains, create_precompile_settings())
+        in_progress = prepare_model!(m)
+        in_progress = step_model!(m)
     end
 end
 
 
 ## Global settings setters.
-function set_use_mpi(use_mpi_value::Bool)
+function set_use_mpi!(use_mpi_value::Bool)
     @set_preferences!("use_mpi" => use_mpi_value)
+end
+
+function set_use_sp!(use_sp_value::Bool)
+    @set_preferences!("use_sp" => use_sp_value)
 end
 
 

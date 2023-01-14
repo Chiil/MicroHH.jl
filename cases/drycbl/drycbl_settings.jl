@@ -7,8 +7,6 @@ end
 
 
 ## Settings.
-float_type = Float32
-
 settings_grid = Dict{String, Any}(
     "itot" => 256,
     "jtot" => 256,

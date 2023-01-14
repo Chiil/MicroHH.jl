@@ -54,10 +54,6 @@ function Parallel(npx, npy)
         id_west, id_east = MPI.Cart_shift(commxy, 1, 1)
         id_south, id_north = MPI.Cart_shift(commxy, 0, 1)
 
-        if id == 0
-            @info "Initialized MicroHH with use_mpi = $use_mpi, on npx = $(npx[]), npy = $(npy[]) tasks, nthreads = $(Threads.nthreads())."
-        end
-
         return ParallelDistributed(
             npx, npy,
             id, id_x, id_y,
@@ -67,8 +63,6 @@ function Parallel(npx, npy)
         id = 0; id_x = 0; id_y = 0
         id_west = 0; id_east = 0; id_south = 0; id_north = 0
         commxy = Nothing; commx = Nothing; commy = Nothing
-
-        @info "Initialized MicroHH with use_mpi = $use_mpi, on npx = $(npx[]), npy = $(npy[]) tasks, nthreads = $(Threads.nthreads())."
 
         return ParallelSerial(
             npx, npy,
