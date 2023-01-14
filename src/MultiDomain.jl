@@ -13,9 +13,11 @@ end
 
 # Constructor for multidomain struct.
 function MultiDomain(g::Grid, settings, TF)
-    enable_nudge = settings["enable_nudge"]
+    d = settings["multidomain"]
+
+    enable_nudge = d["enable_nudge"]
     if enable_nudge
-        nudge_time = settings["nudge_time"]
+        nudge_time = d["nudge_time"]
         return MultiDomain{TF}(
             enable_nudge,
             nudge_time,

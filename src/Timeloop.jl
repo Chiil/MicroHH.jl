@@ -26,7 +26,9 @@ mutable struct Timeloop
 end
 
 
-function Timeloop(d::Dict)
+function Timeloop(settings::Dict)
+    d = settings["timeloop"]
+
     start_time = d["start_time"]
     end_time = d["end_time"]
     save_time = d["save_time"]

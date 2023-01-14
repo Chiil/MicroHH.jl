@@ -52,7 +52,9 @@ struct Grid{TF <: Union{Float32, Float64}}
     dzhi::Vector{TF}
 end
 
-function Grid(d::Dict, p::Parallel, TF)
+function Grid(settings::Dict, p::Parallel, TF)
+    d = settings["grid"]
+
     itot = d["itot"]
     jtot = d["jtot"]
     ktot = d["ktot"]
