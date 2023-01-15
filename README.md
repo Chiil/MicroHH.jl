@@ -16,7 +16,7 @@ using MicroHH
 MicroHH.set_use_mpi!(true)
 ```
 
-With MPI, the simulation should be started for instance as (if `npx = 2` and `npy=2`)
+With MPI, the simulation should be started for instance as (if `npx = 2` and `npy = 2`)
 `drycbl` with 4 tasks and 2 thread(s): `mpiexec -n 4 julia --project -O3 -t2 drycbl_run.nl`
 
 MicroHH can be run at single precision by setting the `use_sp` flag to `true`.
@@ -31,3 +31,4 @@ In case of MPI enabled, it is recommended to manually precompile before starting
 ```
 julia --project -e 'import Pkg; Pkg.precompile()'
 ```
+
