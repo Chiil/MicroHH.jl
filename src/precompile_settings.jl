@@ -1,5 +1,9 @@
 ## Settings.
 function create_precompile_settings()
+    settings_parallel = Dict(
+        "npx" => 1,
+        "npy" => 1)
+
     settings_grid = Dict{String, Any}(
         "itot" => 32,
         "jtot" => 32,
@@ -30,6 +34,7 @@ function create_precompile_settings()
         "enable_nudge" => false)
 
     settings_d01 = Dict(
+        "parallel" => settings_parallel,
         "grid" => settings_grid,
         "fields" => settings_fields,
         "boundary" => settings_boundary,

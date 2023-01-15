@@ -22,7 +22,6 @@ const use_mpi = @load_preference("use_mpi", false)
 @static if use_mpi
     @eval using MPI
 end
-const npx = Ref{Int}(1); const npy = Ref{Int}(1)
 const float_type = (@load_preference("use_sp", false)) ? Float32 : Float64
 
 
@@ -60,7 +59,7 @@ end
 
 function Model(name, n_domains, settings)
     TF = float_type
-    parallel = Parallel(npx[], npy[])
+    parallel = Parallel(settings[1])
     to = TimerOutput()
     disable_timer!(to)
 
@@ -541,22 +540,6 @@ end
 
 ## Initialization.
 function __init__()
-    s = ArgParseSettings()
-    @add_arg_table! s begin
-        "--npx"
-            help = "MPI pencils in x-direction"
-            arg_type = Int
-            default = 1
-        "--npy"
-            help = "MPI pencils in y-direction"
-            arg_type = Int
-            default = 1
-    end
-
-    parsed_args = parse_args(s)
-
-    npx[] = parsed_args["npx"]
-    npy[] = parsed_args["npy"]
 end
 
 

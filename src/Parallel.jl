@@ -37,8 +37,13 @@ struct ParallelSerial <: Parallel
 end
 
 
-function Parallel(npx, npy)
+function Parallel(settings::Dict)
+    d = settings["parallel"]
+
     if use_mpi
+        npx = d["npx"]
+        npy = d["npy"]
+
         MPI.Init()
 
         dims = [npy, npx]; periodic = [1, 1]; reorder = true
@@ -60,9 +65,11 @@ function Parallel(npx, npy)
             id_west, id_east, id_south, id_north,
             commxy, commx, commy)
     else
+        npx = 1; npy = 1
+
         id = 0; id_x = 0; id_y = 0
         id_west = 0; id_east = 0; id_south = 0; id_north = 0
-        commxy = Nothing; commx = Nothing; commy = Nothing
+        commxy = nothing; commx = nothing; commy = nothing
 
         return ParallelSerial(
             npx, npy,
