@@ -25,3 +25,9 @@ MicroHH can be run at single precision by setting the `use_sp` flag to `true`.
 using MicroHH
 MicroHH.set_use_sp!(true)
 ```
+
+In case of MPI enabled, it is recommended to manually precompile before starting a run, to avoid precompilation on all tasks simultaneously.
+
+```
+julia --project -e 'import Pkg; Pkg.precompile()'
+```
