@@ -4,14 +4,24 @@ This is a Julia port of the dynamical core of [MicroHH](https://microhh.github.i
 
 A few example cases are in the `cases` folder.
 
-MicroHH should be launched without flags for serial mode:
+MicroHH is by default precompiled for serial computing with Float64 precision. It can be run on a chosen number of threads:
 
 * `drycbl` with 1 thread(s): `julia --project -O3 drycbl_run.nl`
 * `drycbl` with 2 thread(s): `julia --project -O3 -t2 drycbl_run.nl`
 
-MicroHH should be launched with `--use-mpi` flags for parallel mode with `--npx` and `--npy` specifying the MPI tiling:
+If desired, MPI mode can be enabled via de `set_use_mpi!` function that can be run from Julia, and the settings are stored in `LocalPreferences.toml`.
 
-* `drycbl` with 8 tasks and 1 thread(s): `mpiexecjl -n 8 julia --project -O3 drycbl_run.nl --use-mpi --npx 2 --npy 4`
-* `drycbl` with 4 tasks and 2 thread(s): `mpiexecjl -n 4 julia --project -O3 -t2 drycbl_run.nl --use-mpi --npx 2 --npy 2`
-* `drycbl` with 2 tasks and 4 thread(s): `mpiexecjl -n 2 julia --project -O3 -t4 drycbl_run.nl --use-mpi --npx 1 --npy 2`
+```
+using MicroHH
+MicroHH.set_use_mpi!(true)
+```
 
+With MPI, the simulation should be started for instance as (if `npx = 2` and `npy=2`)
+`drycbl` with 4 tasks and 2 thread(s): `mpiexec -n 4 julia --project -O3 -t2 drycbl_run.nl`
+
+MicroHH can be run at single precision by setting the `use_sp` flag to `true`.
+
+```
+using MicroHH
+MicroHH.set_use_sp!(true)
+```
