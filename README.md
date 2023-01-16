@@ -9,7 +9,7 @@ MicroHH is by default precompiled for serial computing with Float64 precision. I
 * `drycbl` with 1 thread(s): `julia --project -O3 drycbl_run.nl`
 * `drycbl` with 2 thread(s): `julia --project -O3 -t2 drycbl_run.nl`
 
-If desired, MPI mode can be enabled via de `set_use_mpi!` function that can be run from Julia, and the settings are stored in `LocalPreferences.toml`.
+MPI mode can be enabled via de `set_use_mpi!` function that can be run from Julia, and the settings are stored in `LocalPreferences.toml`.
 
 ```
 using MicroHH
