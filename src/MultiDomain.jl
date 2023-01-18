@@ -1,6 +1,8 @@
 using Interpolations
 
 
+# Abstract type definition. Every implementation must define enable_nudge,
+# or make empty implementation of the functions.
 abstract type MultiDomain end
 
 
