@@ -45,9 +45,9 @@ struct Model{TF <: Union{Float32, Float64}}
     name::String
     n_domains::Int
     last_measured_time::Ref{UInt64}
-    parallel::Parallel
     to::TimerOutput
 
+    parallel::Vector{Parallel}
     grid::Vector{Grid}
     fields::Vector{Fields}
     boundary::Vector{Boundary}
@@ -59,21 +59,21 @@ end
 
 function Model(name, n_domains, settings)
     TF = float_type
-    parallel = Parallel(settings[1])
     to = TimerOutput()
     disable_timer!(to)
 
-    m = Model{TF}(name, n_domains, 0, parallel, to, [], [], [], [], [], [])
+    m = Model{TF}(name, n_domains, 0, to, [], [], [], [], [], [], [])
     for i in 1:n_domains
-        push!(m.grid, Grid(settings[i], m.parallel, TF))
+        push!(m.parallel, Parallel(settings[i]))
+        push!(m.grid, Grid(settings[i], m.parallel[i], TF))
         push!(m.fields, Fields(m.grid[i], settings[i], TF))
-        push!(m.boundary, Boundary(m.grid[i], m.parallel, settings[i], TF))
+        push!(m.boundary, Boundary(m.grid[i], m.parallel[i], settings[i], TF))
         push!(m.timeloop, Timeloop(settings[i]))
-        push!(m.pressure, Pressure(m.grid[i], m.parallel, TF))
+        push!(m.pressure, Pressure(m.grid[i], m.parallel[i], TF))
         push!(m.multidomain, MultiDomain(m.grid[i], settings[i], TF))
     end
 
-    if m.parallel.id == 0
+    if m.parallel[1].id == 0
         @info "Initialized MicroHH with float_type = $float_type, use_mpi = $use_mpi, and nthreads = $(Threads.nthreads())."
     end
 
@@ -82,10 +82,10 @@ end
 
 
 function calc_rhs!(m::Model, i)
-    @timeit m.to "set_boundary"       set_boundary!(m.fields[i], m.grid[i], m.boundary[i], m.parallel)
+    @timeit m.to "set_boundary"       set_boundary!(m.fields[i], m.grid[i], m.boundary[i], m.parallel[i])
     @timeit m.to "calc_dynamics_tend" calc_dynamics_tend!(m.fields[i], m.grid[i], m.to)
     @timeit m.to "calc_nudge_tend"    calc_nudge_tend!(m.fields[i], m.grid[i], m.multidomain[i])
-    @timeit m.to "calc_pressure_tend" calc_pressure_tend!(m.fields[i], m.grid[i], m.timeloop[i], m.pressure[i], m.boundary[i], m.parallel, m.to)
+    @timeit m.to "calc_pressure_tend" calc_pressure_tend!(m.fields[i], m.grid[i], m.timeloop[i], m.pressure[i], m.boundary[i], m.parallel[i], m.to)
 end
 
 
@@ -330,7 +330,7 @@ end
 
 function save_model(m::Model)
     for i in 1:m.n_domains
-        save_domain(m, i, m.parallel)
+        save_domain(m, i, m.parallel[i])
     end
 end
 
@@ -340,7 +340,7 @@ function load_domain!(m::Model, i, p::ParallelSerial)
     g = m.grid[i]
     t = m.timeloop[i]
     b = m.boundary[i]
-    p = m.parallel
+    p = m.parallel[i]
 
     filename = @sprintf("%s.%02i.%08i.h5", m.name, i, round(t.time))
     h5open(filename, "r") do fid
@@ -370,7 +370,7 @@ function load_domain!(m::Model, i, p::ParallelDistributed)
     g = m.grid[i]
     t = m.timeloop[i]
     b = m.boundary[i]
-    p = m.parallel
+    p = m.parallel[i]
 
     # Set the range of i and j of the total grid that is stored on this task.
     is = p.id_x*g.imax + 1; ie = (p.id_x+1)*g.imax
@@ -435,7 +435,7 @@ end
 
 function load_model!(m::Model)
     for i in 1:m.n_domains
-        load_domain!(m, i, m.parallel)
+        load_domain!(m, i, m.parallel[i])
     end
 end
 
@@ -458,7 +458,7 @@ function step_model!(m::Model)
                 @timeit m.to "step_time" step_time!(m.timeloop[i])
 
                 if is_save_time(m.timeloop[i])
-                    @timeit m.to "save_domain" save_domain(m, i, m.parallel)
+                    @timeit m.to "save_domain" save_domain(m, i, m.parallel[i])
                 end
 
                 @timeit m.to "calc_rhs" calc_rhs!(m, i)
@@ -486,7 +486,7 @@ function check_model(m::Model)
     status_string = @sprintf("(%11.2f) Time = %8.3f",
         m.timeloop[1].time,
         (m.last_measured_time[] - old_time) * 1e-9)
-    if m.parallel.id == 0
+    if m.parallel[1].id == 0
         @info "$status_string"
     end
 
@@ -498,7 +498,7 @@ function check_model(m::Model)
             calc_cfl(m.fields[i], m.grid[i], m.timeloop[i]),
             sum(issubnormal.(m.fields[i].u)) + sum(issubnormal.(m.fields[i].v)) + sum(issubnormal.(m.fields[i].w)))
 
-        if m.parallel.id == 0
+        if m.parallel[1].id == 0
             @info "$status_string"
         end
     end
@@ -506,7 +506,7 @@ end
 
 
 function output_timer_model!(m::Model)
-    if m.parallel.id == 0
+    if m.parallel[1].id == 0
         @info ""
         @info "Timer output:"
         show(m.to)
