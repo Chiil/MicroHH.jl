@@ -1,6 +1,15 @@
 using Interpolations
 
-struct MultiDomain{TF <: Union{Float32, Float64}}
+
+abstract type MultiDomain end
+
+
+struct MultiDomainDisabled <: MultiDomain
+    enable_nudge::Bool
+end
+
+
+struct MultiDomainNudge{TF <: Union{Float32, Float64}} <: MultiDomain
     enable_nudge::Bool
     nudge_time::TF
 
@@ -12,13 +21,17 @@ end
 
 
 # Constructor for multidomain struct.
-function MultiDomain(g::Grid, settings, TF)
-    d = settings["multidomain"]
+function MultiDomain(g::Grid, settings::Dict, TF)
+    if haskey(settings, "multidomain")
+        d = settings["multidomain"]
+        enable_nudge = d["enable_nudge"]
+    else
+        enable_nudge = false
+    end
 
-    enable_nudge = d["enable_nudge"]
     if enable_nudge
         nudge_time = d["nudge_time"]
-        return MultiDomain{TF}(
+        return MultiDomainNudge{TF}(
             enable_nudge,
             nudge_time,
             zeros(g.icells, g.jcells, g.kcells),
@@ -26,14 +39,7 @@ function MultiDomain(g::Grid, settings, TF)
             zeros(g.icells, g.jcells, g.kcells),
             zeros(g.icells, g.jcells, g.kcells))
     else
-        nudge_time = 1e12
-        return MultiDomain{TF}(
-            enable_nudge,
-            nudge_time,
-            zeros(0, 0, 0),
-            zeros(0, 0, 0),
-            zeros(0, 0, 0),
-            zeros(0, 0, 0))
+        return MultiDomainDisabled(enable_nudge)
     end
 end
 

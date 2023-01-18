@@ -37,16 +37,12 @@ settings_timeloop = Dict(
     "check_time" => 2.,
     "dt" => 2.)
 
-settings_multidomain = Dict(
-    "enable_nudge" => false)
-
 settings_d01 = Dict(
     "parallel" => settings_parallel,
     "grid" => settings_grid,
     "fields" => settings_fields,
     "boundary" => settings_boundary,
-    "timeloop" => settings_timeloop,
-    "multidomain" => settings_multidomain)
+    "timeloop" => settings_timeloop)
 
 settings_d01["grid"]["z"] = make_grid(settings_d01["grid"]["zsize"], settings_d01["grid"]["ktot"])
 
