@@ -38,9 +38,9 @@ end
 
 
 function Parallel(settings::Dict)
-    d = settings["parallel"]
-
     if use_mpi
+        d = settings["parallel"]
+
         npx = d["npx"]
         npy = d["npy"]
 
