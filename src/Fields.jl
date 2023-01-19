@@ -38,7 +38,9 @@ struct Fields{TF <: Union{Float32, Float64}}
 end
 
 
-function Fields(g::Grid, d::Dict, TF)
+function Fields(g::Grid, settings::Dict, TF)
+    d = settings["fields"]
+
     visc = d["visc"]
     alpha = d["alpha"]
 

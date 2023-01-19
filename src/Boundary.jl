@@ -32,7 +32,9 @@ function string_to_type(s::String)
 end
 
 
-function Boundary(g::Grid, pp::Parallel, d::Dict, TF)
+function Boundary(g::Grid, pp::Parallel, settings::Dict, TF)
+    d = settings["boundary"]
+
     mom_bot_type = string_to_type(d["mom_bot_type"])
     mom_top_type = string_to_type(d["mom_top_type"])
     s_bot_type = string_to_type(d["s_bot_type"])

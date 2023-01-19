@@ -37,8 +37,13 @@ struct ParallelSerial <: Parallel
 end
 
 
-function Parallel(npx, npy)
-    if use_mpi[]
+function Parallel(settings::Dict)
+    if use_mpi
+        d = settings["parallel"]
+
+        npx = d["npx"]
+        npy = d["npy"]
+
         MPI.Init()
 
         dims = [npy, npx]; periodic = [1, 1]; reorder = true
@@ -54,21 +59,17 @@ function Parallel(npx, npy)
         id_west, id_east = MPI.Cart_shift(commxy, 1, 1)
         id_south, id_north = MPI.Cart_shift(commxy, 0, 1)
 
-        if id == 0
-            @info "Initialized MicroHH with use_mpi = $(use_mpi[]), on npx = $(npx[]), npy = $(npy[]) tasks, nthreads = $(Threads.nthreads())."
-        end
-
         return ParallelDistributed(
             npx, npy,
             id, id_x, id_y,
             id_west, id_east, id_south, id_north,
             commxy, commx, commy)
     else
+        npx = 1; npy = 1
+
         id = 0; id_x = 0; id_y = 0
         id_west = 0; id_east = 0; id_south = 0; id_north = 0
-        commxy = Nothing; commx = Nothing; commy = Nothing
-
-        @info "Initialized MicroHH with use_mpi = $(use_mpi[]), on npx = $(npx[]), npy = $(npy[]) tasks, nthreads = $(Threads.nthreads())."
+        commxy = nothing; commx = nothing; commy = nothing
 
         return ParallelSerial(
             npx, npy,

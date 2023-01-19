@@ -7,15 +7,22 @@ export prepare_model!, step_model!, save_model, load_model!, output_timer_model!
 
 
 ## Load packages.
-const use_mpi = Ref{Bool}(false)
-const npx = Ref{Int}(1); const npy = Ref{Int}(1)
-
 using LoopVectorization
 using Tullio
 using Printf
 using HDF5
 using ArgParse
 using TimerOutputs
+using SnoopPrecompile
+using Preferences
+
+
+## Set global constants.
+const use_mpi = @load_preference("use_mpi", false)
+@static if use_mpi
+    @eval using MPI
+end
+const float_type = (@load_preference("use_sp", false)) ? Float32 : Float64
 
 
 ## Include the necessary files.
@@ -38,9 +45,9 @@ struct Model{TF <: Union{Float32, Float64}}
     name::String
     n_domains::Int
     last_measured_time::Ref{UInt64}
-    parallel::Parallel
     to::TimerOutput
 
+    parallel::Vector{Parallel}
     grid::Vector{Grid}
     fields::Vector{Fields}
     boundary::Vector{Boundary}
@@ -50,19 +57,24 @@ struct Model{TF <: Union{Float32, Float64}}
 end
 
 
-function Model(name, n_domains, settings, TF)
-    parallel = Parallel(npx[], npy[])
+function Model(name, n_domains, settings)
+    TF = float_type
     to = TimerOutput()
     disable_timer!(to)
 
-    m = Model{TF}(name, n_domains, 0, parallel, to, [], [], [], [], [], [])
+    m = Model{TF}(name, n_domains, 0, to, [], [], [], [], [], [], [])
     for i in 1:n_domains
-        push!(m.grid, Grid(settings[i]["grid"], m.parallel, TF))
-        push!(m.fields, Fields(m.grid[i], settings[i]["fields"], TF))
-        push!(m.boundary, Boundary(m.grid[i], m.parallel, settings[i]["boundary"], TF))
-        push!(m.timeloop, Timeloop(settings[i]["timeloop"]))
-        push!(m.pressure, Pressure(m.grid[i], m.parallel, TF))
-        push!(m.multidomain, MultiDomain(m.grid[i], settings[i]["multidomain"], TF))
+        push!(m.parallel, Parallel(settings[i]))
+        push!(m.grid, Grid(settings[i], m.parallel[i], TF))
+        push!(m.fields, Fields(m.grid[i], settings[i], TF))
+        push!(m.boundary, Boundary(m.grid[i], m.parallel[i], settings[i], TF))
+        push!(m.timeloop, Timeloop(settings[i]))
+        push!(m.pressure, Pressure(m.grid[i], m.parallel[i], TF))
+        push!(m.multidomain, MultiDomain(m.grid[i], settings[i], TF))
+    end
+
+    if m.parallel[1].id == 0
+        @info "Initialized MicroHH with float_type = $float_type, use_mpi = $use_mpi, and nthreads = $(Threads.nthreads())."
     end
 
     return m
@@ -70,7 +82,7 @@ end
 
 
 function calc_rhs!(m::Model, i)
-    @timeit m.to "set_boundary"       set_boundary!(m.fields[i], m.grid[i], m.boundary[i], m.parallel)
+    @timeit m.to "set_boundary"       set_boundary!(m.fields[i], m.grid[i], m.boundary[i], m.parallel[i])
 
     # CvH TMP
     if i > 1
@@ -281,7 +293,7 @@ function calc_rhs!(m::Model, i)
 
     @timeit m.to "calc_dynamics_tend" calc_dynamics_tend!(m.fields[i], m.grid[i], m.to)
     @timeit m.to "calc_nudge_tend"    calc_nudge_tend!(m.fields[i], m.grid[i], m.multidomain[i])
-    @timeit m.to "calc_pressure_tend" calc_pressure_tend!(m.fields[i], m.grid[i], m.timeloop[i], m.pressure[i], m.boundary[i], m.parallel, m.to)
+    @timeit m.to "calc_pressure_tend" calc_pressure_tend!(m.fields[i], m.grid[i], m.timeloop[i], m.pressure[i], m.boundary[i], m.parallel[i], m.to)
 end
 
 
@@ -475,7 +487,7 @@ function save_domain(m::Model, i, p::ParallelDistributed)
         ("w", f.w, g.ktoth),
         ("s", f.s, g.ktot )]
 
-    map(items_to_save) do item
+    for item in items_to_save
         name, a, ktot = item
 
         # Remove the ghost cells.
@@ -518,7 +530,7 @@ function save_domain(m::Model, i, p::ParallelDistributed)
         ("s_gradbot", f.s_gradbot),
         ("s_gradtop", f.s_gradtop)]
 
-    map(items_to_save) do item
+    for item in items_to_save
         name, a = item
         a_nogc = a[g.is:g.ie, g.js:g.je]
         aid = create_dataset(fid, name, datatype(a_nogc), dataspace((g.itot, g.jtot)), dxpl_mpio=HDF5.H5FD_MPIO_COLLECTIVE)
@@ -539,7 +551,7 @@ function save_domain(m::Model, i, p::ParallelDistributed)
         ("w", "x" , "y" , "zh"),
         ("s", "x" , "y" , "z" )]
 
-    map(vars_3d) do var
+    for var in vars_3d
         name::String, x::String, y::String, z::String = var
         HDF5.h5ds_attach_scale(fid[name], fid[x], 2)
         HDF5.h5ds_attach_scale(fid[name], fid[y], 1)
@@ -560,7 +572,7 @@ function save_domain(m::Model, i, p::ParallelDistributed)
         ("s_gradbot", "x", "y"),
         ("s_gradtop", "x", "y")]
 
-    map(vars_2d) do var
+    for var in vars_2d
         name::String, x::String, y::String = var
         HDF5.h5ds_attach_scale(fid[name], fid[x], 1)
         HDF5.h5ds_attach_scale(fid[name], fid[y], 0)
@@ -575,7 +587,7 @@ end
 
 function save_model(m::Model)
     for i in 1:m.n_domains
-        save_domain(m, i, m.parallel)
+        save_domain(m, i, m.parallel[i])
     end
 end
 
@@ -585,7 +597,7 @@ function load_domain!(m::Model, i, p::ParallelSerial)
     g = m.grid[i]
     t = m.timeloop[i]
     b = m.boundary[i]
-    p = m.parallel
+    p = m.parallel[i]
 
     filename = @sprintf("%s.%02i.%08i.h5", m.name, i, round(t.time))
     h5open(filename, "r") do fid
@@ -623,7 +635,7 @@ function load_domain!(m::Model, i, p::ParallelDistributed)
     g = m.grid[i]
     t = m.timeloop[i]
     b = m.boundary[i]
-    p = m.parallel
+    p = m.parallel[i]
 
     # Set the range of i and j of the total grid that is stored on this task.
     is = p.id_x*g.imax + 1; ie = (p.id_x+1)*g.imax
@@ -720,7 +732,7 @@ end
 
 function load_model!(m::Model)
     for i in 1:m.n_domains
-        load_domain!(m, i, m.parallel)
+        load_domain!(m, i, m.parallel[i])
     end
 end
 
@@ -833,7 +845,7 @@ function step_model!(m::Model)
 
             for i in 1:m.n_domains
                 if is_save_time(m.timeloop[i])
-                    @timeit m.to "save_domain" save_domain(m, i, m.parallel)
+                    @timeit m.to "save_domain" save_domain(m, i, m.parallel[i])
                 end
             end
 
@@ -864,7 +876,7 @@ function check_model(m::Model)
     status_string = @sprintf("(%11.3f) Time = %8.3f",
         m.timeloop[1].time,
         (m.last_measured_time[] - old_time) * 1e-9)
-    if m.parallel.id == 0
+    if m.parallel[1].id == 0
         @info "$status_string"
     end
 
@@ -876,7 +888,7 @@ function check_model(m::Model)
             calc_cfl(m.fields[i], m.grid[i], m.timeloop[i]),
             sum(issubnormal.(m.fields[i].u)) + sum(issubnormal.(m.fields[i].v)) + sum(issubnormal.(m.fields[i].w)))
 
-        if m.parallel.id == 0
+        if m.parallel[1].id == 0
             @info "$status_string"
         end
     end
@@ -884,7 +896,7 @@ end
 
 
 function output_timer_model!(m::Model)
-    if m.parallel.id == 0
+    if m.parallel[1].id == 0
         @info ""
         @info "Timer output:"
         show(m.to)
@@ -894,45 +906,30 @@ end
 
 
 ## Precompilation
-include("precompile_settings.jl")
+@precompile_setup begin
+    include("precompile_settings.jl")
 
-for float_type in [Float32, Float64]
-    n_domains = 1
-    m = Model("precompile", n_domains, create_precompile_settings(), float_type)
-    save_model(m)
-    load_model!(m)
-    in_progress = prepare_model!(m)
-    in_progress = step_model!(m)
+    @precompile_all_calls begin
+        n_domains = 1
+        m = Model("precompile", n_domains, create_precompile_settings())
+        in_progress = prepare_model!(m)
+        in_progress = step_model!(m)
+    end
 end
 
 
-## Initialization
+## Global settings setters.
+function set_use_mpi!(use_mpi_value::Bool)
+    @set_preferences!("use_mpi" => use_mpi_value)
+end
+
+function set_use_sp!(use_sp_value::Bool)
+    @set_preferences!("use_sp" => use_sp_value)
+end
+
+
+## Initialization.
 function __init__()
-    s = ArgParseSettings()
-    @add_arg_table! s begin
-        "--use-mpi"
-            help = "Enable MPI"
-            action = :store_true
-        "--npx"
-            help = "MPI pencils in x-direction"
-            arg_type = Int
-            default = 1
-        "--npy"
-            help = "MPI pencils in y-direction"
-            arg_type = Int
-            default = 1
-    end
-
-    parsed_args = parse_args(s)
-
-    use_mpi[] = parsed_args["use-mpi"]
-    npx[] = parsed_args["npx"]
-    npy[] = parsed_args["npy"]
-
-    # Only load MPI if parallel run is required.
-    if use_mpi[]
-        @eval using MPI
-    end
 end
 
 
