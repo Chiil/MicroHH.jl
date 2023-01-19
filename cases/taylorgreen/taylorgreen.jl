@@ -1,9 +1,6 @@
 ## Loading packages.
 using MicroHH
 using Tullio
-using Statistics
-using PyPlot
-pygui(:qt5)
 
 
 ## Solve the Taylor Green vortex
@@ -52,7 +49,7 @@ function solve_taylorgreen(itot)
 
     # Initialize the model.
     n_domains = 1
-    m = Model("taylorgreen", n_domains, settings, Float64)
+    m = Model("taylorgreen", n_domains, settings)
 
 
     # Create the initials fields.
@@ -103,6 +100,9 @@ p_errs = [ p016, p032, p064, p128, p256 ]
 
 
 ## Plot the results
+using PyPlot
+pygui(:qt5)
+
 figure()
 loglog(dxs, u_errs, "C0o-", label="u")
 loglog(dxs, w_errs, "C1o-", label="w")
