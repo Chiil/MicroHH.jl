@@ -15,6 +15,7 @@ using ArgParse
 using TimerOutputs
 using SnoopPrecompile
 using Preferences
+using Statistics
 
 
 ## Set global constants.
@@ -156,20 +157,95 @@ function calc_rhs!(m::Model, i)
         f = m.fields[i]
 
         # Set the walls to const normal velocity (zero for no-penetration BC).
-        f.u[g.is  , :, :] .= 0
-        f.u[g.ie+1, :, :] .= 0
-        # z_tmp = reshape(g.z[:], (1, g.kcells))
-        # zsize = g.zsize
-        # f.u[g.is  , :, :] .= z_tmp ./ zsize
-        # f.u[g.ie+1, :, :] .= z_tmp ./ zsize
+        # f.u[g.is  , :, :] .= 0
+        # f.u[g.ie+1, :, :] .= 0
+        z_tmp = reshape(g.z[:], (1, g.kcells))
+        zsize = g.zsize
+        f.u[g.is  , :, :] .= 10 .* z_tmp ./ zsize
+        f.u[g.ie+1, :, :] .= 10 .* z_tmp ./ zsize
 
-        # For other velocity components we impose free slip (no-flux).
-        f.v[g.is-1, :, :] .= f.v[g.is, :, :]
-        f.v[g.ie+1, :, :] .= f.v[g.ie, :, :]
+        # Zero v
+        f.v[g.is-1, :, :] .= - f.v[g.is, :, :]
+        f.v[g.ie+1, :, :] .= - f.v[g.ie, :, :]
+
+        # Free-slip w
         f.w[g.is-1, :, :] .= f.w[g.is, :, :]
         f.w[g.ie+1, :, :] .= f.w[g.ie, :, :]
-        f.s[g.is-1, :, :] .= f.s[g.is, :, :]
-        f.s[g.ie+1, :, :] .= f.s[g.ie, :, :]
+
+        s_mean = reshape(mean(f.s, dims=(1, 2)), (1, g.kcells))
+        f.s[g.is-1, :, :] .= 2. .* s_mean .- f.s[g.is, :, :]
+        f.s[g.ie+1, :, :] .= 2. .* s_mean .- f.s[g.ie, :, :]
+
+
+        # Apply the sponge layer
+        W_dt = 0.1 / m.timeloop[1].dt
+        N = 5
+
+        z_tmp = reshape(g.z[:], (1, 1, g.kcells))
+        du = f.u .- 10 .* z_tmp ./ zsize
+        Threads.@threads for k in g.ks:g.ke
+            for j in g.js:g.je
+                # Skip the first point
+                @inbounds @fastmath @simd for i in g.is+1:g.is+N-1
+                    ii = i - g.is + 1
+                    w1 = W_dt * (1+N-ii) / N;
+                    w2 = 0.2*w1
+                    du_diff = du[i-1, j, k] + du[i+1, j, k] + du[i, j-1, k] + du[i, j+1, k] + du[i, j, k-1] + du[i, j, k+1] - 6*du[i, j, k]
+                    f.u_tend[i, j, k] += - w1*du[i, j, k] + w2*du_diff
+                end
+
+                # Skip the last point
+                @inbounds @fastmath @simd for i in g.ie+1-N+1:g.ie
+                    ii = g.ie+1 - i + 1
+                    w1 = W_dt * (1+N-ii) / N;
+                    w2 = 0.2*w1
+                    du_diff = du[i-1, j, k] + du[i+1, j, k] + du[i, j-1, k] + du[i, j+1, k] + du[i, j, k-1] + du[i, j, k+1] - 6*du[i, j, k]
+                    f.u_tend[i, j, k] += - w1*du[i, j, k] + w2*du_diff
+                end
+            end
+        end
+
+        dv = @view f.v[:, :, :]
+        Threads.@threads for k in g.ks:g.ke
+            for j in g.js:g.je
+                @inbounds @fastmath @simd for i in g.is:g.is+N-1
+                    ii = i - g.is + 1
+                    w1 = W_dt * (1+N-ii) / N;
+                    w2 = 0.2*w1
+                    dv_diff = dv[i-1, j, k] + dv[i+1, j, k] + dv[i, j-1, k] + dv[i, j+1, k] + dv[i, j, k-1] + dv[i, j, k+1] - 6*dv[i, j, k]
+                    f.v_tend[i, j, k] += - w1*dv[i, j, k] + w2*dv_diff
+                end
+
+                @inbounds @fastmath @simd for i in g.ie-N+1:g.ie
+                    ii = g.ie - i + 1
+                    w1 = W_dt * (1+N-ii) / N;
+                    w2 = 0.2*w1
+                    dv_diff = dv[i-1, j, k] + dv[i+1, j, k] + dv[i, j-1, k] + dv[i, j+1, k] + dv[i, j, k-1] + dv[i, j, k+1] - 6*dv[i, j, k]
+                    f.v_tend[i, j, k] += - w1*dv[i, j, k] + w2*dv_diff
+                end
+            end
+        end
+
+        ds = f.s .- mean(f.s, dims=(1, 2))
+        Threads.@threads for k in g.ks:g.ke
+            for j in g.js:g.je
+                @inbounds @fastmath @simd for i in g.is:g.is+N-1
+                    ii = i - g.is + 1
+                    w1 = W_dt * (1+N-ii) / N;
+                    w2 = 0.2*w1
+                    ds_diff = ds[i-1, j, k] + ds[i+1, j, k] + ds[i, j-1, k] + ds[i, j+1, k] + ds[i, j, k-1] + ds[i, j, k+1] - 6*ds[i, j, k]
+                    f.s_tend[i, j, k] += - w1*ds[i, j, k] + w2*ds_diff
+                end
+
+                @inbounds @fastmath @simd for i in g.ie-N+1:g.ie
+                    ii = g.ie - i + 1
+                    w1 = W_dt * (1+N-ii) / N;
+                    w2 = 0.2*w1
+                    ds_diff = ds[i-1, j, k] + ds[i+1, j, k] + ds[i, j-1, k] + ds[i, j+1, k] + ds[i, j, k-1] + ds[i, j, k+1] - 6*ds[i, j, k]
+                    f.s_tend[i, j, k] += - w1*ds[i, j, k] + w2*ds_diff
+                end
+            end
+        end
     end
 
     # Set the BCs again, this needs to be done more clean if ever implemented properly...
