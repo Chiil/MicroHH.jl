@@ -240,6 +240,28 @@ function calc_rhs!(m::Model, i)
             end
         end
 
+        w_mean = reshape(w_mean, (1, 1, g.kcells))
+        dw = f.w .- w_mean
+        Threads.@threads for k in g.ks+1:g.ke-1
+            for j in g.js:g.je
+                @inbounds @fastmath @simd for i in g.is:g.is+N-1
+                    ii = i - g.is + 1
+                    w1 = W_dt * (1+N-ii) / N;
+                    w2 = 0.2*w1
+                    dw_diff = dw[i-1, j, k] + dw[i+1, j, k] + dw[i, j-1, k] + dw[i, j+1, k] + dw[i, j, k-1] + dw[i, j, k+1] - 6*dw[i, j, k]
+                    f.w_tend[i, j, k] += - w1*dw[i, j, k] + w2*dw_diff
+                end
+
+                @inbounds @fastmath @simd for i in g.ie-N+1:g.ie
+                    ii = g.ie - i + 1
+                    w1 = W_dt * (1+N-ii) / N;
+                    w2 = 0.2*w1
+                    dw_diff = dw[i-1, j, k] + dw[i+1, j, k] + dw[i, j-1, k] + dw[i, j+1, k] + dw[i, j, k-1] + dw[i, j, k+1] - 6*dw[i, j, k]
+                    f.w_tend[i, j, k] += - w1*dw[i, j, k] + w2*dw_diff
+                end
+            end
+        end
+
         ds = f.s .- mean(f.s, dims=(1, 2))
         Threads.@threads for k in g.ks:g.ke
             for j in g.js:g.je
