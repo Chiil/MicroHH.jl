@@ -8,8 +8,8 @@ include("drycbl_settings.jl")
 
 
 ## Initialize the model.
-n_domains = 2
-m = Model("drycbl", n_domains, settings, float_type)
+n_domains = 1
+m = Model("drycbl", n_domains, settings)
 
 
 ## Load the restart data.

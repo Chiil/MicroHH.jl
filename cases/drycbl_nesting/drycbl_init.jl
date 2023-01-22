@@ -9,8 +9,8 @@ include("drycbl_settings.jl")
 
 
 ## Initialize the model.
-n_domains = 2
-m = Model("drycbl", n_domains, settings, float_type)
+n_domains = 1
+m = Model("drycbl", n_domains, settings)
 
 
 ## Create the initials fields.
@@ -22,9 +22,9 @@ for i in 1:n_domains
     s = @view f.s[g.is:g.ie, g.js:g.je, g.ks:g.ke]
     s_gradbot = @view f.s_gradbot[g.is:g.ie, g.js:g.je]
 
-    u .= 0
-    # zsize_max = settings[1]["grid"]["zsize"]
-    # @tullio u[i, j, k] = 3 * z[k] / zsize_max
+    # u .= 0
+    zsize_max = settings[1]["grid"]["zsize"]
+    @tullio u[i, j, k] = 3 * z[k] / zsize_max
 
     rand2d = 1e-2 .* rand(g.imax, g.jmax)
     rand2d .-= mean(rand2d)

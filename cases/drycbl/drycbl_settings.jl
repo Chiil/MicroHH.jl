@@ -12,16 +12,16 @@ settings_parallel= Dict(
     "npy" => 1)
 
 settings_grid = Dict{String, Any}(
-    "itot" => 256,
-    "jtot" => 256,
+    "itot" => 1024,
+    "jtot" => 1,
     "ktot" => 256,
 
-    "xsize" => 3200.,
-    "ysize" => 3200.,
+    "xsize" => 12800.,
+    "ysize" => 3200. / 256,
     "zsize" => 3200.)
 
 settings_fields = Dict(
-    "visc" => 5.,
+    "visc" => 6.,
     "alpha" => 9.81 / 300)
 
 settings_boundary = Dict(
@@ -32,10 +32,10 @@ settings_boundary = Dict(
 
 settings_timeloop = Dict(
     "start_time" => 0.,
-    "end_time" => 3600.,
-    "save_time" => 900.,
-    "check_time" => 2.,
-    "dt" => 2.)
+    "end_time" => 10800.,
+    "save_time" => 1800.,
+    "check_time" => 10.,
+    "dt" => 1)
 
 settings_d01 = Dict(
     "parallel" => settings_parallel,
