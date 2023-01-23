@@ -24,7 +24,7 @@ zh = @view g.zh[g.ks:g.keh]
 rand2d = rand(g.imax, g.jmax)
 rand2d .-= mean(rand2d)
 s[:, :, 1] .+= rand2d[:, :]
-f.s_gradbot[:, :] .= - 0.1 / settings[1]["fields"]["visc"]
+f.s_gradbot[g.is+g.itot÷4:g.is+3*g.itot÷4-1, :] .= - 0.2 / settings[1]["fields"]["visc"]
 f.s_gradtop[:, :] .= 0.003
 
 
@@ -52,7 +52,7 @@ end
 
 
 u_gradtop = @view f.u_gradtop[g.is:g.ie+1, g.js:g.je]
-@tullio u_gradtop[i, j] = (10 / zsize_max) * (xh[i] / xsize_max)
+@tullio u_gradtop[i, j] = 10 * (0.9 + 0.1 * xh[i] / xsize_max) / zsize_max
 
 
 # Set the reference profile.

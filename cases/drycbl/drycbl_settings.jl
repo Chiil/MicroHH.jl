@@ -21,7 +21,7 @@ settings_grid = Dict{String, Any}(
     "zsize" => 3200.)
 
 settings_fields = Dict(
-    "visc" => 6.,
+    "visc" => 3.,
     "alpha" => 9.81 / 300)
 
 settings_boundary = Dict(

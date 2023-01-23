@@ -184,9 +184,11 @@ function calc_rhs!(m::Model, i)
         f.w[g.is-1, :, :] .= 2. .* w_mean .- f.w[g.is, :, :]
         f.w[g.ie+1, :, :] .= 2. .* w_mean .- f.w[g.ie, :, :]
 
-        s_mean = reshape(mean(f.s, dims=(1, 2)), (1, g.kcells))
-        f.s[g.is-1, :, :] .= 2. .* s_mean .- f.s[g.is, :, :]
-        f.s[g.ie+1, :, :] .= 2. .* s_mean .- f.s[g.ie, :, :]
+        s_mean_west = reshape(mean(f.s[g.is:g.is+10, g.js:g.je, :], dims=(1, 2)), (1, g.kcells))
+        f.s[g.is-1, :, :] .= 2. .* s_mean_west .- f.s[g.is, :, :]
+
+        s_mean_east = reshape(mean(f.s[g.ie-10:g.ie, g.js:g.je, :], dims=(1, 2)), (1, g.kcells))
+        f.s[g.ie+1, :, :] .= 2. .* s_mean_east .- f.s[g.ie, :, :]
 
 
         # Apply the sponge layer
@@ -262,7 +264,7 @@ function calc_rhs!(m::Model, i)
             end
         end
 
-        ds = f.s .- mean(f.s, dims=(1, 2))
+        ds = f.s .- reshape(s_mean_west, (1, 1, g.kcells))
         Threads.@threads for k in g.ks:g.ke
             for j in g.js:g.je
                 @inbounds @fastmath @simd for i in g.is:g.is+N-1
@@ -272,7 +274,12 @@ function calc_rhs!(m::Model, i)
                     ds_diff = ds[i-1, j, k] + ds[i+1, j, k] + ds[i, j-1, k] + ds[i, j+1, k] + ds[i, j, k-1] + ds[i, j, k+1] - 6*ds[i, j, k]
                     f.s_tend[i, j, k] += - w1*ds[i, j, k] + w2*ds_diff
                 end
+            end
+        end
 
+        ds = f.s .- reshape(s_mean_east, (1, 1, g.kcells))
+        Threads.@threads for k in g.ks:g.ke
+            for j in g.js:g.je
                 @inbounds @fastmath @simd for i in g.ie-N+1:g.ie
                     ii = g.ie - i + 1
                     w1 = W_dt * (1+N-ii) / N;

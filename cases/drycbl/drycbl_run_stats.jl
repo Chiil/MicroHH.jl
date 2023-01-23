@@ -86,7 +86,9 @@ function do_cross(m::Model)
     w = @view f.w[g.is:g.ie, g.js, g.ks:g.keh]
     add_record!(fid, w, "w_xz", ("x", "zh"), t.iter)
 
-    close(fid)
+    p = @view f.p[g.is:g.ie, g.js, g.ks:g.ke]
+    add_record!(fid, p, "p_xz", ("x", "z"), t.iter)
+
     close(fid)
 end
 
