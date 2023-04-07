@@ -272,6 +272,6 @@ function set_boundary!(f::Fields, g::Grid, b::Boundary, p::Parallel)
 
     for scalar_name in keys(f.scalars)
         set_ghost_cells_top_kernel!(
-            f.scalars[scalar_name], f.scalars_bot[scalar_name], f.scalars_gradbot[scalar_name], g.dzh, g.ks, b.s_bot_type)
+            f.scalars[scalar_name], f.scalars_top[scalar_name], f.scalars_gradtop[scalar_name], g.dzh, g.ke, b.s_top_type)
     end
 end
