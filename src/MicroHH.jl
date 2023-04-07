@@ -167,11 +167,11 @@ function save_domain(m::Model, i, p::ParallelSerial)
         HDF5.h5ds_attach_scale(fid["s_bot"], fid["x"], 1)
         HDF5.h5ds_attach_scale(fid["s_bot"], fid["y"], 0)
 
-        HDF5.h5ds_attach_scale(fid["s_top"], fid["x"], 1)
-        HDF5.h5ds_attach_scale(fid["s_top"], fid["y"], 0)
-
         HDF5.h5ds_attach_scale(fid["s_gradbot"], fid["x"], 1)
         HDF5.h5ds_attach_scale(fid["s_gradbot"], fid["y"], 0)
+
+        HDF5.h5ds_attach_scale(fid["s_top"], fid["x"], 1)
+        HDF5.h5ds_attach_scale(fid["s_top"], fid["y"], 0)
 
         HDF5.h5ds_attach_scale(fid["s_gradtop"], fid["x"], 1)
         HDF5.h5ds_attach_scale(fid["s_gradtop"], fid["y"], 0)
@@ -291,6 +291,13 @@ function save_domain(m::Model, i, p::ParallelDistributed)
         ("s_gradbot", f.s_gradbot),
         ("s_gradtop", f.s_gradtop)]
 
+    for scalar_name in keys(f.scalars)
+        push!(items_to_save, (scalar_name * "_bot", f.scalars_bot[scalar_name]))
+        push!(items_to_save, (scalar_name * "_gradbot", f.scalars_gradbot[scalar_name]))
+        push!(items_to_save, (scalar_name * "_top", f.scalars_top[scalar_name]))
+        push!(items_to_save, (scalar_name * "_gradtop", f.scalars_gradtop[scalar_name]))
+    end
+
     for item in items_to_save
         name, a = item
         a_nogc = a[g.is:g.ie, g.js:g.je]
@@ -305,12 +312,16 @@ function save_domain(m::Model, i, p::ParallelDistributed)
     end
     close(s_ref_id)
 
-    # Attach the dimensions. Note the c-indexing.
+    # Attach the dimensions. Note the c-indexing in h5ds_attach_scale.
     vars_3d = [
         ("u", "xh", "y" , "z" ),
         ("v", "x" , "yh", "z" ),
         ("w", "x" , "y" , "zh"),
         ("s", "x" , "y" , "z" )]
+
+    for scalar_name in keys(f.scalars)
+        push!(vars_3d, (scalar_name, "x", "y", "z"))
+    end
 
     for var in vars_3d
         name::String, x::String, y::String, z::String = var
@@ -321,9 +332,16 @@ function save_domain(m::Model, i, p::ParallelDistributed)
 
     vars_2d = [
         ("s_bot", "x", "y"),
-        ("s_top", "x", "y"),
         ("s_gradbot", "x", "y"),
+        ("s_top", "x", "y"),
         ("s_gradtop", "x", "y")]
+
+    for scalar_name in keys(f.scalars)
+        push!(vars_2d, (scalar_name * "_bot", "x", "y"))
+        push!(vars_2d, (scalar_name * "_gradbot", "x", "y"))
+        push!(vars_2d, (scalar_name * "_top", "x", "y"))
+        push!(vars_2d, (scalar_name * "_gradtop", "x", "y"))
+    end
 
     for var in vars_2d
         name::String, x::String, y::String = var
