@@ -137,6 +137,10 @@ function save_domain(m::Model, i, p::ParallelSerial)
         write(fid, "v", f.v[g.is:g.ie, g.js:g.je, g.ks:g.ke ])
         write(fid, "w", f.w[g.is:g.ie, g.js:g.je, g.ks:g.keh])
         write(fid, "s", f.s[g.is:g.ie, g.js:g.je, g.ks:g.ke ])
+        for (scalar_name, scalar) in f.scalars
+            write(fid, scalar_name, scalar[g.is:g.ie, g.js:g.je, g.ks:g.ke])
+        end
+
         write(fid, "s_bot", f.s_bot[g.is:g.ie, g.js:g.je])
         write(fid, "s_top", f.s_top[g.is:g.ie, g.js:g.je])
         write(fid, "s_gradbot", f.s_gradbot[g.is:g.ie, g.js:g.je])
@@ -240,12 +244,18 @@ function save_domain(m::Model, i, p::ParallelDistributed)
 
     MPI.Barrier(p.commxy)
 
+    # Collect all items to save and their grid location.
     items_to_save = [
         ("u", f.u, g.ktot ),
         ("v", f.v, g.ktot ),
         ("w", f.w, g.ktoth),
         ("s", f.s, g.ktot )]
 
+    for scalar_name in keys(f.scalars)
+        push!(items_to_save, (scalar_name, f.scalars[scalar_name], g.ktot))
+    end
+
+    # Save the collected items.
     for item in items_to_save
         name, a, ktot = item
 
@@ -348,6 +358,11 @@ function load_domain!(m::Model, i, p::ParallelSerial)
         f.v[g.is:g.ie, g.js:g.je, g.ks:g.ke ] = read(fid, "v")
         f.w[g.is:g.ie, g.js:g.je, g.ks:g.keh] = read(fid, "w")
         f.s[g.is:g.ie, g.js:g.je, g.ks:g.ke ] = read(fid, "s")
+
+        for scalar_name in keys(f.scalars)
+            f.scalars[scalar_name][g.is:g.ie, g.js:g.je, g.ks:g.ke] = read(fid, scalar_name)
+        end
+
         f.s_bot[g.is:g.ie, g.js:g.je] = read(fid, "s_bot")
         f.s_top[g.is:g.ie, g.js:g.je] = read(fid, "s_top")
         f.s_gradbot[g.is:g.ie, g.js:g.je] = read(fid, "s_gradbot")
@@ -398,6 +413,12 @@ function load_domain!(m::Model, i, p::ParallelDistributed)
     s_id = open_dataset(fid, "s", dapl, dxpl)
     f.s[g.is:g.ie, g.js:g.je, g.ks:g.ke ] = s_id[is:ie, js:je, :]
     close(s_id)
+
+    for scalar_name in keys(f.scalars)
+        scalar_id = open_dataset(fid, scalar_name, dapl, dxpl)
+        f.scalars[scalar_name][g.is:g.ie, g.js:g.je, g.ks:g.ke ] = scalar_id[is:ie, js:je, :]
+        close(scalar_id)
+    end
 
     s_bot_id = open_dataset(fid, "s_bot", dapl, dxpl)
     f.s_bot[g.is:g.ie, g.js:g.je] = s_bot_id[is:ie, js:je]

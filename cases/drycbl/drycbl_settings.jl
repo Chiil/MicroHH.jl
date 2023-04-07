@@ -7,7 +7,7 @@ end
 
 
 ## Settings.
-settings_parallel= Dict(
+settings_parallel = Dict(
     "npx" => 1,
     "npy" => 1)
 
@@ -23,6 +23,7 @@ settings_grid = Dict{String, Any}(
 settings_fields = Dict(
     "visc" => 5.,
     "alpha" => 9.81 / 300)
+    #"scalars" => ["smoke"])
 
 settings_boundary = Dict(
     "mom_bot_type" => "Dirichlet",
