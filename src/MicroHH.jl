@@ -145,6 +145,13 @@ function save_domain(m::Model, i, p::ParallelSerial)
         write(fid, "s_top", f.s_top[g.is:g.ie, g.js:g.je])
         write(fid, "s_gradbot", f.s_gradbot[g.is:g.ie, g.js:g.je])
         write(fid, "s_gradtop", f.s_gradtop[g.is:g.ie, g.js:g.je])
+        for scalar_name in keys(f.scalars)
+            write(fid, scalar_name * "_bot", f.scalars_bot[scalar_name][g.is:g.ie, g.js:g.je])
+            write(fid, scalar_name * "_gradbot", f.scalars_gradbot[scalar_name][g.is:g.ie, g.js:g.je])
+            write(fid, scalar_name * "_top", f.scalars_top[scalar_name][g.is:g.ie, g.js:g.je])
+            write(fid, scalar_name * "_gradtop", f.scalars_gradtop[scalar_name][g.is:g.ie, g.js:g.je])
+        end
+
         write(fid, "s_ref", f.s_ref[g.ks:g.ke])
 
         # Attach the dimensions. Note the c-indexing.
@@ -164,6 +171,12 @@ function save_domain(m::Model, i, p::ParallelSerial)
         HDF5.h5ds_attach_scale(fid["s"], fid["y"], 1)
         HDF5.h5ds_attach_scale(fid["s"], fid["z"], 0)
 
+        for scalar_name in keys(f.scalars)
+            HDF5.h5ds_attach_scale(fid[scalar_name], fid["x"], 2)
+            HDF5.h5ds_attach_scale(fid[scalar_name], fid["y"], 1)
+            HDF5.h5ds_attach_scale(fid[scalar_name], fid["z"], 0)
+        end
+
         HDF5.h5ds_attach_scale(fid["s_bot"], fid["x"], 1)
         HDF5.h5ds_attach_scale(fid["s_bot"], fid["y"], 0)
 
@@ -175,6 +188,20 @@ function save_domain(m::Model, i, p::ParallelSerial)
 
         HDF5.h5ds_attach_scale(fid["s_gradtop"], fid["x"], 1)
         HDF5.h5ds_attach_scale(fid["s_gradtop"], fid["y"], 0)
+
+        for scalar_name in keys(f.scalars)
+            HDF5.h5ds_attach_scale(fid[scalar_name * "_bot"], fid["x"], 1)
+            HDF5.h5ds_attach_scale(fid[scalar_name * "_bot"], fid["y"], 0)
+
+            HDF5.h5ds_attach_scale(fid[scalar_name * "_gradbot"], fid["x"], 1)
+            HDF5.h5ds_attach_scale(fid[scalar_name * "_gradbot"], fid["y"], 0)
+
+            HDF5.h5ds_attach_scale(fid[scalar_name * "_top"], fid["x"], 1)
+            HDF5.h5ds_attach_scale(fid[scalar_name * "_top"], fid["y"], 0)
+
+            HDF5.h5ds_attach_scale(fid[scalar_name * "_gradtop"], fid["x"], 1)
+            HDF5.h5ds_attach_scale(fid[scalar_name * "_gradtop"], fid["y"], 0)
+        end
 
         HDF5.h5ds_attach_scale(fid["s_ref"], fid["z"], 0)
     end
