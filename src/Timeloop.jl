@@ -98,6 +98,13 @@ function integrate_time!(
         f.s, f.s_tend,
         t.rkstep, dt,
         g.is, g.ie, g.js, g.je, g.ks, g.ke)
+
+    for scalar_name in keys(f.scalars)
+        integrate_time_kernel!(
+            f.scalars[scalar_name], f.scalars_tend[scalar_name],
+            t.rkstep, dt,
+            g.is, g.ie, g.js, g.je, g.ks, g.ke)
+    end
 end
 
 

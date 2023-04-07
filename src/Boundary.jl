@@ -205,6 +205,11 @@ function set_boundary!(f::Fields, g::Grid, b::Boundary, p::Parallel)
     boundary_cyclic_kernel!(
         f.s, g.is, g.ie, g.js, g.je, g.igc, g.jgc, b.buffers, p)
 
+    for scalar_name in keys(f.scalars)
+        boundary_cyclic_kernel!(
+            f.scalars[scalar_name], g.is, g.ie, g.js, g.je, g.igc, g.jgc, b.buffers, p)
+    end
+
     # Cyclic BCs of boundary f.
     boundary_cyclic_kernel!(
         f.u_bot, g.is, g.ie, g.js, g.je, g.igc, g.jgc, b.buffers, p)
@@ -233,6 +238,17 @@ function set_boundary!(f::Fields, g::Grid, b::Boundary, p::Parallel)
     boundary_cyclic_kernel!(
         f.s_gradtop, g.is, g.ie, g.js, g.je, g.igc, g.jgc, b.buffers, p)
 
+    for scalar_name in keys(f.scalars)
+        boundary_cyclic_kernel!(
+            f.scalars_bot[scalar_name], g.is, g.ie, g.js, g.je, g.igc, g.jgc, b.buffers, p)
+        boundary_cyclic_kernel!(
+            f.scalars_gradbot[scalar_name], g.is, g.ie, g.js, g.je, g.igc, g.jgc, b.buffers, p)
+        boundary_cyclic_kernel!(
+            f.scalars_top[scalar_name], g.is, g.ie, g.js, g.je, g.igc, g.jgc, b.buffers, p)
+        boundary_cyclic_kernel!(
+            f.scalars_gradtop[scalar_name], g.is, g.ie, g.js, g.je, g.igc, g.jgc, b.buffers, p)
+    end
+
     # Bottom BC.
     set_ghost_cells_bot_kernel!(
         f.u, f.u_bot, f.u_gradbot, g.dzh, g.ks, b.mom_bot_type)
@@ -241,6 +257,11 @@ function set_boundary!(f::Fields, g::Grid, b::Boundary, p::Parallel)
     set_ghost_cells_bot_kernel!(
         f.s, f.s_bot, f.s_gradbot, g.dzh, g.ks, b.s_bot_type)
 
+    for scalar_name in keys(f.scalars)
+        set_ghost_cells_bot_kernel!(
+            f.scalars[scalar_name], f.scalars_bot[scalar_name], f.scalars_gradbot[scalar_name], g.dzh, g.ks, b.s_bot_type)
+    end
+
     # Top BC.
     set_ghost_cells_top_kernel!(
         f.u, f.u_top, f.u_gradtop, g.dzh, g.ke, b.mom_top_type)
@@ -248,4 +269,9 @@ function set_boundary!(f::Fields, g::Grid, b::Boundary, p::Parallel)
         f.v, f.v_top, f.v_gradtop, g.dzh, g.ke, b.mom_top_type)
     set_ghost_cells_top_kernel!(
         f.s, f.s_top, f.s_gradtop, g.dzh, g.ke, b.s_top_type)
+
+    for scalar_name in keys(f.scalars)
+        set_ghost_cells_top_kernel!(
+            f.scalars[scalar_name], f.scalars_bot[scalar_name], f.scalars_gradbot[scalar_name], g.dzh, g.ks, b.s_bot_type)
+    end
 end

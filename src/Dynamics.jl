@@ -200,4 +200,17 @@ function calc_dynamics_tend!(f::Fields, g::Grid, to::TimerOutput)
         f.visc,
         g.dxi, g.dyi, g.dzi, g.dzhi,
         g.is, g.ie, g.js, g.je, g.ks, g.ke)
+
+    for scalar_name in keys(f.scalars)
+        @timeit to "advection_s_kernel" advection_s_kernel!(
+            f.scalars_tend[scalar_name], f.u, f.v, f.w, f.scalars[scalar_name],
+            g.dxi, g.dyi, g.dzi,
+            g.is, g.ie, g.js, g.je, g.ks, g.ke)
+
+        @timeit to "diffusion_s_kernel" diffusion_s_kernel!(
+            f.scalars_tend[scalar_name], f.scalars[scalar_name],
+            f.visc,
+            g.dxi, g.dyi, g.dzi, g.dzhi,
+            g.is, g.ie, g.js, g.je, g.ks, g.ke)
+    end
 end
