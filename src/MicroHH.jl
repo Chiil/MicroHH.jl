@@ -412,6 +412,14 @@ function load_domain!(m::Model, i, p::ParallelSerial)
         f.s_top[g.is:g.ie, g.js:g.je] = read(fid, "s_top")
         f.s_gradbot[g.is:g.ie, g.js:g.je] = read(fid, "s_gradbot")
         f.s_gradtop[g.is:g.ie, g.js:g.je] = read(fid, "s_gradtop")
+
+        for scalar_name in keys(f.scalars)
+            f.scalars_bot[scalar_name][g.is:g.ie, g.js:g.je] = read(fid, scalar_name * "_bot")
+            f.scalars_top[scalar_name][g.is:g.ie, g.js:g.je] = read(fid, scalar_name * "_top")
+            f.scalars_gradbot[scalar_name][g.is:g.ie, g.js:g.je] = read(fid, scalar_name * "_gradbot")
+            f.scalars_gradtop[scalar_name][g.is:g.ie, g.js:g.je] = read(fid, scalar_name * "_gradtop")
+        end
+
         f.s_ref[g.ks:g.ke] = read(fid, "s_ref")
     end
 
@@ -480,6 +488,24 @@ function load_domain!(m::Model, i, p::ParallelDistributed)
     s_gradtop_id = open_dataset(fid, "s_gradtop", dapl, dxpl)
     f.s_gradtop[g.is:g.ie, g.js:g.je] = s_gradtop_id[is:ie, js:je]
     close(s_gradtop_id)
+
+    for scalar_name in keys(f.scalars)
+        scalar_bot_id = open_dataset(fid, scalar_name * "_bot", dapl, dxpl)
+        f.scalars_bot[scalar_name][g.is:g.ie, g.js:g.je] = scalar_bot_id[is:ie, js:je]
+        close(scalar_bot_id)
+
+        scalar_top_id = open_dataset(fid, scalar_name * "_top", dapl, dxpl)
+        f.scalars_top[scalar_name][g.is:g.ie, g.js:g.je] = scalar_top_id[is:ie, js:je]
+        close(scalar_top_id)
+
+        scalar_gradbot_id = open_dataset(fid, scalar_name * "_gradbot", dapl, dxpl)
+        f.scalars_gradbot[scalar_name][g.is:g.ie, g.js:g.je] = scalar_gradbot_id[is:ie, js:je]
+        close(scalar_gradbot_id)
+
+        scalar_gradtop_id = open_dataset(fid, scalar_name * "_gradtop", dapl, dxpl)
+        f.scalars_gradtop[scalar_name][g.is:g.ie, g.js:g.je] = scalar_gradtop_id[is:ie, js:je]
+        close(scalar_gradtop_id)
+    end
 
     s_ref_id = open_dataset(fid, "s_ref", dapl, dxpl)
     f.s_ref[g.ks:g.ke] = s_ref_id[:]
