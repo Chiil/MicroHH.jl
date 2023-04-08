@@ -64,6 +64,7 @@ function process_expr(ex, arrays, i, j, k)
 
     n = 1
 
+    # Check whether expression is a gradient, and if so inject the appropriate dx/dy/dz.
     if (isa(ex.args[1], Symbol) && ex.args[1] == Symbol("gradx"))
         ex.args[1] = Symbol("gradx_")
         ex = :( $ex * dxi )
@@ -72,6 +73,9 @@ function process_expr(ex, arrays, i, j, k)
         ex = :( $ex * dyi )
     elseif (isa(ex.args[1], Symbol) && ex.args[1] == Symbol("gradz"))
         ex.args[1] = Symbol("gradz_")
+
+        # Check whether the vertical location is at ctr or hlf location.
+        # ctr location
         if isinteger(k)
             k_int = convert(Int, abs(k))
             if k > 0
@@ -81,6 +85,7 @@ function process_expr(ex, arrays, i, j, k)
             else
                 ex = :( $ex * dzi[k+0] )
             end
+        # hlf location
         else
             k_int = convert(Int, abs(k + 1/2))
             if k > -1/2
@@ -93,6 +98,8 @@ function process_expr(ex, arrays, i, j, k)
         end
     end
 
+    # Recurse through expression and replace gradients and interpolations by
+    # the appropriate code.
     args = ex.args
     while n <= length(args)
         if isa(args[n], Expr)
