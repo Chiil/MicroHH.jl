@@ -111,6 +111,20 @@ function process_expr(ex, arrays, i, j, k)
             n += 1
         elseif isa(args[n], Symbol)
             if args[n] == Symbol("gradx_")
+                # A gradient operator along the x-axis is detected. The gradient either contains
+                # a deeper Expr, for instance gradx(interpx(u)), or a Symbol that gets indexed
+                # for instance gradx(u).
+                # In both cases the gradx_ Symbol and the argument are removed and replaced by 
+                # evaluation of the stencil at the approprate two locations (-1/2, +1/2). In case the
+                # argument of gradx is a expression, we go deeper into the tree, whereas in case of a
+                # symbol we call the make_index function.
+                # After doing this, we insert a Symbol("+") in the front of the argument queue to
+                # make sure all stencil components get added up in the produced expression. n is then
+                # incremented with the size of the total arguments that the gradx resulted in. So, 
+                # initially there were two (gradx and argument of gradx), and we end with
+                # three (+, evaluation at i-1/2, evaluation at i+1/2), thus we increment n with 3 to 
+                # continue after this expression in case there is more to evaluate.
+                # All other stencil operators follow the same logic.
                 if isa(args[n+1], Expr)
                     args[n] = copy(args[n+1])
                     args[n  ] = process_expr(args[n  ], arrays, i-0.5, j, k)
