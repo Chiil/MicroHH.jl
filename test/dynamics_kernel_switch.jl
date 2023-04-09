@@ -12,17 +12,17 @@ float_type = Float32
 macro make_kernel(do_advec::Bool, do_diff::Bool, do_buoy::Bool)
     ex_rhs_l = []
     if do_advec
-        push!(ex_rhs_l, :( -gradx(interpz(u) * interpx(w)) ))
-        push!(ex_rhs_l, :( -grady(interpz(v) * interpy(w)) ))
-        push!(ex_rhs_l, :( -gradz(interpz(w) * interpz(w)) ))
+        push!(ex_rhs_l, :( -grad2x(interp2z(u) * interp2x(w)) ))
+        push!(ex_rhs_l, :( -grad2y(interp2z(v) * interp2y(w)) ))
+        push!(ex_rhs_l, :( -grad2z(interp2z(w) * interp2z(w)) ))
     end
     if do_diff
-        push!(ex_rhs_l, :( visc * (gradx(gradx(w))) ))
-        push!(ex_rhs_l, :( visc * (grady(grady(w))) ))
-        push!(ex_rhs_l, :( visc * (gradz(gradz(w))) ))
+        push!(ex_rhs_l, :( visc * (grad2x(grad2x(w))) ))
+        push!(ex_rhs_l, :( visc * (grad2y(grad2y(w))) ))
+        push!(ex_rhs_l, :( visc * (grad2z(grad2z(w))) ))
     end
     if do_buoy
-        push!(ex_rhs_l, :( alpha*interpz(s) ))
+        push!(ex_rhs_l, :( alpha*interp2z(s) ))
     end
 
     if length(ex_rhs_l) > 0

@@ -88,7 +88,7 @@ function input_kernel!(
 
     @fast3d begin
         p[i-is+1, j-js+1, k-ks+1] = @fd (u[ih, j, k], v[i, jh, k], w[i, j, kh], ut[ih, j, k], vt[i, jh, k], wt[i, j, kh]) begin
-            gradx(ut + u*dti) + grady(vt + v*dti) + gradz(wt + w*dti)
+            grad2x(ut + u*dti) + grad2y(vt + v*dti) + grad2z(wt + w*dti)
         end
     end
 end
@@ -176,9 +176,9 @@ function output_kernel!(
     is, ie, js, je, ks, ke)
 
     @fast3d begin
-        @fd (ut[ih, j, k], p[i, j, k]) ut -= gradx(p)
-        @fd (vt[i, jh, k], p[i, j, k]) vt -= grady(p)
-        @fd (wt[i, j, kh], p[i, j, k]) wt -= gradz(p)
+        @fd (ut[ih, j, k], p[i, j, k]) ut -= grad2x(p)
+        @fd (vt[i, jh, k], p[i, j, k]) vt -= grad2y(p)
+        @fd (wt[i, j, kh], p[i, j, k]) wt -= grad2z(p)
     end
 end
 

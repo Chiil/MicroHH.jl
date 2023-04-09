@@ -59,20 +59,20 @@ end
 
 
 function process_expr(ex, arrays, i, j, k)
-    ci1 = 1//2; ci2 = 1//2;
-    cg1 = -1; cg2 = 1;
+    i2_c1 = 1//2; i2_c2 = 1//2;
+    g2_c1 = -1; g2_c2 = 1;
 
     n = 1
 
     # Check whether expression is a gradient, and if so inject the appropriate dx/dy/dz.
-    if (isa(ex.args[1], Symbol) && ex.args[1] == Symbol("gradx"))
-        ex.args[1] = Symbol("gradx_")
+    if (isa(ex.args[1], Symbol) && ex.args[1] == Symbol("grad2x"))
+        ex.args[1] = Symbol("grad2x_")
         ex = :( $ex * dxi )
-    elseif (isa(ex.args[1], Symbol) && ex.args[1] == Symbol("grady"))
-        ex.args[1] = Symbol("grady_")
+    elseif (isa(ex.args[1], Symbol) && ex.args[1] == Symbol("grad2y"))
+        ex.args[1] = Symbol("grad2y_")
         ex = :( $ex * dyi )
-    elseif (isa(ex.args[1], Symbol) && ex.args[1] == Symbol("gradz"))
-        ex.args[1] = Symbol("gradz_")
+    elseif (isa(ex.args[1], Symbol) && ex.args[1] == Symbol("grad2z"))
+        ex.args[1] = Symbol("grad2z_")
 
         # Check whether the vertical location is at ctr or hlf location.
         # ctr location
@@ -110,19 +110,19 @@ function process_expr(ex, arrays, i, j, k)
             args[n] = process_expr(args[n], arrays, i, j, k)
             n += 1
         elseif isa(args[n], Symbol)
-            if args[n] == Symbol("gradx_")
+            if args[n] == Symbol("grad2x_")
                 # A gradient operator along the x-axis is detected. The gradient either contains
-                # a deeper Expr, for instance gradx(interpx(u)), or a Symbol that gets indexed
-                # for instance gradx(u).
-                # In both cases the gradx_ Symbol and the argument are removed and replaced by 
+                # a deeper Expr, for instance grad2x(interp2x(u)), or a Symbol that gets indexed
+                # for instance grad2x(u).
+                # In both cases the grad2x_ Symbol and the argument are removed and replaced by
                 # evaluation of the stencil at the approprate two locations (-1/2, +1/2). In case the
-                # argument of gradx is a expression, we go deeper into the tree, whereas in case of a
+                # argument of grad2x is a expression, we go deeper into the tree, whereas in case of a
                 # symbol we call the make_index function.
                 # After doing this, we insert a Symbol("+") in the front of the argument queue to
                 # make sure all stencil components get added up in the produced expression. n is then
-                # incremented with the size of the total arguments that the gradx resulted in. So, 
-                # initially there were two (gradx and argument of gradx), and we end with
-                # three (+, evaluation at i-1/2, evaluation at i+1/2), thus we increment n with 3 to 
+                # incremented with the size of the total arguments that the grad2x resulted in. So,
+                # initially there were two (grad2x and argument of grad2x), and we end with
+                # three (+, evaluation at i-1/2, evaluation at i+1/2), thus we increment n with 3 to
                 # continue after this expression in case there is more to evaluate.
                 # All other stencil operators follow the same logic.
                 if isa(args[n+1], Expr)
@@ -134,11 +134,11 @@ function process_expr(ex, arrays, i, j, k)
                     args[n  ] = make_index(args[n  ], arrays, i-0.5, j, k)
                     args[n+1] = make_index(args[n+1], arrays, i+0.5, j, k)
                 end
-                args[n  ] = :( $cg1 * $(args[n  ])  )
-                args[n+1] = :( $cg2 * $(args[n+1])  )
+                args[n  ] = :( $g2_c1 * $(args[n  ])  )
+                args[n+1] = :( $g2_c2 * $(args[n+1])  )
                 insert!(args, n, Symbol("+"))
                 n += 3
-            elseif args[n] == Symbol("grady_")
+            elseif args[n] == Symbol("grad2y_")
                 if isa(args[n+1], Expr)
                     args[n] = copy(args[n+1])
                     args[n  ] = process_expr(args[n  ], arrays, i, j-0.5, k)
@@ -148,11 +148,11 @@ function process_expr(ex, arrays, i, j, k)
                     args[n  ] = make_index(args[n  ], arrays, i, j-0.5, k)
                     args[n+1] = make_index(args[n+1], arrays, i, j+0.5, k)
                 end
-                args[n  ] = :( $cg1 * $(args[n  ])  )
-                args[n+1] = :( $cg2 * $(args[n+1])  )
+                args[n  ] = :( $g2_c1 * $(args[n  ])  )
+                args[n+1] = :( $g2_c2 * $(args[n+1])  )
                 insert!(args, n, Symbol("+"))
                 n += 3
-            elseif args[n] == Symbol("gradz_")
+            elseif args[n] == Symbol("grad2z_")
                 if isa(args[n+1], Expr)
                     args[n] = copy(args[n+1])
                     args[n  ] = process_expr(args[n  ], arrays, i, j, k-0.5)
@@ -162,11 +162,11 @@ function process_expr(ex, arrays, i, j, k)
                     args[n  ] = make_index(args[n  ], arrays, i, j, k-0.5)
                     args[n+1] = make_index(args[n+1], arrays, i, j, k+0.5)
                 end
-                args[n  ] = :( $cg1 * $(args[n  ])  )
-                args[n+1] = :( $cg2 * $(args[n+1])  )
+                args[n  ] = :( $g2_c1 * $(args[n  ])  )
+                args[n+1] = :( $g2_c2 * $(args[n+1])  )
                 insert!(args, n, Symbol("+"))
                 n += 3
-            elseif args[n] == Symbol("interpx")
+            elseif args[n] == Symbol("interp2x")
                 if isa(args[n+1], Expr)
                     args[n] = copy(args[n+1])
                     args[n  ] = process_expr(args[n  ], arrays, i-0.5, j, k)
@@ -176,11 +176,11 @@ function process_expr(ex, arrays, i, j, k)
                     args[n  ] = make_index(args[n  ], arrays, i-0.5, j, k)
                     args[n+1] = make_index(args[n+1], arrays, i+0.5, j, k)
                 end
-                args[n  ] = :( $ci1 * $(args[n  ])  )
-                args[n+1] = :( $ci2 * $(args[n+1])  )
+                args[n  ] = :( $i2_c1 * $(args[n  ])  )
+                args[n+1] = :( $i2_c2 * $(args[n+1])  )
                 insert!(args, n, Symbol("+"))
                 n += 3
-            elseif args[n] == Symbol("interpy")
+            elseif args[n] == Symbol("interp2y")
                 if isa(args[n+1], Expr)
                     args[n] = copy(args[n+1])
                     args[n  ] = process_expr(args[n  ], arrays, i, j-0.5, k)
@@ -190,11 +190,11 @@ function process_expr(ex, arrays, i, j, k)
                     args[n  ] = make_index(args[n  ], arrays, i, j-0.5, k)
                     args[n+1] = make_index(args[n+1], arrays, i, j+0.5, k)
                 end
-                args[n  ] = :( $ci1 * $(args[n  ])  )
-                args[n+1] = :( $ci2 * $(args[n+1])  )
+                args[n  ] = :( $i2_c1 * $(args[n  ])  )
+                args[n+1] = :( $i2_c2 * $(args[n+1])  )
                 insert!(args, n, Symbol("+"))
                 n += 3
-            elseif args[n] == Symbol("interpz")
+            elseif args[n] == Symbol("interp2z")
                 if isa(args[n+1], Expr)
                     args[n] = copy(args[n+1])
                     args[n  ] = process_expr(args[n  ], arrays, i, j, k-0.5)
@@ -204,8 +204,8 @@ function process_expr(ex, arrays, i, j, k)
                     args[n  ] = make_index(args[n  ], arrays, i, j, k-0.5)
                     args[n+1] = make_index(args[n+1], arrays, i, j, k+0.5)
                 end
-                args[n  ] = :( $ci1 * $(args[n  ])  )
-                args[n+1] = :( $ci2 * $(args[n+1])  )
+                args[n  ] = :( $i2_c1 * $(args[n  ])  )
+                args[n+1] = :( $i2_c2 * $(args[n+1])  )
                 insert!(args, n, Symbol("+"))
                 n += 3
             else

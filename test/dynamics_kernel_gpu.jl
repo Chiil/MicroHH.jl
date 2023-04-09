@@ -18,10 +18,10 @@ function dynamics_w_kernel_cpu!(
     @fast3d begin
         @fd (wt[i, j, kh], u[ih, j, k], v[i, jh, k], w[i, j, kh], s[i, j, k]) begin
             wt += (
-                - gradx(interpz(u) * interpx(w)) + visc * (gradx(gradx(w)))
-                - grady(interpz(v) * interpy(w)) + visc * (grady(grady(w)))
-                - gradz(interpz(w) * interpz(w)) + visc * (gradz(gradz(w)))
-                + alpha*interpz(s) )
+                - grad2x(interp2z(u) * interp2x(w)) + visc * (grad2x(grad2x(w)))
+                - grad2y(interp2z(v) * interp2y(w)) + visc * (grad2y(grad2y(w)))
+                - grad2z(interp2z(w) * interp2z(w)) + visc * (grad2z(grad2z(w)))
+                + alpha*interp2z(s) )
         end
     end
 end
@@ -48,10 +48,10 @@ function dynamics_w_kernel_gpu!(
     if i <= ie && j <= je && k <= ke
         @inbounds @fd (wt[i, j, kh], u[ih, j, k], v[i, jh, k], w[i, j, kh], s[i, j, k]) begin
             wt += (
-                - gradx(interpz(u) * interpx(w)) + visc * (gradx(gradx(w)))
-                - grady(interpz(v) * interpy(w)) + visc * (grady(grady(w)))
-                - gradz(interpz(w) * interpz(w)) + visc * (gradz(gradz(w)))
-                + alpha*interpz(s) )
+                - grad2x(interp2z(u) * interp2x(w)) + visc * (grad2x(grad2x(w)))
+                - grad2y(interp2z(v) * interp2y(w)) + visc * (grad2y(grad2y(w)))
+                - grad2z(interp2z(w) * interp2z(w)) + visc * (grad2z(grad2z(w)))
+                + alpha*interp2z(s) )
         end
     end
 
@@ -133,10 +133,10 @@ function benchmark_tullio(
 
     @fd_tullio (wt[i, j, kh], u[ih, j, k], v[i, jh, k], w[i, j, kh], s[i, j, k]) begin
         wt += (
-            - gradx(interpz(u) * interpx(w)) + visc * (gradx(gradx(w)))
-            - grady(interpz(v) * interpy(w)) + visc * (grady(grady(w)))
-            - gradz(interpz(w) * interpz(w)) + visc * (gradz(gradz(w)))
-            + alpha*interpz(s) )
+            - grad2x(interp2z(u) * interp2x(w)) + visc * (grad2x(grad2x(w)))
+            - grad2y(interp2z(v) * interp2y(w)) + visc * (grad2y(grad2y(w)))
+            - grad2z(interp2z(w) * interp2z(w)) + visc * (grad2z(grad2z(w)))
+            + alpha*interp2z(s) )
     end
 
 end

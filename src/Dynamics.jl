@@ -10,9 +10,9 @@ function advection_u_kernel!(
     @fast3d begin
         @fd (ut[ih, j, k], u[ih, j, k], v[i, jh, k], w[i, j, kh]) begin
             ut += (
-                - gradx(interpx(u) * interpx(u))
-                - grady(interpx(v) * interpy(u))
-                - gradz(interpx(w) * interpz(u)) )
+                - grad2x(interp2x(u) * interp2x(u))
+                - grad2y(interp2x(v) * interp2y(u))
+                - grad2z(interp2x(w) * interp2z(u)) )
         end
     end
 end
@@ -27,9 +27,9 @@ function diffusion_u_kernel!(
     @fast3d begin
         @fd (ut[ih, j, k], u[ih, j, k]) begin
             ut += (
-                + visc * (gradx(gradx(u)))
-                + visc * (grady(grady(u)))
-                + visc * (gradz(gradz(u))) )
+                + visc * (grad2x(grad2x(u)))
+                + visc * (grad2y(grad2y(u)))
+                + visc * (grad2z(grad2z(u))) )
         end
     end
 end
@@ -43,9 +43,9 @@ function advection_v_kernel!(
     @fast3d begin
         @fd (vt[i, jh, k], u[ih, j, k], v[i, jh, k], w[i, j, kh]) begin
             vt += (
-                - gradx(interpy(u) * interpx(v))
-                - grady(interpy(v) * interpy(v))
-                - gradz(interpy(w) * interpz(v)) )
+                - grad2x(interp2y(u) * interp2x(v))
+                - grad2y(interp2y(v) * interp2y(v))
+                - grad2z(interp2y(w) * interp2z(v)) )
         end
     end
 end
@@ -60,9 +60,9 @@ function diffusion_v_kernel!(
     @fast3d begin
         @fd (vt[i, jh, k], v[i, jh, k]) begin
             vt += (
-                + visc * (gradx(gradx(v)))
-                + visc * (grady(grady(v)))
-                + visc * (gradz(gradz(v))) )
+                + visc * (grad2x(grad2x(v)))
+                + visc * (grad2y(grad2y(v)))
+                + visc * (grad2z(grad2z(v))) )
         end
     end
 end
@@ -76,9 +76,9 @@ function advection_w_kernel!(
     @fast3d begin
         @fd (wt[i, j, kh], u[ih, j, k], v[i, jh, k], w[i, j, kh]) begin
             wt += (
-                - gradx(interpz(u) * interpx(w))
-                - grady(interpz(v) * interpy(w))
-                - gradz(interpz(w) * interpz(w)) )
+                - grad2x(interp2z(u) * interp2x(w))
+                - grad2y(interp2z(v) * interp2y(w))
+                - grad2z(interp2z(w) * interp2z(w)) )
         end
     end
 end
@@ -93,9 +93,9 @@ function diffusion_w_kernel!(
     @fast3d begin
         @fd (wt[i, j, kh], w[i, j, kh]) begin
             wt += (
-                + visc * (gradx(gradx(w)))
-                + visc * (grady(grady(w)))
-                + visc * (gradz(gradz(w))) )
+                + visc * (grad2x(grad2x(w)))
+                + visc * (grad2y(grad2y(w)))
+                + visc * (grad2z(grad2z(w))) )
         end
     end
 end
@@ -108,7 +108,7 @@ function buoyancy_w_kernel!(
 
     @fast3d begin
         @fd (wt[i, j, kh], s[i, j, k], s_ref[k]) begin
-            wt += alpha*interpz(s - s_ref)
+            wt += alpha*interp2z(s - s_ref)
         end
     end
 end
@@ -122,9 +122,9 @@ function advection_s_kernel!(
     @fast3d begin
         @fd (st[i, j, k], u[ih, j, k], v[i, jh, k], w[i, j, kh], s[i, j, k]) begin
             st += (
-                - gradx(u * interpx(s))
-                - grady(v * interpy(s))
-                - gradz(w * interpz(s)) )
+                - grad2x(u * interp2x(s))
+                - grad2y(v * interp2y(s))
+                - grad2z(w * interp2z(s)) )
         end
     end
 end
@@ -139,9 +139,9 @@ function diffusion_s_kernel!(
     @fast3d begin
         @fd (st[i, j, k], s[i, j, k]) begin
             st += (
-                + visc * (gradx(gradx(s)))
-                + visc * (grady(grady(s)))
-                + visc * (gradz(gradz(s))) )
+                + visc * (grad2x(grad2x(s)))
+                + visc * (grad2y(grad2y(s)))
+                + visc * (grad2z(grad2z(s))) )
         end
     end
 end

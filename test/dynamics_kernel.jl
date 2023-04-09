@@ -16,10 +16,10 @@ function dynamics_w_kernel!(
     @fast3d begin
         @fd (wt[i, j, kh], u[ih, j, k], v[i, jh, k], w[i, j, kh], s[i, j, k]) begin
             wt += (
-                - gradx(interpz(u) * interpx(w)) + visc * (gradx(gradx(w)))
-                - grady(interpz(v) * interpy(w)) + visc * (grady(grady(w)))
-                - gradz(interpz(w) * interpz(w)) + visc * (gradz(gradz(w)))
-                + alpha*interpz(s) )
+                - grad2x(interp2z(u) * interp2x(w)) + visc * (grad2x(grad2x(w)))
+                - grad2y(interp2z(v) * interp2y(w)) + visc * (grad2y(grad2y(w)))
+                - grad2z(interp2z(w) * interp2z(w)) + visc * (grad2z(grad2z(w)))
+                + alpha*interp2z(s) )
         end
     end
 end
@@ -34,9 +34,9 @@ function dynamics_w_kernel_1!(
     @fast3d begin
         @fd (wt[i, j, kh], u[ih, j, k], v[i, jh, k], w[i, j, kh]) begin
             wt += (
-                - gradx(interpz(u) * interpx(w))
-                - grady(interpz(v) * interpy(w))
-                - gradz(interpz(w) * interpz(w)) )
+                - grad2x(interp2z(u) * interp2x(w))
+                - grad2y(interp2z(v) * interp2y(w))
+                - grad2z(interp2z(w) * interp2z(w)) )
         end
     end
 end
@@ -51,9 +51,9 @@ function dynamics_w_kernel_2!(
     @fast3d begin
         @fd (wt[i, j, kh], w[i, j, kh]) begin
             wt += (
-                + visc * (gradx(gradx(w)))
-                + visc * (grady(grady(w)))
-                + visc * (gradz(gradz(w))) )
+                + visc * (grad2x(grad2x(w)))
+                + visc * (grad2y(grad2y(w)))
+                + visc * (grad2z(grad2z(w))) )
         end
     end
 end
@@ -66,7 +66,7 @@ function dynamics_w_kernel_3!(
 
     @fast3d begin
         @fd (wt[i, j, kh], s[i, j, k]) begin
-            wt += alpha*interpz(s)
+            wt += alpha*interp2z(s)
         end
     end
 end
