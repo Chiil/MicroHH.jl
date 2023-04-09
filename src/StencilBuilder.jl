@@ -98,8 +98,12 @@ function process_expr(ex, arrays, i, j, k)
         end
     end
 
-    # Recurse through expression and replace gradients and interpolations by
-    # the appropriate code.
+    # Recurse through expression and replace gradients and interpolations by the
+    # appropriate code. There are three options:
+    # 1. The argument is an Expr, we recurse further into the tree.
+    # 2. The argument is a Symbol. In case of a stencil operator, we insert the evaluation
+    #    of interpolations and gradients into the expression tree at the correct locations.
+    # 3. The argument is a number (Int64, Float, ...). In this case, no action is needed.
     args = ex.args
     while n <= length(args)
         if isa(args[n], Expr)
@@ -266,7 +270,7 @@ function build_fd(ex_arrays, ex_offset, ex, use_tullio)
     end
 
     i += offset[1]; j += offset[2]; k += offset[3]
-        
+
     ex = process_expr(ex, arrays, i, j, k)
 
     if use_tullio
