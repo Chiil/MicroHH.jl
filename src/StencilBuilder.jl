@@ -62,6 +62,8 @@ function process_expr(ex, arrays, i, j, k)
     i2_c1 = 1//2; i2_c2 = 1//2;
     g2_c1 = -1; g2_c2 = 1;
 
+    i4_c1 = -1//16; i4_c2 = 9//16; i4_c3 = 9//16; i4_c4 = -1//16
+
     n = 1
 
     # Check whether expression is a gradient, and if so inject the appropriate dx/dy/dz.
@@ -109,7 +111,9 @@ function process_expr(ex, arrays, i, j, k)
         if isa(args[n], Expr)
             args[n] = process_expr(args[n], arrays, i, j, k)
             n += 1
+
         elseif isa(args[n], Symbol)
+            # Second-order gradients (grad2)
             if args[n] == Symbol("grad2x_")
                 # A gradient operator along the x-axis is detected. The gradient either contains
                 # a deeper Expr, for instance grad2x(interp2x(u)), or a Symbol that gets indexed
@@ -166,6 +170,8 @@ function process_expr(ex, arrays, i, j, k)
                 args[n+1] = :( $g2_c2 * $(args[n+1])  )
                 insert!(args, n, Symbol("+"))
                 n += 3
+
+            # Second-order interpolations (interp2)
             elseif args[n] == Symbol("interp2x")
                 if isa(args[n+1], Expr)
                     args[n] = copy(args[n+1])
@@ -208,6 +214,50 @@ function process_expr(ex, arrays, i, j, k)
                 args[n+1] = :( $i2_c2 * $(args[n+1])  )
                 insert!(args, n, Symbol("+"))
                 n += 3
+
+            # Fourth-order interpolations (interp4)
+            # In case of fourth-order interpolation, two extra args need to be inserted, as two
+            # are replaced with four.
+            elseif args[n] == Symbol("interp4x")
+                if isa(args[n+1], Expr)
+                    args[n] = copy(args[n+1])
+                    args[n  ] = process_expr(args[n  ], arrays, i-1.5, j, k)
+                    args[n+1] = process_expr(args[n+1], arrays, i-0.5, j, k)
+                    insert!(args, n+2, process_expr(args[n  ], arrays, i+0.5, j, k))
+                    insert!(args, n+3, process_expr(args[n  ], arrays, i+1.5, j, k))
+                elseif isa(args[n+1], Symbol)
+                    args[n] = args[n+1]
+                    args[n  ] = make_index(args[n  ], arrays, i-1.5, j, k)
+                    args[n+1] = make_index(args[n+1], arrays, i-0.5, j, k)
+                    insert!(args, n+2, process_expr(args[n  ], arrays, i+0.5, j, k))
+                    insert!(args, n+3, process_expr(args[n  ], arrays, i+1.5, j, k))
+                end
+                args[n  ] = :( $i4_c1 * $(args[n  ])  )
+                args[n+1] = :( $i4_c2 * $(args[n+1])  )
+                args[n+2] = :( $i4_c3 * $(args[n+2])  )
+                args[n+3] = :( $i4_c4 * $(args[n+3])  )
+                insert!(args, n, Symbol("+"))
+                n += 5
+            elseif args[n] == Symbol("interp4y")
+                if isa(args[n+1], Expr)
+                    args[n] = copy(args[n+1])
+                    args[n  ] = process_expr(args[n  ], arrays, i, j-1.5, k)
+                    args[n+1] = process_expr(args[n+1], arrays, i, j-0.5, k)
+                    insert!(args, n+2, process_expr(args[n  ], arrays, i, j+0.5, k))
+                    insert!(args, n+3, process_expr(args[n  ], arrays, i, j+1.5, k))
+                elseif isa(args[n+1], Symbol)
+                    args[n] = args[n+1]
+                    args[n  ] = make_index(args[n  ], arrays, i, j-1.5, k)
+                    args[n+1] = make_index(args[n+1], arrays, i, j-0.5, k)
+                    insert!(args, n+2, process_expr(args[n  ], arrays, i, j+0.5, k))
+                    insert!(args, n+3, process_expr(args[n  ], arrays, i, j+1.5, k))
+                end
+                args[n  ] = :( $i4_c1 * $(args[n  ])  )
+                args[n+1] = :( $i4_c2 * $(args[n+1])  )
+                args[n+2] = :( $i4_c3 * $(args[n+2])  )
+                args[n+3] = :( $i4_c4 * $(args[n+3])  )
+                insert!(args, n, Symbol("+"))
+                n += 5
             else
                 args[n] = make_index(args[n], arrays, i, j, k)
                 n += 1
