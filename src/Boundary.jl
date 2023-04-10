@@ -75,21 +75,45 @@ function boundary_cyclic_kernel!(
     a, is, ie, js, je, igc, jgc, bufs::BoundaryBuffers, p::ParallelSerial)
 
     # East-west BCs
-    @tturbo for k in 1:size(a, 3)
-        for j in 1:size(a, 2)
-            for i in 1:igc
-                a[i, j, k] = a[ie-i+1, j, k]
-                a[ie+i, j, k] = a[is+i-1, j, k]
+    if ndims(a) == 3 && ie-is == 0
+        @tturbo unroll=8 for k in 1:size(a, 3)
+            for j in 1:size(a, 2)
+                for i in 1:igc
+                    a_val = a[is, j, k]
+                    a[i, j, k] = a_val
+                    a[ie+i, j, k] = a_val
+                end
+            end
+        end
+    else
+        @tturbo unroll=8 for k in 1:size(a, 3)
+            for j in 1:size(a, 2)
+                for i in 1:igc
+                    a[i, j, k] = a[ie-i+1, j, k]
+                    a[ie+i, j, k] = a[is+i-1, j, k]
+                end
             end
         end
     end
 
     # North-south BCs
-    @tturbo for k in 1:size(a, 3)
-        for j in 1:jgc
-            for i in 1:size(a, 1)
-                a[i, j, k] = a[i, je-j+1, k]
-                a[i, je+j, k] = a[i, js+j-1, k]
+    if ndims(a) == 3 && je-js == 0
+        @tturbo unroll=8 for k in 1:size(a, 3)
+            for j in 1:jgc
+                for i in 1:size(a, 1)
+                    a_val = a[i, js, k]
+                    a[i, j, k] = a_val
+                    a[i, je+j, k] = a_val
+                end
+            end
+        end
+    else
+        @tturbo unroll=8 for k in 1:size(a, 3)
+            for j in 1:jgc
+                for i in 1:size(a, 1)
+                    a[i, j, k] = a[i, je-j+1, k]
+                    a[i, je+j, k] = a[i, js+j-1, k]
+                end
             end
         end
     end
