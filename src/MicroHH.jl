@@ -32,7 +32,9 @@ include("Grid.jl")
 include("Fields.jl")
 include("Boundary.jl")
 include("Timeloop.jl")
-include("Dynamics.jl")
+include("Advection.jl")
+include("Diffusion.jl")
+include("Buoyancy.jl")
 include("Pressure.jl")
 include("Transposes.jl")
 include("Diagnostics.jl")
@@ -82,10 +84,12 @@ end
 
 
 function calc_rhs!(m::Model, i)
-    @timeit m.to "set_boundary"       set_boundary!(m.fields[i], m.grid[i], m.boundary[i], m.parallel[i])
-    @timeit m.to "calc_dynamics_tend" calc_dynamics_tend!(m.fields[i], m.grid[i], m.to)
-    @timeit m.to "calc_nudge_tend"    calc_nudge_tend!(m.fields[i], m.grid[i], m.multidomain[i])
-    @timeit m.to "calc_pressure_tend" calc_pressure_tend!(m.fields[i], m.grid[i], m.timeloop[i], m.pressure[i], m.boundary[i], m.parallel[i], m.to)
+    @timeit m.to "set_boundary"        set_boundary!(m.fields[i], m.grid[i], m.boundary[i], m.parallel[i])
+    @timeit m.to "calc_advection_tend" calc_advection_tend!(m.fields[i], m.grid[i], m.to)
+    @timeit m.to "calc_diffusion_tend" calc_diffusion_tend!(m.fields[i], m.grid[i], m.to)
+    @timeit m.to "calc_buoyancy_tend"  calc_buoyancy_tend!(m.fields[i], m.grid[i], m.to)
+    @timeit m.to "calc_nudge_tend"     calc_nudge_tend!(m.fields[i], m.grid[i], m.multidomain[i])
+    @timeit m.to "calc_pressure_tend"  calc_pressure_tend!(m.fields[i], m.grid[i], m.timeloop[i], m.pressure[i], m.boundary[i], m.parallel[i], m.to)
 end
 
 
