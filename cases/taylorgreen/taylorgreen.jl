@@ -6,6 +6,10 @@ using Tullio
 ## Solve the Taylor Green vortex
 function solve_taylorgreen(itot)
     # Loading settings.
+    d_parallel = Dict{String, Any}()
+    d_parallel["npx"] = 1
+    d_parallel["npy"] = 1
+
     d_grid = Dict{String, Any}()
     d_grid["itot"] = itot
     d_grid["jtot"] = 1
@@ -40,6 +44,7 @@ function solve_taylorgreen(itot)
     d_multidomain["enable_nudge"] = false
 
     settings = [ Dict(
+        "parallel" => d_parallel,
         "grid" => d_grid,
         "fields" => d_fields,
         "boundary" => d_boundary,
