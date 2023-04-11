@@ -266,6 +266,30 @@ function process_expr(ex, arrays, i, j, k)
                 args[n+3] = :( $i4_c4 * $(args[n+3])  )
                 insert!(args, n, Symbol("+"))
                 n += 5
+            elseif args[n] == Symbol("interp4z")
+                if isa(args[n+1], Expr)
+                    args[n] = copy(args[n+1])
+                    insert!(args, n+2, copy(args[n+1]))
+                    insert!(args, n+2, copy(args[n+1]))
+                    args[n  ] = process_expr(args[n  ], arrays, i, j, k-1.5)
+                    args[n+1] = process_expr(args[n+1], arrays, i, j, k-0.5)
+                    args[n+2] = process_expr(args[n+2], arrays, i, j, k+0.5)
+                    args[n+3] = process_expr(args[n+3], arrays, i, j, k+1.5)
+                elseif isa(args[n+1], Symbol)
+                    args[n] = args[n+1]
+                    insert!(args, n+2, args[n+1])
+                    insert!(args, n+2, args[n+1])
+                    args[n  ] = make_index(args[n  ], arrays, i, j, k-1.5)
+                    args[n+1] = make_index(args[n+1], arrays, i, j, k-0.5)
+                    args[n+2] = make_index(args[n+2], arrays, i, j, k+0.5)
+                    args[n+3] = make_index(args[n+3], arrays, i, j, k+1.5)
+                end
+                args[n  ] = :( $i4_c1 * $(args[n  ])  )
+                args[n+1] = :( $i4_c2 * $(args[n+1])  )
+                args[n+2] = :( $i4_c3 * $(args[n+2])  )
+                args[n+3] = :( $i4_c4 * $(args[n+3])  )
+                insert!(args, n, Symbol("+"))
+                n += 5
             else
                 args[n] = make_index(args[n], arrays, i, j, k)
                 n += 1
