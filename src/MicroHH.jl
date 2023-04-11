@@ -157,12 +157,12 @@ function calc_rhs!(m::Model, i)
         f = m.fields[i]
 
         # Set the walls to const normal velocity (zero for no-penetration BC).
-        # f.u[g.is  , :, :] .= 0
-        # f.u[g.ie+1, :, :] .= 0
-        z_tmp = reshape(g.z[:], (1, g.kcells))
-        zsize = g.zsize
-        f.u[g.is  , :, :] .=  9 .* z_tmp ./ zsize
-        f.u[g.ie+1, :, :] .= 10 .* z_tmp ./ zsize
+        f.u[g.is  , :, :] .= 0
+        f.u[g.ie+1, :, :] .= 0
+        # z_tmp = reshape(g.z[:], (1, g.kcells))
+        # zsize = g.zsize
+        # f.u[g.is  , :, :] .=  9 .* z_tmp ./ zsize
+        # f.u[g.ie+1, :, :] .= 10 .* z_tmp ./ zsize
 
         # Zero v
         f.v[g.is-1, :, :] .= - f.v[g.is, :, :]
@@ -198,7 +198,7 @@ function calc_rhs!(m::Model, i)
         xsize = g.xsize
         x_tmp = reshape(g.xh[:], (g.icells, 1, 1))
         z_tmp = reshape(g.z[:], (1, 1, g.kcells))
-        du = f.u .- (10 .* (0.9 .+ 0.1 .* x_tmp ./ xsize) .* z_tmp ./ zsize)
+        du = f.u # .- (10 .* (0.9 .+ 0.1 .* x_tmp ./ xsize) .* z_tmp ./ zsize)
         Threads.@threads for k in g.ks:g.ke
             for j in g.js:g.je
                 # Skip the first point
@@ -310,7 +310,7 @@ function calc_rhs!(m::Model, i)
         f.s, f.s_top, f.s_gradtop, g.dzh, g.ke, b.s_top_type)
 
     # Apply the sponge layer
-    if i > 1
+    if false #i > 1
         g = m.grid[i]; gsrc = m.grid[i-1]
         f = m.fields[i]; fsrc = m.fields[i-1]
 
@@ -785,7 +785,7 @@ function load_domain!(m::Model, i, p::ParallelDistributed)
 
     u_bot_id = open_dataset(fid, "u_bot", dapl, dxpl)
     f.u_bot[g.is:g.ie, g.js:g.je] = u_bot_id[is:ie, js:je]
-    close(s_bot_id)
+    close(u_bot_id)
 
     u_top_id = open_dataset(fid, "u_top", dapl, dxpl)
     f.u_top[g.is:g.ie, g.js:g.je] = u_top_id[is:ie, js:je]

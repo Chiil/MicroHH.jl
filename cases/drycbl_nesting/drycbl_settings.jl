@@ -6,11 +6,11 @@ function make_grid(zsize, ktot)
 end
 
 
-## Default float type.
-float_type = Float32
-
-
 ## Settings domain 1.
+settings_parallel = Dict{String, Any}(
+    "npx" => 1,
+    "npy" => 1)
+
 settings_grid = Dict{String, Any}(
     "itot" => 128,
     "jtot" => 64,
@@ -45,6 +45,7 @@ settings_multidomain = Dict{String, Any}(
     "enable_nudge" => false)
 
 settings_d01 = Dict(
+    "parallel" => settings_parallel,
     "grid" => settings_grid,
     "fields" => settings_fields,
     "boundary" => settings_boundary,

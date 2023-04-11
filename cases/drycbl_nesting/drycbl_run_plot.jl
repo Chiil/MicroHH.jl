@@ -11,7 +11,7 @@ include("drycbl_settings.jl")
 
 ## Initialize the model.
 n_domains = 2
-m = Model("drycbl", n_domains, settings, float_type)
+m = Model("drycbl", n_domains, settings)
 load_model!(m)
 in_progress = prepare_model!(m)
 
